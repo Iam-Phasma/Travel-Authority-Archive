@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Admin</title>
     <link rel="icon" type="image/png" href="../assets/CHED-Logo.png">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../header/header.css">
     <link rel="stylesheet" href="../footer/footer.css">
-    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
 </head>
 <body>
     <div id="header-container"></div>
@@ -90,7 +90,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
@@ -509,7 +509,7 @@
                     display.innerHTML = '<span class=\"multiselect-placeholder\">Select officials...</span>';
                 } else {
                     display.innerHTML = selectedArray.map(name => 
-                        `<span class=\"multiselect-tag\">${name}<button type=\"button\" class=\"multiselect-remove\" data-name=\"${name}\">&times;</button></span>`
+                        `<span class=\"multiselect-tag\">${escapeHtml(name)}<button type=\"button\" class=\"multiselect-remove\" data-name=\"${escapeHtml(name)}\">&times;</button></span>`
                     ).join('');
                     
                     display.querySelectorAll('.multiselect-remove').forEach(btn => {
@@ -540,7 +540,7 @@
                             <div class="multiselect-no-options">
                                 No matching officials found
                                 <br>
-                                <button type="button" class="multiselect-add-btn">Add "${search.value.trim()}"</button>
+                                <button type="button" class="multiselect-add-btn">Add "${escapeHtml(search.value.trim())}"</button>
                             </div>
                         `;
                         
@@ -627,7 +627,7 @@
                     options.innerHTML = filtered.map(emp => {
                         const inactiveClass = emp.is_active === false ? ' inactive-employee' : '';
                         const inactiveLabel = emp.is_active === false ? ' <span class=\"inactive-label\">(Inactive)</span>' : '';
-                        return `<div class=\"multiselect-option${inactiveClass}\" data-name=\"${emp.name}\">${emp.name}${inactiveLabel}</div>`;
+                        return `<div class=\"multiselect-option${inactiveClass}\" data-name=\"${escapeHtml(emp.name)}\">${escapeHtml(emp.name)}${inactiveLabel}</div>`;
                     }).join('');
                     
                     options.querySelectorAll('.multiselect-option').forEach(opt => {
@@ -763,6 +763,27 @@
             }
         };
         window.adminRenderUpdateEmployeesOptions = renderUpdateEmployeesOptions;
+
+        const escapeHtml = (str) => {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+        };
+
+        const safeUrl = (url) => {
+            if (!url) return '#';
+            try {
+                const parsed = new URL(url);
+                if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+                    return url;
+                }
+            } catch (e) {}
+            return '#';
+        };
 
         const formatFileLabel = (value) => {
             const base = String(value || "Download");
@@ -1193,7 +1214,7 @@
             viewBody.innerHTML = sortedRows.map((row) => {
                 const dateText = row.travel_date ? new Date(row.travel_date).toLocaleDateString() : "-";
                 const untilText = row.travel_until ? new Date(row.travel_until).toLocaleDateString() : "-";
-                const fileUrl = row.file_url || "#";
+                const fileUrl = safeUrl(row.file_url);
                 const safeName = row.file_name || "Download";
                 const displayName = formatFileLabel(safeName);
                 const isDemoClass = row.is_demo ? " is-demo" : "";
@@ -1208,30 +1229,30 @@
                 }
 
                 return `
-                    <tr data-id="${row.id}" class="${isDemoClass}">
+                    <tr data-id="${escapeHtml(row.id)}" class="${isDemoClass}">
                         <td>
-                            <button class="view-btn icon-btn" data-id="${row.id}" aria-label="View details">
+                            <button class="view-btn icon-btn" data-id="${escapeHtml(row.id)}" aria-label="View details">
                                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
                                 </svg>
                             </button>
                         </td>
-                        <td>${row.ta_number || "-"}</td>
-                        <td><span class="truncate">${row.purpose || "-"}</span></td>
-                        <td style="text-align: left;"><span class="truncate">${row.destination || "-"}</span></td>
-                        <td style="text-align: left;"><span class="truncate">${employeesText}</span></td>
+                        <td>${escapeHtml(row.ta_number) || "-"}</td>
+                        <td><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
+                        <td style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
+                        <td style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
                         <td>${dateText}</td>
                         <td>${untilText}</td>
                         <td>
-                            <a class="file-link" href="${fileUrl}" target="_blank" rel="noopener">${displayName}</a>
+                            <a class="file-link" href="${fileUrl}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>
                         </td>
                         <td class="actions-cell">
-                            <button class="update-btn icon-btn" data-id="${row.id}" aria-label="Update" title="Update">
+                            <button class="update-btn icon-btn" data-id="${escapeHtml(row.id)}" aria-label="Update" title="Update">
                                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                     <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                                 </svg>
                             </button>
-                            <button class="delete-btn icon-btn" data-id="${row.id}" aria-label="Delete" title="Delete">
+                            <button class="delete-btn icon-btn" data-id="${escapeHtml(row.id)}" aria-label="Delete" title="Delete">
                                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                     <path d="M9 3h6l1 2h4a1 1 0 1 1 0 2h-1l-1.1 12.1a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9L5 7H4a1 1 0 0 1 0-2h4l1-2Zm1.1 7a1 1 0 1 0-2 0v7a1 1 0 1 0 2 0v-7Zm5.9 0a1 1 0 1 0-2 0v7a1 1 0 1 0 2 0v-7Z" />
                                 </svg>
@@ -1321,7 +1342,7 @@
                         : "-";
 
                     if (record.file_url) {
-                        viewFileLink.href = record.file_url;
+                        viewFileLink.href = safeUrl(record.file_url);
                         viewFileLink.textContent = record.file_name || "Open file";
                     } else {
                         viewFileLink.href = "#";
@@ -1587,7 +1608,7 @@
                 adminFilterEmployeeSelect.innerHTML = '<option value="">All Officials</option>' +
                     adminEmployeesListForFilter.map(emp => {
                         const inactiveLabel = emp.is_active === false ? ' (Inactive)' : '';
-                        return `<option value="${emp.name}">${emp.name}${inactiveLabel}</option>`;
+                        return `<option value="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</option>`;
                     }).join('');
             } catch (error) {
                 console.error("Failed to load employees for admin filter:", error);
@@ -1617,7 +1638,7 @@
                 
                 const sortedYears = Array.from(years).sort((a, b) => b - a);
                 adminFilterYearSelect.innerHTML = '<option value="">All Years</option>' +
-                    sortedYears.map(year => `<option value="${year}"${year === currentYear ? ' selected' : ''}>${year}</option>`).join('');
+                    sortedYears.map(year => `<option value="${escapeHtml(year)}"${year === currentYear ? ' selected' : ''}>${escapeHtml(year)}</option>`).join('');
             } catch (error) {
                 console.error('Error populating year filter:', error);
             }
@@ -1772,8 +1793,8 @@
                 // Populate checkboxes
                 exportYearsList.innerHTML = availableYearsForExport.map(year => `
                     <label class="checkbox-label">
-                        <input type="checkbox" class="export-year-checkbox" value="${year}">
-                        <span>${year}</span>
+                        <input type="checkbox" class="export-year-checkbox" value="${escapeHtml(String(year))}">
+                        <span>${escapeHtml(String(year))}</span>
                     </label>
                 `).join('');
 
@@ -2346,16 +2367,16 @@
                 const statusText = isOnline ? 'Online' : 'Offline';
                 return `
                 <tr class="${!accessEnabled ? 'user-disabled' : ''}">
-                    <td class="text-left" title="${fullEmail}">${displayEmail}</td>
+                    <td class="text-left" title="${escapeHtml(fullEmail)}">${escapeHtml(displayEmail)}</td>
                     <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
                     <td>
-                        <select class="access-select" data-user-id="${user.id}" data-current-access="${accessEnabled}">
+                        <select class="access-select" data-user-id="${escapeHtml(user.id)}" data-current-access="${accessEnabled}">
                             <option value="true" ${accessEnabled ? 'selected' : ''}>Enabled</option>
                             <option value="false" ${!accessEnabled ? 'selected' : ''}>Disabled</option>
                         </select>
                     </td>
                     <td>
-                        <select class="role-select" data-user-id="${user.id}" data-current-role="${user.role}" ${!accessEnabled ? 'disabled' : ''}>
+                        <select class="role-select" data-user-id="${escapeHtml(user.id)}" data-current-role="${escapeHtml(user.role)}" ${!accessEnabled ? 'disabled' : ''}>
                             <option value="">-- Select Role --</option>
                             <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
                             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>

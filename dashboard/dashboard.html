@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Dashboard</title>
     <link rel="icon" type="image/png" href="../assets/CHED-Logo.png">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../header/header.css">
     <link rel="stylesheet" href="../footer/footer.css">
@@ -537,6 +537,27 @@
             if (duration > 0) toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
         };
 
+        const escapeHtml = (str) => {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#x27;');
+        };
+
+        const safeUrl = (url) => {
+            if (!url) return '#';
+            try {
+                const parsed = new URL(url);
+                if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+                    return url;
+                }
+            } catch (e) {}
+            return '#';
+        };
+
         const formatFileLabel = (value) => {
             const base = String(value || "Download");
             const extMatch = base.match(/\.([a-z0-9]{1,5})$/i);
@@ -643,7 +664,7 @@
             taBody.innerHTML = sortedRows.map((row, index) => {
                 const dateText = row.travel_date ? new Date(row.travel_date).toLocaleDateString() : "-";
                 const untilText = row.travel_until ? new Date(row.travel_until).toLocaleDateString() : "-";
-                const fileUrl = row.file_url || "#";
+                const fileUrl = safeUrl(row.file_url);
                 const safeName = row.file_name || "Download";
                 const displayName = formatFileLabel(safeName);
                 
@@ -665,14 +686,14 @@
                                 </svg>
                             </button>
                         </td>
-                        <td>${row.ta_number || "-"}</td>
-                        <td><span class="truncate">${row.purpose || "-"}</span></td>
-                        <td style="text-align: left;"><span class="truncate">${row.destination || "-"}</span></td>
-                        <td style="text-align: left;"><span class="truncate">${employeesText}</span></td>
+                        <td>${escapeHtml(row.ta_number) || "-"}</td>
+                        <td><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
+                        <td style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
+                        <td style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
                         <td>${dateText}</td>
                         <td>${untilText}</td>
                         <td>
-                            <a class="file-link" href="${fileUrl}" target="_blank" rel="noopener">${displayName}</a>
+                            <a class="file-link" href="${fileUrl}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>
                         </td>
                     </tr>
                 `;
@@ -696,7 +717,7 @@
                         : "-";
 
                     if (record.file_url) {
-                        viewFileLink.href = record.file_url;
+                        viewFileLink.href = safeUrl(record.file_url);
                         viewFileLink.textContent = record.file_name || "Open file";
                     } else {
                         viewFileLink.href = "#";
@@ -803,7 +824,7 @@
                 filterEmployeeSelect.innerHTML = '<option value="">All Officials</option>' +
                     employeesListForFilter.map(emp => {
                         const inactiveLabel = emp.is_active === false ? ' (Inactive)' : '';
-                        return `<option value="${emp.name}">${emp.name}${inactiveLabel}</option>`;
+                        return `<option value="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</option>`;
                     }).join('');
             } catch (error) {
                 console.error("Failed to load employees for filter:", error);
@@ -833,7 +854,7 @@
                 
                 const sortedYears = Array.from(years).sort((a, b) => b - a);
                 filterYearSelect.innerHTML = '<option value="">All Years</option>' +
-                    sortedYears.map(year => `<option value="${year}"${year === currentYear ? ' selected' : ''}>${year}</option>`).join('');
+                    sortedYears.map(year => `<option value="${escapeHtml(year)}"${year === currentYear ? ' selected' : ''}>${escapeHtml(year)}</option>`).join('');
             } catch (error) {
                 console.error('Error populating year filter:', error);
             }
@@ -1049,7 +1070,7 @@
             }
         });
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
 
     </div>
 
