@@ -694,6 +694,11 @@
             if (window.initUploadPanel) {
                 window.initUploadPanel(supabase, selectedEmployees, employeesMultiSelect);
             }
+
+            // Apply demo checkbox visibility setting after panel is loaded
+            if (window.applyDemoCheckboxVisibility) {
+                window.applyDemoCheckboxVisibility(window.getDemoCheckboxVisible());
+            }
         });
 
         // updateEmployeesMultiSelect will be initialized after view modals load
@@ -712,6 +717,11 @@
             // Render options now if employees already loaded
             if (employeesList.length > 0) {
                 updateEmployeesMultiSelect.renderOptions();
+            }
+
+            // Apply demo checkbox visibility setting after modals are loaded
+            if (window.applyDemoCheckboxVisibility) {
+                window.applyDemoCheckboxVisibility(window.getDemoCheckboxVisible());
             }
         });
 
@@ -2840,7 +2850,12 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <h3>Settings</h3>
-            <p>Settings functionality will be available soon.</p>
+            <div class="settings-list">
+                <label class="checkbox-label settings-item">
+                    <input type="checkbox" id="settings-show-demo-checkbox" checked>
+                    <span>Show demo file checkbox in upload and edit forms</span>
+                </label>
+            </div>
             <div class="modal-actions">
                 <button class="modal-btn cancel" id="close-settings">Close</button>
             </div>
@@ -2848,6 +2863,39 @@
     </div>
 
     <script>
+        // Demo checkbox visibility setting
+        const DEMO_CHECKBOX_SETTING_KEY = 'adminShowDemoCheckbox';
+
+        const getDemoCheckboxVisible = () => {
+            const saved = localStorage.getItem(DEMO_CHECKBOX_SETTING_KEY);
+            return saved === null ? true : saved === 'true';
+        };
+        window.getDemoCheckboxVisible = getDemoCheckboxVisible;
+
+        window.applyDemoCheckboxVisibility = (visible) => {
+            // Upload panel demo checkbox wrapper
+            const uploadDemoWrapper = document.getElementById('is-demo-checkbox')?.closest('.demo-field-wrapper');
+            if (uploadDemoWrapper) {
+                uploadDemoWrapper.style.display = visible ? '' : 'none';
+            }
+            // Edit modal demo checkbox wrapper
+            const editDemoWrapper = document.getElementById('update-is-demo-checkbox')?.closest('.demo-field-wrapper');
+            if (editDemoWrapper) {
+                editDemoWrapper.style.display = visible ? '' : 'none';
+            }
+        };
+
+        const settingsShowDemoCheckbox = document.getElementById('settings-show-demo-checkbox');
+
+        // Load saved setting (default: true = visible)
+        settingsShowDemoCheckbox.checked = getDemoCheckboxVisible();
+
+        settingsShowDemoCheckbox.addEventListener('change', () => {
+            const visible = settingsShowDemoCheckbox.checked;
+            localStorage.setItem(DEMO_CHECKBOX_SETTING_KEY, visible);
+            window.applyDemoCheckboxVisibility(visible);
+        });
+
         document.getElementById('close-settings').addEventListener('click', () => {
             document.getElementById('settings-modal').classList.remove('show');
         });
