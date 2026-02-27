@@ -674,6 +674,84 @@
         const resetStatus = document.getElementById('reset-status');
         const hcaptchaContainer = document.getElementById('hcaptcha-container');
         let resetCaptchaWidgetId = null;
+        let resetCooldownInterval = null;
+        const RESET_COOLDOWN_SECONDS = 60; // seconds to wait between reset attempts
+
+        // Start a visible countdown on the Send Reset Link button
+        const applyResetCooldown = (secondsRemaining) => {
+            sendResetBtn.disabled = true;
+            if (resetCooldownInterval) clearInterval(resetCooldownInterval);
+
+            const tick = () => {
+                if (secondsRemaining <= 0) {
+                    clearInterval(resetCooldownInterval);
+                    resetCooldownInterval = null;
+                    sendResetBtn.disabled = false;
+                    sendResetBtn.textContent = 'Send Reset Link';
+                    return;
+                }
+                sendResetBtn.textContent = `Wait ${secondsRemaining}s`;
+                secondsRemaining--;
+            };
+            tick();
+            resetCooldownInterval = setInterval(tick, 1000);
+        };
+
+        // Check localStorage for an existing per-email cooldown and apply it if still active
+        const checkAndApplyExistingCooldown = (email) => {
+            if (!email) return;
+            const key = `reset_cooldown_${email}`;
+            const expiryStr = localStorage.getItem(key);
+            if (!expiryStr) return;
+            const expiry = parseInt(expiryStr, 10);
+            const now = Date.now();
+            if (expiry > now) {
+                const secondsLeft = Math.ceil((expiry - now) / 1000);
+                applyResetCooldown(secondsLeft);
+            } else {
+                localStorage.removeItem(key);
+            }
+        };
+
+        // Store cooldown expiry in localStorage for the given email
+        const storeResetCooldown = (email, seconds) => {
+            const key = `reset_cooldown_${email}`;
+            localStorage.setItem(key, (Date.now() + seconds * 1000).toString());
+        };
+
+        // Check database rate limit for password reset
+        const checkPasswordResetRateLimit = async (email) => {
+            try {
+                const { data, error } = await supabase.rpc('check_password_reset_rate_limit', {
+                    user_email: email
+                });
+                if (error) {
+                    console.error('Rate limit check error:', error);
+                    return { allowed: true };
+                }
+                return data;
+            } catch (err) {
+                console.error('Rate limit check failed:', err);
+                return { allowed: true };
+            }
+        };
+
+        // Record a password reset attempt in the database
+        const recordPasswordResetAttempt = async (email) => {
+            try {
+                const { data, error } = await supabase.rpc('record_password_reset_attempt', {
+                    user_email: email
+                });
+                if (error) {
+                    console.error('Record reset attempt error:', error);
+                    return { allowed: true };
+                }
+                return data;
+            } catch (err) {
+                console.error('Record reset attempt failed:', err);
+                return { allowed: true };
+            }
+        };
 
         // Open reset password modal
         if (forgotPasswordLink) {
@@ -684,6 +762,9 @@
                 resetEmailInput.value = emailInput.value; // Pre-fill if email is entered
                 resetEmailInput.focus();
                 resetStatus.classList.add('hidden');
+
+                // Apply any existing cooldown for the pre-filled email
+                checkAndApplyExistingCooldown(resetEmailInput.value.trim());
                 
                 // Render captcha for the modal if not already rendered
                 if (resetCaptchaWidgetId === null && typeof hcaptcha !== 'undefined') {
@@ -706,6 +787,13 @@
             resetPasswordModal.classList.add('hidden');
             resetEmailInput.value = '';
             resetStatus.classList.add('hidden');
+            // Clear the countdown interval (cooldown persists in localStorage)
+            if (resetCooldownInterval) {
+                clearInterval(resetCooldownInterval);
+                resetCooldownInterval = null;
+            }
+            sendResetBtn.disabled = false;
+            sendResetBtn.textContent = 'Send Reset Link';
         };
 
         cancelResetBtn.addEventListener('click', closeResetPasswordModal);
@@ -743,6 +831,20 @@
                 return;
             }
 
+            // Check database rate limit before sending
+            const rateLimit = await checkPasswordResetRateLimit(email);
+            if (!rateLimit.allowed) {
+                const secs = rateLimit.seconds_remaining || RESET_COOLDOWN_SECONDS;
+                storeResetCooldown(email, secs);
+                applyResetCooldown(secs);
+                resetStatus.textContent = `Too many reset requests. Please wait ${secs} second${secs !== 1 ? 's' : ''} before trying again.`;
+                resetStatus.classList.remove('status--success', 'hidden', 'status--shake');
+                resetStatus.classList.add('status--error');
+                void resetStatus.offsetWidth;
+                resetStatus.classList.add('status--shake');
+                return;
+            }
+
             resetStatus.textContent = 'Sending reset link...';
             resetStatus.classList.remove('status--error', 'status--success', 'hidden', 'status--shake');
             sendResetBtn.disabled = true;
@@ -772,6 +874,14 @@
                     throw error;
                 }
 
+                // Record the attempt and start cooldown
+                const attemptResult = await recordPasswordResetAttempt(email);
+                const cooldownSecs = attemptResult.allowed === false
+                    ? (attemptResult.seconds_remaining || RESET_COOLDOWN_SECONDS)
+                    : RESET_COOLDOWN_SECONDS;
+                storeResetCooldown(email, cooldownSecs);
+                applyResetCooldown(cooldownSecs);
+
                 resetStatus.textContent = 'Password reset link sent! Check your email.';
                 resetStatus.classList.remove('status--error', 'hidden');
                 resetStatus.classList.add('status--success');
@@ -794,7 +904,6 @@
                 if (resetCaptchaWidgetId !== null) {
                     hcaptcha.reset(resetCaptchaWidgetId);
                 }
-            } finally {
                 sendResetBtn.disabled = false;
             }
         });
