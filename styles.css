@@ -1456,6 +1456,13 @@ button:hover {
     line-height: 1.5;
 }
 
+.settings-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin: 16px 0 4px;
+}
+
 .modal-actions {
     display: flex;
     gap: 12px;
