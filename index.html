@@ -113,13 +113,13 @@
                             <input id="reset-email" type="email" autocomplete="email" placeholder="email">
                         </div>
                     </div>
-                    <span class="status status--neutral hidden" id="reset-status">Enter your email address.</span>
                     <!-- hCaptcha widget for password reset -->
                     <div id="hcaptcha-container"></div>
+                    <span class="status status--neutral hidden" id="reset-status">Enter your email address.</span>
                 </div>
                 <div class="modal-actions">
                     <button id="cancel-reset-btn" type="button" class="modal-btn cancel">Cancel</button>
-                    <button id="send-reset-btn" type="button" class="modal-btn confirm">Verify</button>
+                    <button id="send-reset-btn" type="button" class="modal-btn confirm" disabled>Send Reset Link</button>
                 </div>
             </div>
         </div>
@@ -310,6 +310,7 @@
                     return;
                 }
                 if (loginCaptchaWidgetId === null) {
+                    // First click — just render the widget, no message
                     loginCaptchaWidgetId = hcaptcha.render('login-hcaptcha', {
                         sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
                         callback: (token) => {
@@ -319,10 +320,14 @@
                             loginStatus.classList.remove('status--error', 'hidden');
                         }
                     });
+                    return;
                 }
+                // Captcha already rendered but not yet solved
                 loginStatus.textContent = 'Please complete the CAPTCHA verification.';
-                loginStatus.classList.remove('status--success', 'hidden');
+                loginStatus.classList.remove('status--success', 'hidden', 'status--shake');
                 loginStatus.classList.add('status--error');
+                void loginStatus.offsetWidth;
+                loginStatus.classList.add('status--shake');
                 return;
             }
 
@@ -677,6 +682,7 @@
         let resetCaptchaWidgetId = null;
         let resetCaptchaToken = null;
         let resetCooldownInterval = null;
+        let lastResetEmail = '';
         const RESET_COOLDOWN_SECONDS = 60; // seconds to wait between reset attempts
 
         // Start a visible countdown on the Send Reset Link button
@@ -689,7 +695,7 @@
                     clearInterval(resetCooldownInterval);
                     resetCooldownInterval = null;
                     sendResetBtn.disabled = false;
-                    sendResetBtn.textContent = 'Verify';
+                    sendResetBtn.textContent = 'Send Reset Link';
                     resetCaptchaToken = null;
                     return;
                 }
@@ -766,8 +772,27 @@
                 resetEmailInput.focus();
                 resetStatus.classList.add('hidden');
 
-                // Apply any existing cooldown for the pre-filled email
-                checkAndApplyExistingCooldown(resetEmailInput.value.trim());
+                // Apply any existing cooldown (use pre-filled email or last used email)
+                sendResetBtn.disabled = false;
+                const emailForCooldown = emailInput.value.trim() || lastResetEmail;
+                checkAndApplyExistingCooldown(emailForCooldown);
+
+                // Render CAPTCHA immediately
+                if (typeof hcaptcha === 'undefined') {
+                    resetStatus.textContent = 'CAPTCHA is not loaded. Please refresh the page.';
+                    resetStatus.classList.remove('hidden', 'status--neutral', 'status--success');
+                    resetStatus.classList.add('status--error');
+                } else if (resetCaptchaWidgetId === null) {
+                    resetCaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
+                        sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
+                        callback: (token) => {
+                            resetCaptchaToken = token;
+                            resetStatus.textContent = '';
+                            resetStatus.classList.add('hidden');
+                        }
+                    });
+                }
+
             });
         }
 
@@ -782,10 +807,22 @@
                 clearInterval(resetCooldownInterval);
                 resetCooldownInterval = null;
             }
-            sendResetBtn.disabled = false;
-            sendResetBtn.textContent = 'Verify';
+            // Only re-enable button if no active cooldown remains
+            const cooldownKey = lastResetEmail ? `reset_cooldown_${lastResetEmail}` : null;
+            const cooldownExpiry = cooldownKey ? parseInt(localStorage.getItem(cooldownKey) || '0', 10) : 0;
+            if (cooldownExpiry > Date.now()) {
+                sendResetBtn.disabled = true;
+                sendResetBtn.textContent = 'Send Reset Link';
+            } else {
+                sendResetBtn.disabled = false;
+                sendResetBtn.textContent = 'Send Reset Link';
+            }
             resetCaptchaToken = null;
-            if (resetCaptchaWidgetId !== null) hcaptcha.reset(resetCaptchaWidgetId);
+            if (resetCaptchaWidgetId !== null) {
+                hcaptcha.reset(resetCaptchaWidgetId);
+                hcaptcha.remove(resetCaptchaWidgetId);
+                resetCaptchaWidgetId = null;
+            }
         };
 
         cancelResetBtn.addEventListener('click', closeResetPasswordModal);
@@ -805,8 +842,7 @@
                 resetStatus.textContent = 'Please enter your email address.';
                 resetStatus.classList.remove('status--success', 'hidden', 'status--shake');
                 resetStatus.classList.add('status--error');
-                // Trigger shake animation
-                void resetStatus.offsetWidth; // Force reflow
+                void resetStatus.offsetWidth;
                 resetStatus.classList.add('status--shake');
                 return;
             }
@@ -817,19 +853,18 @@
                 resetStatus.textContent = 'Please enter a valid email address.';
                 resetStatus.classList.remove('status--success', 'hidden', 'status--shake');
                 resetStatus.classList.add('status--error');
-                // Trigger shake animation
-                void resetStatus.offsetWidth; // Force reflow
+                void resetStatus.offsetWidth;
                 resetStatus.classList.add('status--shake');
                 return;
             }
 
-            // Check database rate limit before sending
-            const rateLimit = await checkPasswordResetRateLimit(email);
-            if (!rateLimit.allowed) {
-                const secs = rateLimit.seconds_remaining || RESET_COOLDOWN_SECONDS;
-                storeResetCooldown(email, secs);
-                applyResetCooldown(secs);
-                resetStatus.textContent = `Too many reset requests. Please wait ${secs} second${secs !== 1 ? 's' : ''} before trying again.`;
+            // Client-side cooldown check — always runs regardless of button state
+            const cooldownKey = `reset_cooldown_${email}`;
+            const cooldownExpiry = parseInt(localStorage.getItem(cooldownKey) || '0', 10);
+            if (cooldownExpiry > Date.now()) {
+                const secsLeft = Math.ceil((cooldownExpiry - Date.now()) / 1000);
+                applyResetCooldown(secsLeft);
+                resetStatus.textContent = `Please wait ${secsLeft} second${secsLeft !== 1 ? 's' : ''} before requesting another reset link.`;
                 resetStatus.classList.remove('status--success', 'hidden', 'status--shake');
                 resetStatus.classList.add('status--error');
                 void resetStatus.offsetWidth;
@@ -837,36 +872,23 @@
                 return;
             }
 
-            // Render CAPTCHA widget and prompt user to complete it
+            // Check that captcha token is available
             if (!resetCaptchaToken) {
-                if (typeof hcaptcha === 'undefined') {
-                    resetStatus.textContent = 'CAPTCHA is not loaded. Please refresh the page.';
-                    resetStatus.classList.remove('status--success', 'hidden', 'status--shake');
-                    resetStatus.classList.add('status--error');
-                    return;
-                }
-                if (resetCaptchaWidgetId === null) {
-                    resetCaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
-                        sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
-                        callback: (token) => {
-                            resetCaptchaToken = token;
-                            sendResetBtn.textContent = 'Send Reset Link';
-                            resetStatus.textContent = 'Please click Send Reset Link to proceed.';
-                            resetStatus.classList.remove('status--error', 'status--shake', 'hidden');
-                        }
-                    });
-                }
                 resetStatus.textContent = 'Please complete the CAPTCHA verification.';
-                resetStatus.classList.remove('status--success', 'hidden');
+                resetStatus.classList.remove('status--success', 'hidden', 'status--shake');
                 resetStatus.classList.add('status--error');
+                void resetStatus.offsetWidth;
+                resetStatus.classList.add('status--shake');
                 return;
             }
 
             resetStatus.textContent = 'Sending reset link...';
             resetStatus.classList.remove('status--error', 'status--success', 'hidden', 'status--shake');
+            resetStatus.classList.add('status--neutral');
             sendResetBtn.disabled = true;
 
             const hcaptchaResponse = resetCaptchaToken;
+            resetCaptchaToken = null;
 
             try {
                 const redirectUrl = supabaseConfig.getRedirectUrl();
@@ -885,6 +907,7 @@
                 const cooldownSecs = attemptResult.allowed === false
                     ? (attemptResult.seconds_remaining || RESET_COOLDOWN_SECONDS)
                     : RESET_COOLDOWN_SECONDS;
+                lastResetEmail = email;
                 storeResetCooldown(email, cooldownSecs);
                 applyResetCooldown(cooldownSecs);
 
@@ -894,7 +917,6 @@
 
                 // Reset hCaptcha
                 if (resetCaptchaWidgetId !== null) hcaptcha.reset(resetCaptchaWidgetId);
-                resetCaptchaToken = null;
 
                 // Close modal after success
                 setTimeout(() => {
@@ -902,14 +924,17 @@
                 }, 3000);
             } catch (error) {
                 console.error('Password reset error:', error);
+                // Always show the generic message and apply cooldown to prevent spam,
+                // regardless of whether the underlying request succeeded or failed
+                lastResetEmail = email;
+                storeResetCooldown(email, RESET_COOLDOWN_SECONDS);
+                applyResetCooldown(RESET_COOLDOWN_SECONDS);
+
                 resetStatus.textContent = GENERIC_RESET_MESSAGE;
-                resetStatus.classList.remove('status--success', 'hidden');
-                resetStatus.classList.add('status--error');
+                resetStatus.classList.remove('status--error', 'status--neutral', 'hidden', 'status--shake');
+                resetStatus.classList.add('status--success');
                 // Reset hCaptcha on error
                 if (resetCaptchaWidgetId !== null) hcaptcha.reset(resetCaptchaWidgetId);
-                resetCaptchaToken = null;
-                sendResetBtn.textContent = 'Verify';
-                sendResetBtn.disabled = false;
             }
         });
 
