@@ -12,6 +12,16 @@ window.initEmployeeManagement = (supabase) => {
     const setAdminEmployeesListForFilter = (list) => { window.adminEmployeesListForFilter = list; };
     const getAdminFilterEmployeeSelect = () => document.getElementById('admin-filter-employee');
 
+    const escapeHtml = (str) => {
+        if (str === null || str === undefined) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#x27;');
+    };
+
     // Employee Management Functionality
     const employeeNameInput = document.getElementById("employee-name");
     const addEmployeeBtn = document.getElementById("add-employee-btn");
@@ -102,19 +112,19 @@ window.initEmployeeManagement = (supabase) => {
                 const toggleLabel = !isActive ? 'Unhide official' : 'Hide official';
                 return `
                 <div class="employee-item${inactiveClass}">
-                    <span class="employee-name">${emp.name}${inactiveLabel}</span>
+                    <span class="employee-name">${escapeHtml(emp.name)}${inactiveLabel}</span>
                     <div class="employee-item-actions">
-                        <button class="toggle-employee-btn icon-btn" data-id="${emp.id}" data-name="${emp.name}" data-active="${isActive}" aria-label="${toggleLabel}" title="${toggleLabel}">
+                        <button class="toggle-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" data-active="${isActive}" aria-label="${toggleLabel}" title="${toggleLabel}">
                             <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                 ${toggleIcon}
                             </svg>
                         </button>
-                        <button class="edit-employee-btn icon-btn" data-id="${emp.id}" data-name="${emp.name}" aria-label="Update official" title="Update official">
+                        <button class="edit-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" aria-label="Update official" title="Update official">
                             <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                             </svg>
                         </button>
-                        <button class="delete-employee-btn icon-btn" data-id="${emp.id}" data-name="${emp.name}" aria-label="Delete official" title="Delete official">
+                        <button class="delete-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" aria-label="Delete official" title="Delete official">
                             <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                 <path d="M9 3h6l1 2h4a1 1 0 1 1 0 2h-1l-1.1 12.1a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9L5 7H4a1 1 0 0 1 0-2h4l1-2Zm1.1 7a1 1 0 1 0-2 0v7a1 1 0 1 0 2 0v-7Zm5.9 0a1 1 0 1 0-2 0v7a1 1 0 1 0 2 0v-7Z" />
                             </svg>
@@ -214,7 +224,7 @@ window.initEmployeeManagement = (supabase) => {
                         adminFilterEmployeeSelect.innerHTML = '<option value="">All Officials</option>' +
                         getAdminEmployeesListForFilter().map(emp => {
                             const inactiveLabel = emp.is_active === false ? ' (Inactive)' : '';
-                            return `<option value="${emp.name}">${emp.name}${inactiveLabel}</option>`;
+                            return `<option value="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</option>`;
                         }).join('');
                 }
             }
@@ -284,7 +294,7 @@ window.initEmployeeManagement = (supabase) => {
                 <div class="autocomplete-no-options">
                     No matching officials found
                     <br>
-                    <button type="button" class="autocomplete-add-btn">Add "${employeeNameInput.value.trim()}"</button>
+                    <button type="button" class="autocomplete-add-btn">Add "${escapeHtml(employeeNameInput.value.trim())}"</button>
                 </div>
             `;
             setDropdownVisible(true);
@@ -303,7 +313,7 @@ window.initEmployeeManagement = (supabase) => {
         
         // Build the suggestions HTML
         autocompleteList.innerHTML = matches.map((emp, index) => {
-            return `<div class="autocomplete-item" data-value="${emp.name}" data-index="${index}" role="option">${emp.name}</div>`;
+            return `<div class="autocomplete-item" data-value="${escapeHtml(emp.name)}" data-index="${index}" role="option">${escapeHtml(emp.name)}</div>`;
         }).join('');
         
         setDropdownVisible(true);
