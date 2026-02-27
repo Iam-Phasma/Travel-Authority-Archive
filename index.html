@@ -48,8 +48,8 @@
                     </label>
                     <a href="#" id="forgot-password-link" class="forgot-password-link">Forgot Password?</a>
                 </div>
-                <!-- hCaptcha invisible widget anchor for login -->
-                <div id="login-hcaptcha" style="position:absolute;width:0;height:0;overflow:hidden;"></div>
+                <!-- hCaptcha widget for login -->
+                <div id="login-hcaptcha"></div>
             </div>
             <div class="login-actions">
                 <button id="login-btn" type="button">Verify</button>
@@ -114,6 +114,8 @@
                         </div>
                     </div>
                     <span class="status status--neutral hidden" id="reset-status">Enter your email address.</span>
+                    <!-- hCaptcha widget for password reset -->
+                    <div id="hcaptcha-container"></div>
                 </div>
                 <div class="modal-actions">
                     <button id="cancel-reset-btn" type="button" class="modal-btn cancel">Cancel</button>
@@ -121,9 +123,6 @@
                 </div>
             </div>
         </div>
-
-        <!-- Invisible hCaptcha anchor for password reset popup -->
-        <div id="hcaptcha-container" style="position:absolute;width:0;height:0;overflow:hidden;"></div>
 
     </main>
 
@@ -302,7 +301,7 @@
                 return;
             }
 
-            // Execute captcha popup on first click (before captcha is done)
+            // Render CAPTCHA widget on first click and prompt user to complete it
             if (!loginCaptchaToken) {
                 if (typeof hcaptcha === 'undefined') {
                     loginStatus.textContent = 'CAPTCHA is not loaded. Please refresh the page.';
@@ -313,7 +312,6 @@
                 if (loginCaptchaWidgetId === null) {
                     loginCaptchaWidgetId = hcaptcha.render('login-hcaptcha', {
                         sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
-                        size: 'invisible',
                         callback: (token) => {
                             loginCaptchaToken = token;
                             loginBtn.textContent = 'Login';
@@ -322,7 +320,9 @@
                         }
                     });
                 }
-                hcaptcha.execute(loginCaptchaWidgetId);
+                loginStatus.textContent = 'Please complete the CAPTCHA verification.';
+                loginStatus.classList.remove('status--success', 'hidden');
+                loginStatus.classList.add('status--error');
                 return;
             }
 
@@ -785,6 +785,7 @@
             sendResetBtn.disabled = false;
             sendResetBtn.textContent = 'Verify';
             resetCaptchaToken = null;
+            if (resetCaptchaWidgetId !== null) hcaptcha.reset(resetCaptchaWidgetId);
         };
 
         cancelResetBtn.addEventListener('click', closeResetPasswordModal);
@@ -836,7 +837,7 @@
                 return;
             }
 
-            // Execute captcha popup if not done yet
+            // Render CAPTCHA widget and prompt user to complete it
             if (!resetCaptchaToken) {
                 if (typeof hcaptcha === 'undefined') {
                     resetStatus.textContent = 'CAPTCHA is not loaded. Please refresh the page.';
@@ -847,7 +848,6 @@
                 if (resetCaptchaWidgetId === null) {
                     resetCaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
                         sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
-                        size: 'invisible',
                         callback: (token) => {
                             resetCaptchaToken = token;
                             sendResetBtn.textContent = 'Send Reset Link';
@@ -856,7 +856,9 @@
                         }
                     });
                 }
-                hcaptcha.execute(resetCaptchaWidgetId);
+                resetStatus.textContent = 'Please complete the CAPTCHA verification.';
+                resetStatus.classList.remove('status--success', 'hidden');
+                resetStatus.classList.add('status--error');
                 return;
             }
 
