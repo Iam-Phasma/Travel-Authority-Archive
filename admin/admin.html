@@ -2503,7 +2503,6 @@
                     // If same role, sort by email
                     return (a.email || '').localeCompare(b.email || '');
                 });
-                renderUsersTable(allUsersData);
                 // Attach filter listeners after table is rendered
                 const usersRoleFilter = document.getElementById('users-role-filter');
                 const usersAccessFilter = document.getElementById('users-access-filter');
@@ -2541,12 +2540,12 @@
                 // Clear all filters button
                 const clearFiltersBtn = document.getElementById('clear-filters-btn');
                 if (clearFiltersBtn) {
-                    clearFiltersBtn.addEventListener('click', () => {
+                    clearFiltersBtn.onclick = () => {
                         usersRoleFilter.value = '';
                         usersAccessFilter.value = '';
                         usersStatusFilter.value = '';
                         filterUsers();
-                    });
+                    };
                 }
             
                 // Also filter on load if any filter is set
@@ -2792,11 +2791,9 @@
                         });
                     });
                     
-                    // Start if users panel is initially visible
-                    const usersPanel = document.getElementById('users-panel');
-                    if (usersPanel && !usersPanel.classList.contains('hidden')) {
-                        startUserRefresh();
-                    }
+                    // Always start the auto-refresh interval for super users
+                    // The interval itself checks panel visibility before making network calls
+                    startUserRefresh();
                 });
             }
         })();
