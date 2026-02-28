@@ -202,7 +202,10 @@
                 <div class="detail-row-group">
                     <div class="detail-row">
                         <span class="detail-label">File</span>
-                        <a class="file-link" id="view-file-link" href="#" target="_blank" rel="noopener">Open file</a>
+                        <div style="display: grid; gap: 4px;">
+                            <a class="file-link" id="view-file-link" href="#" target="_blank" rel="noopener">Open file</a>
+                            <span class="detail-value" id="view-file-size">-</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -583,6 +586,47 @@
             return '#';
         };
 
+        const formatFileSize = (bytes) => {
+            if (!Number.isFinite(bytes) || bytes < 0) return 'File size: -';
+            if (bytes < 1024) return `File size: ${bytes} B`;
+            if (bytes < 1024 * 1024) return `File size: ${(bytes / 1024).toFixed(1)} KB`;
+            return `File size: ${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+        };
+
+        const fileSizeCache = new Map();
+
+        const fetchFileSizeBytes = async (url) => {
+            if (!url || url === '#') return null;
+            if (fileSizeCache.has(url)) return fileSizeCache.get(url);
+
+            try {
+                const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+                const contentLength = headResponse.headers.get('content-length');
+                const headSize = Number(contentLength);
+                if (headResponse.ok && Number.isFinite(headSize) && headSize > 0) {
+                    fileSizeCache.set(url, headSize);
+                    return headSize;
+                }
+            } catch (error) {
+                console.warn('HEAD size lookup failed:', error);
+            }
+
+            try {
+                const response = await fetch(url, { cache: 'no-store' });
+                if (!response.ok) return null;
+                const blob = await response.blob();
+                const size = blob.size;
+                if (Number.isFinite(size) && size > 0) {
+                    fileSizeCache.set(url, size);
+                    return size;
+                }
+            } catch (error) {
+                console.warn('Blob size lookup failed:', error);
+            }
+
+            return null;
+        };
+
         const formatFileLabel = (value) => {
             const base = String(value || "Download");
             const extMatch = base.match(/\.([a-z0-9]{1,5})$/i);
@@ -591,6 +635,54 @@
             const compact = nameWithoutExt.replace(/[^a-z0-9-]/gi, "");
             if (compact.length <= 12) return compact + ext || "File";
             return `${compact.slice(0, 12)}...${ext}`;
+        };
+
+        const isGzipFileLink = (fileUrl, fileName = "") => {
+            const fromUrl = /\.gz(?:$|[?#])/i.test(String(fileUrl || ""));
+            const fromName = /\.gz$/i.test(String(fileName || ""));
+            return fromUrl || fromName;
+        };
+
+        const getReconstructedMimeType = (fileName = "") => {
+            const lower = String(fileName).toLowerCase().replace(/\.gz$/, "");
+            if (lower.endsWith('.pdf')) return 'application/pdf';
+            if (lower.endsWith('.png')) return 'image/png';
+            if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
+            return 'application/octet-stream';
+        };
+
+        const openStoredFile = async (fileUrl, fileName = "") => {
+            const safeFileUrl = safeUrl(fileUrl);
+            if (safeFileUrl === '#') return;
+
+            if (!isGzipFileLink(safeFileUrl, fileName)) {
+                window.open(safeFileUrl, '_blank', 'noopener');
+                return;
+            }
+
+            if (typeof DecompressionStream !== 'function') {
+                window.open(safeFileUrl, '_blank', 'noopener');
+                return;
+            }
+
+            try {
+                const response = await fetch(safeFileUrl, { cache: 'no-store' });
+                if (!response.ok || !response.body) {
+                    throw new Error(`Download failed (${response.status})`);
+                }
+
+                const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
+                const decompressedBlob = await new Response(decompressedStream).blob();
+                const mimeType = getReconstructedMimeType(fileName);
+                const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+
+                const objectUrl = URL.createObjectURL(rebuiltBlob);
+                window.open(objectUrl, '_blank', 'noopener');
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+            } catch (error) {
+                console.error('Failed to reconstruct compressed file:', error);
+                window.open(safeFileUrl, '_blank', 'noopener');
+            }
         };
         const viewModal = document.getElementById("view-modal");
         const closeViewBtn = document.getElementById("close-view");
@@ -606,6 +698,25 @@
         const viewTravelDate = document.getElementById("view-travel-date");
         const viewTravelUntil = document.getElementById("view-travel-until");
         const viewFileLink = document.getElementById("view-file-link");
+        const viewFileSize = document.getElementById("view-file-size");
+
+        const updateViewFileSize = async (fileUrl) => {
+            if (!viewFileSize) return;
+            if (!fileUrl || fileUrl === '#') {
+                viewFileSize.textContent = 'File size: -';
+                return;
+            }
+
+            viewFileSize.textContent = 'File size: Loading...';
+            const expectedUrl = fileUrl;
+            const size = await fetchFileSizeBytes(fileUrl);
+
+            if ((viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '') !== expectedUrl) {
+                return;
+            }
+
+            viewFileSize.textContent = size ? formatFileSize(size) : 'File size: Unavailable';
+        };
 
         const applyClientFilters = (rows) => {
             // If no filters are active, return all rows
@@ -718,11 +829,21 @@
                         <td>${dateText}</td>
                         <td>${untilText}</td>
                         <td>
-                            <a class="file-link" href="${fileUrl}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>
+                            <a class="file-link row-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>
                         </td>
                     </tr>
                 `;
             }).join("");
+
+            document.querySelectorAll('.row-file-link').forEach((link) => {
+                link.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    const fileUrl = link.getAttribute('data-file-url') || link.getAttribute('href') || '';
+                    const fileName = link.getAttribute('data-file-name') || link.textContent || 'Open file';
+                    if (!fileUrl || fileUrl === '#') return;
+                    await openStoredFile(fileUrl, fileName);
+                });
+            });
 
             document.querySelectorAll(".view-btn").forEach((btn) => {
                 btn.addEventListener("click", (e) => {
@@ -742,11 +863,18 @@
                         : "-";
 
                     if (record.file_url) {
-                        viewFileLink.href = safeUrl(record.file_url);
+                        const safeFileUrl = safeUrl(record.file_url);
+                        viewFileLink.href = safeFileUrl;
+                        viewFileLink.dataset.fileUrl = safeFileUrl;
+                        viewFileLink.dataset.fileName = record.file_name || 'Open file';
                         viewFileLink.textContent = record.file_name || "Open file";
+                        updateViewFileSize(safeFileUrl);
                     } else {
                         viewFileLink.href = "#";
+                        viewFileLink.dataset.fileUrl = '';
+                        viewFileLink.dataset.fileName = '';
                         viewFileLink.textContent = "No file";
+                        if (viewFileSize) viewFileSize.textContent = 'File size: -';
                     }
 
                     viewModal.classList.add("show");
@@ -809,6 +937,14 @@
             if (e.target === viewModal) {
                 viewModal.classList.remove("show");
             }
+        });
+
+        viewFileLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const fileUrl = viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '';
+            const fileName = viewFileLink.dataset.fileName || viewFileLink.textContent || 'Open file';
+            if (!fileUrl || fileUrl === '#') return;
+            await openStoredFile(fileUrl, fileName);
         });
 
         // Filter panel functionality
