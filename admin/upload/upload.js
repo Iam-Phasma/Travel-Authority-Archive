@@ -2,6 +2,46 @@
 // FILE PROCESSING UTILITIES (available immediately on script load)
 // ============================================
 
+/**
+ * Compress an image file using canvas before embedding in a PDF.
+ * Images are scaled down to at most MAX_DIMENSION pixels on the longest side
+ * and re-encoded as JPEG at JPEG_QUALITY, significantly reducing file size.
+ * @param {File|Blob} file - The source image file (JPEG, PNG, etc.)
+ * @returns {Promise<Blob>} A compressed JPEG blob
+ */
+const compressImageForPdf = (file) => new Promise((resolve, reject) => {
+    const MAX_DIMENSION = 1200;
+    const JPEG_QUALITY = 0.6;
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+        URL.revokeObjectURL(url);
+        let { width, height } = img;
+        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
+            if (width >= height) {
+                height = Math.round(height * MAX_DIMENSION / width);
+                width = MAX_DIMENSION;
+            } else {
+                width = Math.round(width * MAX_DIMENSION / height);
+                height = MAX_DIMENSION;
+            }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+            if (blob) resolve(blob);
+            else reject(new Error('Failed to compress image: canvas.toBlob returned null'));
+        }, 'image/jpeg', JPEG_QUALITY);
+    };
+    img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error(`Failed to load image for compression: ${file.name || file.type}`));
+    };
+    img.src = url;
+});
+
 // Convert images and PDFs to a single combined PDF
 const combineFilesToPDF = async (files, taNumber) => {
     const { PDFDocument } = window.PDFLib;
@@ -17,11 +57,14 @@ const combineFilesToPDF = async (files, taNumber) => {
             const copiedPages = await finalPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
             copiedPages.forEach((page) => finalPdf.addPage(page));
         } else if (file.type.startsWith('image/')) {
+            // Compress image before embedding
+            const compressedBlob = await compressImageForPdf(file);
+
             // Handle image - add as new page
             const imgData = await new Promise((resolve) => {
                 const reader = new FileReader();
                 reader.onload = (e) => resolve(e.target.result);
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(compressedBlob);
             });
 
             // Get image dimensions
@@ -36,15 +79,9 @@ const combineFilesToPDF = async (files, taNumber) => {
             const pageHeight = 841.89; // A4 height in points
             const page = finalPdf.addPage([pageWidth, pageHeight]);
 
-            // Embed image
-            let embeddedImage;
+            // Embed compressed image (always JPEG after compression)
             const imageBytes = await fetch(imgData).then(res => res.arrayBuffer());
-            
-            if (file.type === 'image/png') {
-                embeddedImage = await finalPdf.embedPng(imageBytes);
-            } else {
-                embeddedImage = await finalPdf.embedJpg(imageBytes);
-            }
+            const embeddedImage = await finalPdf.embedJpg(imageBytes);
 
             // Calculate scaling to fit image on page while maintaining aspect ratio
             const margin = 28.35; // 10mm margin in points
@@ -370,16 +407,18 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
 
         try {
             // Validate and process files (PDF or images)
-            uploadStatus.textContent = 'Processing files...';
+            uploadStatus.textContent = 'Compressing and processing files...';
             uploadStatus.classList.remove("status--error");
 
             const processedFile = await window.validateAndProcessFiles(scanFileInput, taNumber);
-            const processedSizeMB = (processedFile.size / 1024 / 1024).toFixed(2);
+            const BYTES_PER_MB = 1024 * 1024;
+            const processedSizeKB = (processedFile.size / 1024).toFixed(0);
+            const processedSizeMB = (processedFile.size / BYTES_PER_MB).toFixed(2);
             
             // Check if file is still too large
             const maxAllowedMB = 10;
-            if (processedFile.size > maxAllowedMB * 1024 * 1024) {
-                uploadStatus.textContent = `File too large: ${processedSizeMB}MB (max ${maxAllowedMB}MB). Please use smaller files.`;
+            if (processedFile.size > maxAllowedMB * BYTES_PER_MB) {
+                uploadStatus.textContent = `File too large after compression: ${processedSizeMB}MB (max ${maxAllowedMB}MB). Please use fewer or smaller files.`;
                 uploadStatus.classList.add("status--error");
                 uploadStatus.classList.remove("status--shake");
                 void uploadStatus.offsetWidth;
@@ -387,7 +426,10 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 return;
             }
 
-            uploadStatus.textContent = `Uploading ${processedSizeMB}MB...`;
+            const sizeLabel = processedFile.size < BYTES_PER_MB
+                ? `${processedSizeKB} KB`
+                : `${processedSizeMB} MB`;
+            uploadStatus.textContent = `Uploading compressed file (${sizeLabel})...`;
 
             // Verify user is authenticated
             const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
