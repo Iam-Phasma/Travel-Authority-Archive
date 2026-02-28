@@ -220,10 +220,33 @@
         // Initialize Supabase
         const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
+        const markCurrentUserOffline = async () => {
+            try {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const userId = sessionData?.session?.user?.id;
+                if (!userId) return;
+
+                const offlineTimestamp = new Date(Date.now() - (10 * 60 * 1000)).toISOString();
+                const { error } = await supabase
+                    .from("profiles")
+                    .update({ last_seen: offlineTimestamp })
+                    .eq("id", userId);
+
+                if (error) {
+                    console.warn("Failed to mark user offline:", error.message);
+                }
+            } catch (error) {
+                console.warn("Offline marker skipped:", error.message);
+            }
+        };
+
         // Initialize auto-logout (5 minutes warning, 6 minutes total)
         initAutoLogout(supabase, {
             warningTime: 5 * 60 * 1000, // 5 minutes
-            logoutTime: 6 * 60 * 1000   // 6 minutes (5 min warning + 1 min countdown)
+            logoutTime: 6 * 60 * 1000,   // 6 minutes (5 min warning + 1 min countdown)
+            onLogout: async () => {
+                await markCurrentUserOffline();
+            }
         });
 
         // Periodically check if current user's access_enabled is still true
@@ -256,6 +279,7 @@
                     toastEl.textContent = "Access disabled: You have been logged out.";
                     toastEl.classList.add("show", "toast--error");
                     // Immediate logout
+                    await markCurrentUserOffline();
                     await supabase.auth.signOut();
                     window.location.href = '../index.html';
                 }
@@ -369,6 +393,7 @@
                     }
 
                     try {
+                        await markCurrentUserOffline();
                         await supabase.auth.signOut();
                         window.location.href = "../index.html";
                     } catch (error) {
@@ -999,8 +1024,19 @@
             // Update button states after loading data
             updateButtonStates();
             
-            // Start heartbeat to track online status
-            const updateHeartbeat = async () => {
+            // Start activity-driven heartbeat to track online status
+            // This avoids marking idle users as online just because their tab is open.
+            const HEARTBEAT_THROTTLE_MS = 30000;
+            let lastHeartbeatAt = 0;
+
+            const updateHeartbeat = async (force = false) => {
+                const now = Date.now();
+                if (!force && now - lastHeartbeatAt < HEARTBEAT_THROTTLE_MS) {
+                    return;
+                }
+
+                lastHeartbeatAt = now;
+
                 try {
                     const { data, error } = await supabase.rpc('update_last_seen');
                     if (error) {
@@ -1013,12 +1049,31 @@
                     console.debug('Heartbeat update skipped:', error.message);
                 }
             };
-            
-            // Update immediately
-            updateHeartbeat();
-            
-            // Update every 10 seconds
-            setInterval(updateHeartbeat, 10000);
+
+            const activityEvents = ['click', 'keydown', 'touchstart', 'wheel', 'scroll', 'mousedown'];
+            const onActivity = () => {
+                if (document.visibilityState !== 'visible') {
+                    return;
+                }
+                updateHeartbeat();
+            };
+
+            activityEvents.forEach((eventName) => {
+                document.addEventListener(eventName, onActivity, { passive: true });
+            });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    updateHeartbeat(true);
+                }
+            });
+
+            window.addEventListener('focus', () => {
+                updateHeartbeat(true);
+            });
+
+            // Initial heartbeat on page load
+            updateHeartbeat(true);
         };
 
         init();

@@ -103,10 +103,33 @@
         // Initialize Supabase
         const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
+        const markCurrentUserOffline = async () => {
+            try {
+                const { data: sessionData } = await supabase.auth.getSession();
+                const userId = sessionData?.session?.user?.id;
+                if (!userId) return;
+
+                const offlineTimestamp = new Date(Date.now() - (10 * 60 * 1000)).toISOString();
+                const { error } = await supabase
+                    .from("profiles")
+                    .update({ last_seen: offlineTimestamp })
+                    .eq("id", userId);
+
+                if (error) {
+                    console.warn("Failed to mark user offline:", error.message);
+                }
+            } catch (error) {
+                console.warn("Offline marker skipped:", error.message);
+            }
+        };
+
         // Initialize auto-logout (5 minutes warning, 6 minutes total)
         initAutoLogout(supabase, {
             warningTime: 5 * 60 * 1000, // 5 minutes
-            logoutTime: 6 * 60 * 1000   // 6 minutes (5 min warning + 1 min countdown)
+            logoutTime: 6 * 60 * 1000,   // 6 minutes (5 min warning + 1 min countdown)
+            onLogout: async () => {
+                await markCurrentUserOffline();
+            }
         });
 
         // Load upload panel
@@ -186,6 +209,7 @@
                     // Show toast notification
                     showToast("Access disabled: You have been logged out.", "error");
                     // Immediate logout
+                    await markCurrentUserOffline();
                     await supabase.auth.signOut();
                     localStorage.removeItem('admin_session_token');
                     localStorage.removeItem('adminActivePanel');
@@ -251,6 +275,7 @@
                     // Wait 2 seconds for user to see the toast
                     await new Promise(resolve => setTimeout(resolve, 1000));
                     
+                    await markCurrentUserOffline();
                     await supabase.auth.signOut();
                     localStorage.removeItem('admin_session_token');
                     localStorage.removeItem('adminActivePanel');
@@ -328,6 +353,7 @@
             // If DB token exists and doesn't match, another session is active
             if (profileData.session_token && profileData.session_token !== localToken) {
                 console.warn("Session token mismatch. Another device logged in.");
+                await markCurrentUserOffline();
                 await supabase.auth.signOut();
                 localStorage.removeItem('admin_session_token');
                 localStorage.removeItem('adminActivePanel');
@@ -364,6 +390,7 @@
             const role = await getUserRole(sessionData.session.user.id);
             if (role !== "admin" && role !== "super") {
                 console.warn("User is no longer an admin or super. Redirecting.");
+                await markCurrentUserOffline();
                 await supabase.auth.signOut();
                 localStorage.removeItem('adminActivePanel');
                 window.location.href = "../index.html";
@@ -439,6 +466,7 @@
                     }
 
                     try {
+                        await markCurrentUserOffline();
                         // Clear admin session token, panel memory, filters, and sort settings
                         localStorage.removeItem('admin_session_token');
                         localStorage.removeItem('adminActivePanel');
@@ -2602,6 +2630,7 @@
                     setTimeout(async () => {
                         window.showToast('Your role has changed. Logging out...', "warning");
                         await new Promise(resolve => setTimeout(resolve, 1500));
+                        await markCurrentUserOffline();
                         localStorage.removeItem('admin_session_token');
                         localStorage.removeItem('adminActivePanel');
                         await supabase.auth.signOut();
@@ -2722,8 +2751,19 @@
             const userRole = await requireAdmin();
             if (!userRole) return; // Redirected to login or dashboard
             
-            // Start global heartbeat for current user (runs on all panels)
-            const updateHeartbeat = async () => {
+            // Start activity-driven global heartbeat for current user
+            // This avoids marking idle users as online when no real interaction happens.
+            const HEARTBEAT_THROTTLE_MS = 30000;
+            let lastHeartbeatAt = 0;
+
+            const updateHeartbeat = async (force = false) => {
+                const now = Date.now();
+                if (!force && now - lastHeartbeatAt < HEARTBEAT_THROTTLE_MS) {
+                    return;
+                }
+
+                lastHeartbeatAt = now;
+
                 try {
                     const { data, error } = await supabase.rpc('update_last_seen');
                     if (error) {
@@ -2735,10 +2775,31 @@
                     // Heartbeat update skipped
                 }
             };
-            
-            // Update immediately and then every 15 seconds
-            updateHeartbeat();
-            setInterval(updateHeartbeat, 15000);
+
+            const activityEvents = ['click', 'keydown', 'touchstart', 'wheel', 'scroll', 'mousedown'];
+            const onActivity = () => {
+                if (document.visibilityState !== 'visible') {
+                    return;
+                }
+                updateHeartbeat();
+            };
+
+            activityEvents.forEach((eventName) => {
+                document.addEventListener(eventName, onActivity, { passive: true });
+            });
+
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible') {
+                    updateHeartbeat(true);
+                }
+            });
+
+            window.addEventListener('focus', () => {
+                updateHeartbeat(true);
+            });
+
+            // Initial heartbeat on page load
+            updateHeartbeat(true);
             
             // Show User Management panel only for super users
             if (userRole === 'super') {
