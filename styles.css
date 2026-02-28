@@ -71,6 +71,7 @@ body.login-page {
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: center;
 }
 
 .welcome-banner {
@@ -142,12 +143,16 @@ body.login-page {
 }
 
 .wide-panel {
-    width: min(1600px, calc(100vw - 36px));
+    width: min(1550px, calc(100vw - 36px));
 }
 
 #ta-panel {
     min-height: 500px;
     grid-template-rows: auto 1fr auto;
+}
+
+#upload-panel {
+    width: min(650px, calc(100vw - 36px));
 }
 
 #login-panel {
@@ -1480,6 +1485,46 @@ button:hover {
     margin: 16px 0 4px;
 }
 
+.settings-section {
+    background: rgba(47, 111, 179, 0.08);
+    border: 1px solid rgba(47, 111, 179, 0.2);
+    border-radius: 14px;
+    padding: 14px;
+}
+
+.settings-section--orphan-tools {
+    background: rgba(15, 26, 31, 0.05);
+    border-color: rgba(15, 26, 31, 0.15);
+}
+
+.settings-action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.settings-btn-primary {
+    background: var(--ink);
+    color: #fff;
+}
+
+.settings-btn-primary:hover {
+    background: #081430;
+}
+
+.settings-orphan-status {
+    display: block;
+    margin-top: 10px;
+}
+
+#settings-modal {
+    z-index: 1200;
+}
+
+#confirm-modal {
+    z-index: 1300;
+}
+
 .modal-actions {
     display: flex;
     gap: 12px;
@@ -1660,6 +1705,10 @@ button:hover {
         padding: 16px 20px;
         font-size: 1rem;
         min-height: 52px;
+    }
+
+    .settings-action-row {
+        flex-direction: column;
     }
 
     .panel-switcher {

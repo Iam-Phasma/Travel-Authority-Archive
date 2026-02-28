@@ -2,45 +2,242 @@
 // FILE PROCESSING UTILITIES (available immediately on script load)
 // ============================================
 
+const getCompressionRunState = () => {
+    if (!window.__uploadCompressionRun) {
+        window.__uploadCompressionRun = {
+            pdfPreset: '',
+            imagePresetCounts: {},
+            imageCount: 0
+        };
+    }
+    return window.__uploadCompressionRun;
+};
+
+const trackImagePresetUse = (presetName) => {
+    const state = getCompressionRunState();
+    state.imageCount += 1;
+    state.imagePresetCounts[presetName] = (state.imagePresetCounts[presetName] || 0) + 1;
+};
+
 /**
- * Compress an image file using canvas before embedding in a PDF.
- * Images are scaled down to at most MAX_DIMENSION pixels on the longest side
- * and re-encoded as JPEG at JPEG_QUALITY, significantly reducing file size.
+ * Compress an image file using adaptive presets before embedding in a PDF.
+ * Targets image payload around ~10KB while preserving readability first.
  * @param {File|Blob} file - The source image file (JPEG, PNG, etc.)
  * @returns {Promise<Blob>} A compressed JPEG blob
  */
-const compressImageForPdf = (file) => new Promise((resolve, reject) => {
-    const MAX_DIMENSION = 1200;
-    const JPEG_QUALITY = 0.6;
+const compressImageForPdf = async (file) => {
+    const TARGET_IMAGE_SIZE_KB = 10;
+    const READABLE_FALLBACK_MAX_KB = 35;
+    const compressionPresets = [
+        { maxDimension: 1800, jpegQuality: 0.82, name: 'Image High' },
+        { maxDimension: 1800, jpegQuality: 0.72, name: 'Image High (Q72)' },
+        { maxDimension: 1800, jpegQuality: 0.62, name: 'Image High (Q62)' },
+        { maxDimension: 1600, jpegQuality: 0.56, name: 'Image Medium High' },
+        { maxDimension: 1400, jpegQuality: 0.50, name: 'Image Medium' },
+        { maxDimension: 1200, jpegQuality: 0.44, name: 'Image Standard' },
+        { maxDimension: 1000, jpegQuality: 0.38, name: 'Image Compact' },
+        { maxDimension: 900, jpegQuality: 0.34, name: 'Image Compact Plus' },
+        { maxDimension: 800, jpegQuality: 0.30, name: 'Image Aggressive' }
+    ];
+
     const url = URL.createObjectURL(file);
-    const img = new Image();
-    img.onload = () => {
-        URL.revokeObjectURL(url);
-        let { width, height } = img;
-        if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-            if (width >= height) {
-                height = Math.round(height * MAX_DIMENSION / width);
-                width = MAX_DIMENSION;
-            } else {
-                width = Math.round(width * MAX_DIMENSION / height);
-                height = MAX_DIMENSION;
+
+    try {
+        const img = await new Promise((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = () => reject(new Error(`Failed to load image for compression: ${file.name || file.type}`));
+            image.src = url;
+        });
+
+        let lastCompressedBlob = null;
+        let readableFallback = null;
+        let readableFallbackPreset = '';
+
+        for (const preset of compressionPresets) {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > preset.maxDimension || height > preset.maxDimension) {
+                if (width >= height) {
+                    height = Math.round(height * preset.maxDimension / width);
+                    width = preset.maxDimension;
+                } else {
+                    width = Math.round(width * preset.maxDimension / height);
+                    height = preset.maxDimension;
+                }
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const compressedBlob = await new Promise((resolve, reject) => {
+                canvas.toBlob((blob) => {
+                    if (blob) resolve(blob);
+                    else reject(new Error('Failed to compress image: canvas.toBlob returned null'));
+                }, 'image/jpeg', preset.jpegQuality);
+            });
+
+            lastCompressedBlob = compressedBlob;
+            const compressedSizeKB = compressedBlob.size / 1024;
+            console.log(`Tried ${preset.name}: ${compressedSizeKB.toFixed(1)}KB (${width}x${height}, q=${preset.jpegQuality})`);
+
+            if (!readableFallback && compressedSizeKB <= READABLE_FALLBACK_MAX_KB) {
+                readableFallback = compressedBlob;
+                readableFallbackPreset = preset.name;
+            }
+
+            if (compressedSizeKB <= TARGET_IMAGE_SIZE_KB) {
+                console.log(`✓ Using ${preset.name} - under ${TARGET_IMAGE_SIZE_KB}KB image target`);
+                trackImagePresetUse(preset.name);
+                return compressedBlob;
             }
         }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob((blob) => {
-            if (blob) resolve(blob);
-            else reject(new Error('Failed to compress image: canvas.toBlob returned null'));
-        }, 'image/jpeg', JPEG_QUALITY);
-    };
-    img.onerror = () => {
+
+        if (readableFallback) {
+            console.warn(`Could not reach ${TARGET_IMAGE_SIZE_KB}KB image target, using readable fallback (${readableFallbackPreset})`);
+            trackImagePresetUse(readableFallbackPreset);
+            return readableFallback;
+        }
+
+        console.warn(`Could not reach ${TARGET_IMAGE_SIZE_KB}KB image target, using most compressed version`);
+        if (compressionPresets.length > 0) {
+            trackImagePresetUse(compressionPresets[compressionPresets.length - 1].name);
+        }
+        return lastCompressedBlob || file;
+    } finally {
         URL.revokeObjectURL(url);
-        reject(new Error(`Failed to load image for compression: ${file.name || file.type}`));
-    };
-    img.src = url;
-});
+    }
+};
+
+/**
+ * Re-compress a PDF by rendering each page to canvas and compressing as JPEG.
+ * Targets file size under 600KB while maintaining readable quality.
+ * @param {File|Blob} pdfFile - The PDF file to re-compress
+ * @returns {Promise<Blob>} A new PDF with compressed pages (target < 600KB)
+ */
+const recompressPDF = async (pdfFile) => {
+    const TARGET_SIZE_KB = 600;
+    const { PDFDocument } = window.PDFLib;
+    
+    console.log('Starting PDF re-compression for file:', pdfFile.name || 'unnamed', `(${(pdfFile.size / 1024 / 1024).toFixed(2)}MB)`);
+    
+    // Load PDF with pdf.js for rendering
+    const pdfjsLib = window.pdfjsLib;
+    if (!pdfjsLib) {
+        console.warn('pdf.js not loaded, skipping PDF re-compression');
+        return pdfFile;
+    }
+    
+    // Quality presets to try (from best to most compressed)
+    const qualityPresets = [
+        { renderScale: 3.0, maxDimension: 2800, jpegQuality: 0.90, name: 'Very High Quality' },
+        { renderScale: 2.6, maxDimension: 2400, jpegQuality: 0.84, name: 'High Quality' },
+        { renderScale: 2.2, maxDimension: 2100, jpegQuality: 0.78, name: 'Good Quality' },
+        { renderScale: 1.8, maxDimension: 1800, jpegQuality: 0.70, name: 'Medium Quality' },
+        { renderScale: 1.4, maxDimension: 1500, jpegQuality: 0.62, name: 'Standard Quality' },
+        { renderScale: 1.1, maxDimension: 1200, jpegQuality: 0.54, name: 'Compressed' },
+    ];
+    
+    try {
+        const arrayBuffer = await pdfFile.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdfDoc = await loadingTask.promise;
+        const numPages = pdfDoc.numPages;
+        
+        console.log(`Re-compressing PDF with ${numPages} pages...`);
+        
+        let lastCompressedBlob = null;
+        
+        // Try each quality preset until we get under target size
+        for (const preset of qualityPresets) {
+            const newPdf = await PDFDocument.create();
+            
+            // Process each page with current preset
+            for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+                const page = await pdfDoc.getPage(pageNum);
+                const baseViewport = page.getViewport({ scale: preset.renderScale });
+
+                // Fit to max dimension while keeping higher render DPI
+                let dimensionScale = 1.0;
+                if (baseViewport.width > preset.maxDimension || baseViewport.height > preset.maxDimension) {
+                    dimensionScale = Math.min(
+                        preset.maxDimension / baseViewport.width,
+                        preset.maxDimension / baseViewport.height
+                    );
+                }
+
+                const scaledViewport = page.getViewport({ scale: preset.renderScale * dimensionScale });
+                
+                // Render to canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = scaledViewport.width;
+                canvas.height = scaledViewport.height;
+                const context = canvas.getContext('2d');
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: scaledViewport
+                }).promise;
+                
+                // Compress canvas to JPEG
+                const compressedBlob = await new Promise((resolve, reject) => {
+                    canvas.toBlob((blob) => {
+                        if (blob) resolve(blob);
+                        else reject(new Error('Canvas to blob failed'));
+                    }, 'image/jpeg', preset.jpegQuality);
+                });
+                
+                // Add compressed image to new PDF
+                const imgArrayBuffer = await compressedBlob.arrayBuffer();
+                const img = await newPdf.embedJpg(imgArrayBuffer);
+                
+                // Create page with same dimensions as canvas
+                const newPage = newPdf.addPage([canvas.width, canvas.height]);
+                newPage.drawImage(img, {
+                    x: 0,
+                    y: 0,
+                    width: canvas.width,
+                    height: canvas.height
+                });
+            }
+            
+            // Check resulting size
+            const pdfBytes = await newPdf.save();
+            const compressedBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            lastCompressedBlob = compressedBlob; // Save this version
+            
+            const compressedSizeKB = compressedBlob.size / 1024;
+            
+            const originalSizeMB = (pdfFile.size / 1024 / 1024).toFixed(2);
+            const compressedSizeMB = (compressedBlob.size / 1024 / 1024).toFixed(2);
+            const reduction = ((1 - compressedBlob.size / pdfFile.size) * 100).toFixed(1);
+            
+            console.log(`Tried ${preset.name}: ${originalSizeMB}MB → ${compressedSizeMB}MB (${compressedSizeKB.toFixed(0)}KB, ${reduction}% reduction)`);
+            
+            // If under target, use this version
+            if (compressedSizeKB <= TARGET_SIZE_KB) {
+                console.log(`✓ Using ${preset.name} - under ${TARGET_SIZE_KB}KB target`);
+                getCompressionRunState().pdfPreset = preset.name;
+                return compressedBlob;
+            }
+        }
+        
+        // If all presets are still too large, use the most compressed one
+        console.warn(`Could not achieve ${TARGET_SIZE_KB}KB target, using most compressed version`);
+        if (qualityPresets.length > 0) {
+            getCompressionRunState().pdfPreset = qualityPresets[qualityPresets.length - 1].name;
+        }
+        return lastCompressedBlob || pdfFile;
+        
+    } catch (error) {
+        console.warn('PDF re-compression failed, using original:', error);
+        return pdfFile;
+    }
+};
 
 // Convert images and PDFs to a single combined PDF
 const combineFilesToPDF = async (files, taNumber) => {
@@ -51,8 +248,9 @@ const combineFilesToPDF = async (files, taNumber) => {
         const file = files[i];
 
         if (file.type === 'application/pdf') {
-            // Handle PDF - copy all pages
-            const arrayBuffer = await file.arrayBuffer();
+            // Re-compress PDF by rendering pages to canvas
+            const recompressedPdf = await recompressPDF(file);
+            const arrayBuffer = await recompressedPdf.arrayBuffer();
             const pdfDoc = await PDFDocument.load(arrayBuffer);
             const copiedPages = await finalPdf.copyPages(pdfDoc, pdfDoc.getPageIndices());
             copiedPages.forEach((page) => finalPdf.addPage(page));
@@ -135,8 +333,58 @@ const combineFilesToPDF = async (files, taNumber) => {
     });
 };
 
+const gzipBlob = async (blob) => {
+    if (typeof CompressionStream !== 'function') {
+        return null;
+    }
+
+    const gzipStream = new CompressionStream('gzip');
+    const compressedStream = blob.stream().pipeThrough(gzipStream);
+    return await new Response(compressedStream).blob();
+};
+
+window.prepareFileForStorage = async (file, taNumber) => {
+    let storageBlob = file;
+    let extension = '.pdf';
+    let compressed = false;
+
+    if (file.type === 'application/pdf') {
+        try {
+            const gzBlob = await gzipBlob(file);
+            if (gzBlob && gzBlob.size > 0 && gzBlob.size < file.size) {
+                storageBlob = gzBlob;
+                extension = '.pdf.gz';
+                compressed = true;
+            }
+        } catch (error) {
+            console.warn('Gzip compression skipped due to error:', error);
+        }
+    }
+
+    const mimeType = compressed ? 'application/gzip' : 'application/pdf';
+    const storageName = `${taNumber}${extension}`;
+    const storageFile = new File([storageBlob], storageName, {
+        type: mimeType,
+        lastModified: Date.now()
+    });
+
+    return {
+        storageFile,
+        extension,
+        compressed,
+        originalSize: file.size,
+        storedSize: storageFile.size
+    };
+};
+
 // Validate and process files (PDF and/or images combined)
 window.validateAndProcessFiles = async (fileInput, taNumber) => {
+    window.__uploadCompressionRun = {
+        pdfPreset: '',
+        imagePresetCounts: {},
+        imageCount: 0
+    };
+
     const files = Array.from(fileInput.files);
     
     if (files.length === 0) {
@@ -411,13 +659,14 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             uploadStatus.classList.remove("status--error");
 
             const processedFile = await window.validateAndProcessFiles(scanFileInput, taNumber);
+            const preparedUpload = await window.prepareFileForStorage(processedFile, taNumber);
             const BYTES_PER_MB = 1024 * 1024;
-            const processedSizeKB = (processedFile.size / 1024).toFixed(0);
-            const processedSizeMB = (processedFile.size / BYTES_PER_MB).toFixed(2);
+            const processedSizeKB = (preparedUpload.storedSize / 1024).toFixed(0);
+            const processedSizeMB = (preparedUpload.storedSize / BYTES_PER_MB).toFixed(2);
             
             // Check if file is still too large
             const maxAllowedMB = 10;
-            if (processedFile.size > maxAllowedMB * BYTES_PER_MB) {
+            if (preparedUpload.storedSize > maxAllowedMB * BYTES_PER_MB) {
                 uploadStatus.textContent = `File too large after compression: ${processedSizeMB}MB (max ${maxAllowedMB}MB). Please use fewer or smaller files.`;
                 uploadStatus.classList.add("status--error");
                 uploadStatus.classList.remove("status--shake");
@@ -426,10 +675,28 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 return;
             }
 
-            const sizeLabel = processedFile.size < BYTES_PER_MB
+            const sizeLabel = preparedUpload.storedSize < BYTES_PER_MB
                 ? `${processedSizeKB} KB`
                 : `${processedSizeMB} MB`;
-            uploadStatus.textContent = `Uploading compressed file (${sizeLabel})...`;
+
+            const compressionState = window.__uploadCompressionRun || {};
+            const detailParts = [];
+            if (compressionState.pdfPreset) {
+                detailParts.push(`PDF preset: ${compressionState.pdfPreset}`);
+            }
+            if (compressionState.imageCount > 0) {
+                const imagePresetSummary = Object.entries(compressionState.imagePresetCounts || {})
+                    .map(([name, count]) => `${name} x${count}`)
+                    .join(', ');
+                if (imagePresetSummary) {
+                    detailParts.push(`Image preset: ${imagePresetSummary}`);
+                }
+            }
+            const detailSuffix = detailParts.length ? ` • ${detailParts.join(' • ')}` : '';
+
+            uploadStatus.textContent = preparedUpload.compressed
+                ? `Uploading optimized file (${sizeLabel})${detailSuffix}...`
+                : `Uploading file (${sizeLabel})...`;
 
             // Verify user is authenticated
             const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -457,7 +724,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             const safeDate = travelDate.replace(/[^0-9-]/g, "-");
             
             // Extract file extension and rename file to TA number with timestamp
-            const fileExtension = processedFile.name.substring(processedFile.name.lastIndexOf('.'));
+            const fileExtension = preparedUpload.extension;
             const timestamp = Date.now();
             const newFileName = `${taNumber}_${timestamp}${fileExtension}`;
             const filePath = `travel-authorities/${safeTa}/${safeDate}/${newFileName}`;
@@ -465,7 +732,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             const { error: uploadError } = await supabase
                 .storage
                 .from("ta-files")
-                .upload(filePath, processedFile, { upsert: false });
+                .upload(filePath, preparedUpload.storageFile, { upsert: false });
 
             if (uploadError) {
                 throw new Error(`Storage upload failed: ${uploadError.message || "Unknown error"}`);
