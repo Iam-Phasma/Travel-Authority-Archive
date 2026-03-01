@@ -1358,14 +1358,21 @@
                         
                         // Check if this is a demo file - suppress toast for regular users
                         let isDemo = false;
-                        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                        let changedToDemo = false;
+                        
+                        if (payload.eventType === 'INSERT') {
                             isDemo = payload.new?.is_demo === true;
+                        } else if (payload.eventType === 'UPDATE') {
+                            isDemo = payload.new?.is_demo === true;
+                            // Check if file was just changed to demo (wasn't demo before, is demo now)
+                            changedToDemo = payload.old?.is_demo === false && payload.new?.is_demo === true;
                         } else if (payload.eventType === 'DELETE') {
                             isDemo = payload.old?.is_demo === true;
                         }
                         
                         // Don't show toast for demo files on dashboard (regular users)
-                        if (isDemo) {
+                        // EXCEPT when a file was just updated to demo status (admin forgot to mark it initially)
+                        if (isDemo && !changedToDemo) {
                             console.log('[Realtime] Suppressing notification - demo file change');
                             return;
                         }
