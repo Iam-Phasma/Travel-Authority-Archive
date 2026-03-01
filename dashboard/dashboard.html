@@ -1292,12 +1292,9 @@
                     const { data, error } = await supabase.rpc('update_last_seen');
                     if (error) {
                         console.warn('Heartbeat error:', error.message);
-                    } else {
-                        console.debug('Heartbeat updated:', data);
                     }
                 } catch (error) {
                     // Silently fail - user might not have the function yet
-                    console.debug('Heartbeat update skipped:', error.message);
                 }
             };
 

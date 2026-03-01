@@ -6,8 +6,6 @@
 
 export class AutoLogout {
     constructor(options = {}) {
-        console.log('[Auto-Logout] 🚀 Initializing Auto-Logout system...');
-        
         // Configuration
         // CHANGE SESSION TIMEOUT HERE:
         this.warningTime = options.warningTime || 5 * 60 * 1000; // 5 minutes
@@ -15,12 +13,6 @@ export class AutoLogout {
         this.countdownDuration = this.logoutTime - this.warningTime; // 1 minute countdown
         this.supabase = options.supabase; // Supabase client instance
         this.onLogout = options.onLogout || null; // Optional callback before logout
-        
-        console.log('[Auto-Logout] ⏰ Configuration:', {
-            warningTime: this.warningTime / 1000 + 's',
-            logoutTime: this.logoutTime / 1000 + 's',
-            countdownDuration: this.countdownDuration / 1000 + 's'
-        });
         
         // State
         this.activityTimer = null;
