@@ -216,17 +216,24 @@
                             filter: `id=eq.${user.id}`
                         },
                         (payload) => {
+                            // Prevent multiple simultaneous logouts
+                            if (logoutInProgress) return;
                             
                             // Check if access was disabled
-                            if (payload.new && payload.new.access_enabled === false) {
+                            if (payload.new && payload.old && payload.new.access_enabled === false && payload.old.access_enabled !== false) {
+                                logoutInProgress = true;
                                 showToast("Access disabled: You have been logged out.", "error");
                                 
                                 // Immediate logout
                                 setTimeout(async () => {
-                                    await markCurrentUserOffline();
-                                    await supabase.auth.signOut();
-                                    localStorage.removeItem('admin_session_token');
-                                    localStorage.removeItem('adminActivePanel');
+                                    try {
+                                        await markCurrentUserOffline();
+                                        await supabase.auth.signOut();
+                                        localStorage.removeItem('admin_session_token');
+                                        localStorage.removeItem('adminActivePanel');
+                                    } catch (e) {
+                                        console.warn('Semi-graceful logout:', e);
+                                    }
                                     window.location.href = '../index.html';
                                 }, 1000);
                             }
@@ -245,6 +252,8 @@
         // ⚠️ WARNING: This uses localStorage which users can view/modify via DevTools
         // However, we validate against the database token, so manipulation won't grant access
         // The database session_token field is the source of truth
+        let logoutInProgress = false; // Guard against multiple logout triggers
+        
         const setupSessionMonitoring = async () => {
             try {
                 const { data: sessionData } = await supabase.auth.getSession();
@@ -266,40 +275,21 @@
                             filter: `id=eq.${user.id}`
                         },
                         async (payload) => {
+                            // Prevent multiple simultaneous logouts
+                            if (logoutInProgress) return;
                             
-                            // Check if role changed (user was promoted or demoted)
-                            if (payload.new && payload.old && 
-                                payload.new.role !== payload.old.role) {
-                                // Role change detected - logout to apply new permissions
-                                showToast("Your role has been changed. Logging out...", "warning");
-                                
-                                // Give user time to see the toast before redirecting
-                                await new Promise(resolve => setTimeout(resolve, 1500));
-                                
-                                try {
-                                    await markCurrentUserOffline();
-                                    localStorage.removeItem('admin_session_token');
-                                    localStorage.removeItem('adminActivePanel');
-                                    await supabase.auth.signOut();
-                                } catch (e) {
-                                    console.warn('Semi-graceful logout:', e);
-                                }
-                                window.location.href = '../index.html';
-                                return;
-                            }
-                            
-                            // Check if session_token changed
-                            if (payload.new && payload.old && 
-                                payload.new.session_token !== payload.old.session_token) {
-                                
+                            // Only logout if session_token exists in new payload and doesn't match local
+                            // AND the old payload didn't already have this mismatch
+                            if (payload.new && payload.new.session_token) {
                                 const dbToken = payload.new.session_token;
+                                const wasAlreadyMismatched = payload.old && payload.old.session_token !== localToken;
+                                const isNowMismatched = dbToken !== localToken;
                                 
-                                // If database token doesn't match local token, another device logged in
-                                if (dbToken && dbToken !== localToken) {
-                                    // Session token mismatch - another device logged in
-                                    showToast("Logged out: Another device logged into this account.", "warning");
+                                // Only trigger logout if THIS UPDATE caused the mismatch (not if it was already mismatched)
+                                if (isNowMismatched && !wasAlreadyMismatched) {
+                                    logoutInProgress = true;
+                                    showToast("Your session has been invalidated. Logging out...", "warning");
                                     
-                                    // Wait 1 second for user to see the toast
                                     await new Promise(resolve => setTimeout(resolve, 1000));
                                     
                                     try {
@@ -333,12 +323,17 @@
                             .eq("id", user.id);
                     } else if (data.session_token !== localToken) {
                         // Already logged in elsewhere - immediate logout
+                        logoutInProgress = true;
                         showToast("Logged out: Another device logged into this account.", "warning");
                         await new Promise(resolve => setTimeout(resolve, 1000));
-                        await markCurrentUserOffline();
-                        await supabase.auth.signOut();
-                        localStorage.removeItem('admin_session_token');
-                        localStorage.removeItem('adminActivePanel');
+                        try {
+                            await markCurrentUserOffline();
+                            localStorage.removeItem('admin_session_token');
+                            localStorage.removeItem('adminActivePanel');
+                            await supabase.auth.signOut();
+                        } catch (e) {
+                            console.warn('Semi-graceful logout:', e);
+                        }
                         window.location.href = '../index.html';
                     }
                 }
@@ -3217,6 +3212,7 @@
                 
                 // If user changed their own role, logout after showing success message
                 if (isChangingOwnRole) {
+                    logoutInProgress = true;
                     setTimeout(async () => {
                         window.showToast('Your role has changed. Logging out...', "warning");
                         await new Promise(resolve => setTimeout(resolve, 1500));
