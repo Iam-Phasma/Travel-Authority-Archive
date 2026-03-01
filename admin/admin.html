@@ -278,15 +278,14 @@
                             // Prevent multiple simultaneous logouts
                             if (logoutInProgress) return;
                             
-                            // Only logout if session_token exists in new payload and doesn't match local
-                            // AND the old payload didn't already have this mismatch
-                            if (payload.new && payload.new.session_token) {
-                                const dbToken = payload.new.session_token;
-                                const wasAlreadyMismatched = payload.old && payload.old.session_token !== localToken;
-                                const isNowMismatched = dbToken !== localToken;
+                            // Check if session_token changed
+                            if (payload.new && payload.old && 
+                                payload.new.session_token !== payload.old.session_token) {
                                 
-                                // Only trigger logout if THIS UPDATE caused the mismatch (not if it was already mismatched)
-                                if (isNowMismatched && !wasAlreadyMismatched) {
+                                const newToken = payload.new.session_token;
+                                
+                                // If the new token doesn't match local token, session was invalidated
+                                if (newToken && newToken !== localToken) {
                                     logoutInProgress = true;
                                     showToast("Your session has been invalidated. Logging out...", "warning");
                                     
