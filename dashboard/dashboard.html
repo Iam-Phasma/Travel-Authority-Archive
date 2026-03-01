@@ -1355,6 +1355,8 @@
                     },
                     (payload) => {
                         console.log('[Realtime] Change detected:', payload.eventType, payload);
+                        console.log('[Realtime] Payload old:', payload.old);
+                        console.log('[Realtime] Payload new:', payload.new);
                         
                         // Check if this is a demo file - suppress toast for regular users
                         let isDemo = false;
@@ -1363,9 +1365,17 @@
                         if (payload.eventType === 'INSERT') {
                             isDemo = payload.new?.is_demo === true;
                         } else if (payload.eventType === 'UPDATE') {
-                            isDemo = payload.new?.is_demo === true;
+                            const oldIsDemo = payload.old?.is_demo;
+                            const newIsDemo = payload.new?.is_demo;
+                            
+                            console.log('[Realtime] UPDATE - old.is_demo:', oldIsDemo, '(type:', typeof oldIsDemo, ')');
+                            console.log('[Realtime] UPDATE - new.is_demo:', newIsDemo, '(type:', typeof newIsDemo, ')');
+                            
+                            isDemo = newIsDemo === true;
                             // Check if file was just changed to demo (wasn't demo before, is demo now)
-                            changedToDemo = payload.old?.is_demo === false && payload.new?.is_demo === true;
+                            changedToDemo = !oldIsDemo && newIsDemo === true;
+                            
+                            console.log('[Realtime] UPDATE check - isDemo:', isDemo, 'changedToDemo:', changedToDemo);
                         } else if (payload.eventType === 'DELETE') {
                             isDemo = payload.old?.is_demo === true;
                         }
@@ -1376,6 +1386,8 @@
                             console.log('[Realtime] Suppressing notification - demo file change');
                             return;
                         }
+                        
+                        console.log('[Realtime] Showing toast notification');
                         
                         // Show notification with flashing refresh button
                         let message = '';
