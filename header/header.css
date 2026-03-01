@@ -64,6 +64,22 @@
     display: none;
 }
 
+/* Compact user name on small screens */
+@media (max-width: 768px) {
+    .header-user-name {
+        display: inline;
+        max-width: 110px;
+        font-size: 0.85rem;
+    }
+    
+    .header-user-btn {
+        width: auto;
+        max-width: 180px;
+        padding: 0 10px;
+        justify-content: flex-start;
+    }
+}
+
 .sticky-header-actions {
     position: relative;
     display: flex;
@@ -84,6 +100,52 @@
     justify-content: center;
     transition: all 250ms ease;
     padding: 0;
+}
+
+.header-user-btn {
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 26, 31, 0.25);
+    background: white;
+    color: rgba(15, 26, 31, 0.7);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 250ms ease;
+    padding: 0 12px;
+    white-space: nowrap;
+}
+
+.header-user-btn .user-icon {
+    width: 20px;
+    height: 20px;
+    fill: rgba(15, 26, 31, 0.65);
+    transition: fill 250ms ease;
+    flex-shrink: 0;
+}
+
+.header-user-name {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(15, 26, 31, 0.85);
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.header-user-btn:hover {
+    background: rgba(47, 111, 179, 0.08);
+    border-color: var(--sea);
+}
+
+.header-user-btn:hover .user-icon {
+    fill: var(--sea);
+}
+
+.header-user-btn:active {
+    background: rgba(47, 111, 179, 0.12);
 }
 
 .header-icon-btn svg {

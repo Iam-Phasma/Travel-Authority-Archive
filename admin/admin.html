@@ -197,108 +197,139 @@
                 return false;
             });
 
-        // Periodically check if current admin's access_enabled is still true
-        const checkAccessEnabled = async () => {
+        // Realtime subscription to monitor current admin's access status
+        const setupAccessMonitoring = async () => {
             try {
                 const { data: sessionData } = await supabase.auth.getSession();
                 const user = sessionData?.session?.user;
                 if (!user) return;
 
-                const { data, error } = await supabase
-                    .from("profiles")
-                    .select("access_enabled")
-                    .eq("id", user.id)
-                    .maybeSingle();
-
-                if (error) {
-                    console.error("Error checking access_enabled:", error);
-                    return;
-                }
-
-                if (data && data.access_enabled === false) {
-                    // Show toast notification
-                    showToast("Access disabled: You have been logged out.", "error");
-                    // Immediate logout
-                    await markCurrentUserOffline();
-                    await supabase.auth.signOut();
-                    localStorage.removeItem('admin_session_token');
-                    localStorage.removeItem('adminActivePanel');
-                    window.location.href = '../index.html';
-                }
+                // Subscribe to changes on current user's profile
+                const accessChannel = supabase
+                    .channel('admin_access_monitoring')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'profiles',
+                            filter: `id=eq.${user.id}`
+                        },
+                        (payload) => {
+                            console.log('[Realtime] Admin profile change detected:', payload);
+                            
+                            // Check if access was disabled
+                            if (payload.new && payload.new.access_enabled === false) {
+                                showToast("Access disabled: You have been logged out.", "error");
+                                
+                                // Immediate logout
+                                setTimeout(async () => {
+                                    await markCurrentUserOffline();
+                                    await supabase.auth.signOut();
+                                    localStorage.removeItem('admin_session_token');
+                                    localStorage.removeItem('adminActivePanel');
+                                    window.location.href = '../index.html';
+                                }, 1000);
+                            }
+                        }
+                    )
+                    .subscribe((status) => {
+                        console.log('[Realtime] Admin access monitoring status:', status);
+                    });
             } catch (err) {
-                console.error("Error in checkAccessEnabled:", err);
+                console.error("Error setting up admin access monitoring:", err);
             }
         };
-        // Check every 5 seconds
-        setInterval(checkAccessEnabled, 5000);
-        setTimeout(checkAccessEnabled, 3000); // First check after 3 seconds
+        
+        // Initialize access monitoring
+        setupAccessMonitoring();
 
-        // Single-session enforcement for admin users
+        // Single-session enforcement for admin users using realtime
         // ⚠️ WARNING: This uses localStorage which users can view/modify via DevTools
         // However, we validate against the database token, so manipulation won't grant access
         // The database session_token field is the source of truth
-        const checkAdminSession = async () => {
+        const setupSessionMonitoring = async () => {
             try {
                 const { data: sessionData } = await supabase.auth.getSession();
                 const user = sessionData?.session?.user;
-                if (!user) {
-                    return;
-                }
+                if (!user) return;
 
                 const localToken = localStorage.getItem('admin_session_token');
-                if (!localToken) {
-                    return;
-                }
+                if (!localToken) return;
 
+                // Subscribe to changes on current user's session_token
+                const sessionChannel = supabase
+                    .channel('admin_session_monitoring')
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'profiles',
+                            filter: `id=eq.${user.id}`
+                        },
+                        async (payload) => {
+                            console.log('[Realtime] Session change detected:', payload);
+                            
+                            // Check if session_token changed
+                            if (payload.new && payload.old && 
+                                payload.new.session_token !== payload.old.session_token) {
+                                
+                                const dbToken = payload.new.session_token;
+                                
+                                // If database token doesn't match local token, another device logged in
+                                if (dbToken && dbToken !== localToken) {
+                                    // Session token mismatch - another device logged in
+                                    showToast("Logged out: Another device logged into this account.", "warning");
+                                    
+                                    // Wait 1 second for user to see the toast
+                                    await new Promise(resolve => setTimeout(resolve, 1000));
+                                    
+                                    await markCurrentUserOffline();
+                                    await supabase.auth.signOut();
+                                    localStorage.removeItem('admin_session_token');
+                                    localStorage.removeItem('adminActivePanel');
+                                    window.location.href = '../index.html';
+                                }
+                            }
+                        }
+                    )
+                    .subscribe((status) => {
+                        console.log('[Realtime] Session monitoring status:', status);
+                    });
+
+                // Initial check: verify session token is set in database
                 const { data, error } = await supabase
                     .from("profiles")
                     .select("session_token")
                     .eq("id", user.id)
                     .maybeSingle();
 
-                if (error) {
-                    // Session token fetch failed, skip validation
-                    return;
-                }
-
-                if (!data) {
-                    return;
-                }
-
-                // Only logout if database token exists AND doesn't match
-                // If database token is null, update it (in case initial update failed)
-                if (data.session_token === null) {
-                    const { error: updateError } = await supabase
-                        .from("profiles")
-                        .update({ session_token: localToken })
-                        .eq("id", user.id);
-                    
-                    if (updateError) {
-                        // Session token update failed, continue without logging
+                if (!error && data) {
+                    // If database token is null, update it (in case initial update failed)
+                    if (data.session_token === null) {
+                        await supabase
+                            .from("profiles")
+                            .update({ session_token: localToken })
+                            .eq("id", user.id);
+                    } else if (data.session_token !== localToken) {
+                        // Already logged in elsewhere - immediate logout
+                        showToast("Logged out: Another device logged into this account.", "warning");
+                        await new Promise(resolve => setTimeout(resolve, 1000));
+                        await markCurrentUserOffline();
+                        await supabase.auth.signOut();
+                        localStorage.removeItem('admin_session_token');
+                        localStorage.removeItem('adminActivePanel');
+                        window.location.href = '../index.html';
                     }
-                } else if (data.session_token !== localToken) {
-                    // Session token mismatch - another device logged in
-                    
-                    // Show toast notification
-                    showToast("Logged out: Another device logged into this account.", "warning");
-                    
-                    // Wait 2 seconds for user to see the toast
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                    
-                    await markCurrentUserOffline();
-                    await supabase.auth.signOut();
-                    localStorage.removeItem('admin_session_token');
-                    localStorage.removeItem('adminActivePanel');
-                    window.location.href = '../index.html';
                 }
             } catch (err) {
-                console.error("Error in checkAdminSession:", err);
+                console.error("Error setting up session monitoring:", err);
             }
         };
-
-        // Check session every 5 seconds, start after initial delay
-        setInterval(checkAdminSession, 5000);
-        setTimeout(checkAdminSession, 3000); // First check after 3 seconds
+        
+        // Initialize session monitoring
+        setupSessionMonitoring();
 
         const getUserRole = async (userId) => {
             try {
@@ -420,6 +451,47 @@
             const settingsOption = document.getElementById('header-settings-option');
             const logoutOption = document.getElementById('header-logout-option');
             const userEmailElement = document.getElementById('header-user-email');
+            const userNameElement = document.getElementById('header-user-name');
+
+            const capitalizeWords = (str) => {
+                if (!str) return '';
+                return str.split(' ').map(word => {
+                    if (!word) return '';
+                    return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+                }).join(' ');
+            };
+
+            const setResponsiveHeaderName = (rawFName, rawLName, fallbackName) => {
+                if (!userNameElement) return;
+
+                const fname = capitalizeWords(rawFName || '');
+                const lname = capitalizeWords(rawLName || '');
+                const fullName = `${fname} ${lname}`.trim();
+
+                const renderName = () => {
+                    const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
+                    if (isSmallScreen && fname) {
+                        const initials = fname
+                            .split(/\s+/)
+                            .filter(Boolean)
+                            .map(word => word.charAt(0).toUpperCase())
+                            .join('');
+                        const compactName = `${initials} ${lname}`.trim();
+                        userNameElement.textContent = compactName || fullName || fallbackName;
+                        return;
+                    }
+
+                    userNameElement.textContent = fullName || fallbackName;
+                };
+
+                renderName();
+
+                if (window.__headerNameResizeHandler) {
+                    window.removeEventListener('resize', window.__headerNameResizeHandler);
+                }
+                window.__headerNameResizeHandler = renderName;
+                window.addEventListener('resize', window.__headerNameResizeHandler);
+            };
 
             if (!userMenuBtn || !headerPopup) {
                 return; // Header not loaded yet, allow retry
@@ -427,16 +499,52 @@
             
             headerButtonsInitialized = true;
 
-            // Fetch and display user email
-            if (userEmailElement) {
-                supabase.auth.getSession().then(({ data: { session } }) => {
+            // Fetch and display user email and name
+            if (userEmailElement || userNameElement) {
+                supabase.auth.getSession().then(async ({ data: { session } }) => {
                     if (session?.user?.email) {
-                        userEmailElement.textContent = session.user.email;
+                        if (userEmailElement) {
+                            userEmailElement.textContent = session.user.email;
+                        }
+                        
+                        // Fetch user's first and last name from profiles
+                        try {
+                            const { data: profile, error } = await supabase
+                                .from('profiles')
+                                .select('FName, LName')
+                                .eq('id', session.user.id)
+                                .maybeSingle();
+                            
+                            if (!error && profile) {
+                                setResponsiveHeaderName(
+                                    profile.FName,
+                                    profile.LName,
+                                    session.user.email.split('@')[0]
+                                );
+                            } else if (userNameElement) {
+                                setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
+                            }
+                        } catch (err) {
+                            console.error('Error fetching user name:', err);
+                            if (userNameElement) {
+                                setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
+                            }
+                        }
                     } else {
-                        userEmailElement.textContent = 'Not available';
+                        if (userEmailElement) {
+                            userEmailElement.textContent = 'Not available';
+                        }
+                        if (userNameElement) {
+                            setResponsiveHeaderName('', '', 'User');
+                        }
                     }
                 }).catch(() => {
-                    userEmailElement.textContent = 'Not available';
+                    if (userEmailElement) {
+                        userEmailElement.textContent = 'Not available';
+                    }
+                    if (userNameElement) {
+                        setResponsiveHeaderName('', '', 'User');
+                    }
                 });
             }
 
