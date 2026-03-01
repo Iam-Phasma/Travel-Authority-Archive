@@ -1743,6 +1743,11 @@
             }
         };
 
+        // Track recent admin actions to suppress own realtime notifications
+        window.adminRecentUploadTimestamp = 0;
+        window.adminRecentUpdateTimestamp = 0;
+        window.adminRecentDeleteTimestamp = 0;
+        
         // Realtime subscription for travel_authorities changes
         let realtimeChannel = null;
         const setupRealtimeSubscription = () => {
@@ -1763,6 +1768,21 @@
                     },
                     (payload) => {
                         console.log('[Realtime] Change detected:', payload.eventType, payload);
+                        
+                        // Check if this is from the admin's own recent action
+                        const now = Date.now();
+                        const timeSinceUpload = now - window.adminRecentUploadTimestamp;
+                        const timeSinceUpdate = now - window.adminRecentUpdateTimestamp;
+                        const timeSinceDelete = now - window.adminRecentDeleteTimestamp;
+                        
+                        const isOwnUpload = payload.eventType === 'INSERT' && timeSinceUpload < 3000;
+                        const isOwnUpdate = payload.eventType === 'UPDATE' && timeSinceUpdate < 3000;
+                        const isOwnDelete = payload.eventType === 'DELETE' && timeSinceDelete < 3000;
+                        
+                        if (isOwnUpload || isOwnUpdate || isOwnDelete) {
+                            console.log('[Realtime] Suppressing notification - own action detected');
+                            return;
+                        }
                         
                         // Show notification with flashing refresh button
                         let message = '';
@@ -2254,6 +2274,9 @@
             try {
                 viewStatus.textContent = "Deleting record...";
                 
+                // Mark timestamp BEFORE database operation to suppress own realtime notification
+                window.adminRecentDeleteTimestamp = Date.now();
+                
                 // Delete database record first
                 const { error: deleteError } = await supabase
                     .from("travel_authorities")
@@ -2411,6 +2434,9 @@
             try {
                 updateStatus.textContent = "Updating record...";
                 updateStatus.classList.remove("status--error", "hidden");
+
+                // Mark timestamp BEFORE database operation to suppress own realtime notification
+                window.adminRecentUpdateTimestamp = Date.now();
 
                 let fileUrl = updateRecordData.file_url || "";
                 let fileName = updateRecordData.file_name || "";
@@ -2580,6 +2606,7 @@
                 updateModal.classList.remove("show");
                 updateRecordData = null;
                 viewStatus.textContent = "Record updated successfully.";
+                
                 showToast("Update saved.", "success");
                 await loadTravelAuthorities(true);
             } catch (error) {
@@ -2685,6 +2712,189 @@
             return `${truncated}@${domain}`;
         };
 
+        const capitalizeWords = (value) => {
+            if (!value) return '';
+            return String(value)
+                .split(/\s+/)
+                .filter(Boolean)
+                .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+                .join(' ');
+        };
+
+        const formatHeaderLikeName = (fname, lname, compact = false) => {
+            const normalizedFirst = capitalizeWords(fname || '');
+            const normalizedLast = capitalizeWords(lname || '');
+            const fullName = `${normalizedFirst} ${normalizedLast}`.trim();
+
+            if (!compact || !normalizedFirst) {
+                return fullName;
+            }
+
+            const initials = normalizedFirst
+                .split(/\s+/)
+                .filter(Boolean)
+                .map((part) => part.charAt(0).toUpperCase())
+                .join('');
+
+            return `${initials} ${normalizedLast}`.trim() || fullName;
+        };
+
+        let editUserNameData = null;
+        let userNameModalHandlersInitialized = false;
+        window.currentlyEditingUserId = null; // Track which user is being edited
+
+        const closeEditUserNameModal = () => {
+            const modal = document.getElementById('edit-user-name-modal');
+            const statusEl = document.getElementById('edit-user-name-status');
+            const fnameInput = document.getElementById('edit-user-fname');
+            const lnameInput = document.getElementById('edit-user-lname');
+
+            if (modal) {
+                modal.classList.remove('show');
+            }
+            if (statusEl) {
+                statusEl.classList.add('hidden');
+                statusEl.classList.remove('status--error');
+                statusEl.textContent = '';
+            }
+            if (fnameInput) fnameInput.value = '';
+            if (lnameInput) lnameInput.value = '';
+            editUserNameData = null;
+            window.currentlyEditingUserId = null; // Clear tracked user
+        };
+
+        const submitEditUserName = async () => {
+            const statusEl = document.getElementById('edit-user-name-status');
+            const fnameInput = document.getElementById('edit-user-fname');
+            const lnameInput = document.getElementById('edit-user-lname');
+
+            if (!editUserNameData || !fnameInput || !lnameInput) {
+                return;
+            }
+
+            const latestUser = allUsersData.find((u) => u.id === editUserNameData.id);
+            if (latestUser?.is_online === true) {
+                if (statusEl) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.classList.add('status--error');
+                    statusEl.textContent = 'User is online. Name can only be edited while offline.';
+                    
+                    // Add shake animation
+                    statusEl.classList.remove('status--shake');
+                    void statusEl.offsetWidth; // Trigger reflow to restart animation
+                    statusEl.classList.add('status--shake');
+                }
+                return;
+            }
+
+            const rawFName = fnameInput.value.trim();
+            const rawLName = lnameInput.value.trim();
+
+            if (!rawFName || !rawLName) {
+                if (statusEl) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.classList.add('status--error');
+                    statusEl.textContent = 'Both first name and last name are required.';
+                }
+                return;
+            }
+
+            try {
+                if (statusEl) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.classList.remove('status--error');
+                    statusEl.textContent = 'Saving changes...';
+                }
+
+                const { error } = await supabase
+                    .from('profiles')
+                    .update({
+                        FName: capitalizeWords(rawFName),
+                        LName: capitalizeWords(rawLName)
+                    })
+                    .eq('id', editUserNameData.id);
+
+                if (error) {
+                    throw error;
+                }
+
+                window.showToast('User name updated successfully.', 'success');
+                closeEditUserNameModal();
+                await loadUsers();
+            } catch (error) {
+                console.error('Failed to update user name:', error);
+                if (statusEl) {
+                    statusEl.classList.remove('hidden');
+                    statusEl.classList.add('status--error');
+                    statusEl.textContent = error?.message || 'Failed to update user name.';
+                }
+            }
+        };
+
+        const initUserNameModalHandlers = () => {
+            if (userNameModalHandlersInitialized) {
+                return;
+            }
+
+            const modal = document.getElementById('edit-user-name-modal');
+            const cancelBtn = document.getElementById('cancel-edit-user-name');
+            const confirmBtn = document.getElementById('confirm-edit-user-name');
+
+            if (!modal || !cancelBtn || !confirmBtn) {
+                return;
+            }
+
+            cancelBtn.addEventListener('click', closeEditUserNameModal);
+            confirmBtn.addEventListener('click', submitEditUserName);
+            modal.addEventListener('click', (event) => {
+                if (event.target === modal) {
+                    closeEditUserNameModal();
+                }
+            });
+
+            userNameModalHandlersInitialized = true;
+        };
+
+        const openEditUserNameModal = (userId) => {
+            const user = allUsersData.find((entry) => entry.id === userId);
+            if (!user) {
+                return;
+            }
+
+            if (user.is_online === true) {
+                window.showToast('User must be offline before editing name.', 'warning');
+                return;
+            }
+
+            const modal = document.getElementById('edit-user-name-modal');
+            const fnameInput = document.getElementById('edit-user-fname');
+            const lnameInput = document.getElementById('edit-user-lname');
+            const statusEl = document.getElementById('edit-user-name-status');
+
+            if (!modal || !fnameInput || !lnameInput) {
+                return;
+            }
+
+            editUserNameData = {
+                id: user.id,
+                email: user.email || ''
+            };
+
+            // Track which user is being edited for realtime protection
+            window.currentlyEditingUserId = user.id;
+
+            fnameInput.value = user.FName || '';
+            lnameInput.value = user.LName || '';
+
+            if (statusEl) {
+                statusEl.classList.add('hidden');
+                statusEl.classList.remove('status--error');
+                statusEl.textContent = '';
+            }
+
+            modal.classList.add('show');
+        };
+
         const renderUsersTable = (users) => {
             const usersBody = document.getElementById('users-body');
             const usersStatus = document.getElementById('users-status');
@@ -2695,12 +2905,13 @@
             }
             
             if (!users || users.length === 0) {
-                usersBody.innerHTML = '<tr><td colspan="5">No users found.</td></tr>';
+                usersBody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
                 usersStatus.textContent = 'No users available.';
                 return;
             }
 
             // Render users table
+            const useCompactName = window.matchMedia('(max-width: 768px)').matches;
             usersBody.innerHTML = users.map(user => {
                 const accessEnabled = user.access_enabled !== false;
                 const displayEmail = truncateEmail(user.email || 'No email', 10);
@@ -2708,8 +2919,12 @@
                 const isOnline = user.is_online === true;
                 const statusClass = isOnline ? 'status-online' : 'status-offline';
                 const statusText = isOnline ? 'Online' : 'Offline';
+                const nameDisplay = formatHeaderLikeName(user.FName, user.LName, useCompactName) || fullEmail.split('@')[0] || 'Unknown User';
+                const editDisabledReason = "Can't edit: user is online.";
+                const editTooltip = isOnline ? editDisabledReason : 'Edit user name';
                 return `
                 <tr class="${!accessEnabled ? 'user-disabled' : ''}">
+                    <td class="text-left">${escapeHtml(nameDisplay)}</td>
                     <td class="text-left" title="${escapeHtml(fullEmail)}">${escapeHtml(displayEmail)}</td>
                     <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
                     <td>
@@ -2725,6 +2940,21 @@
                             <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
                             <option value="super" ${user.role === 'super' ? 'selected' : ''}>Super</option>
                         </select>
+                    </td>
+                    <td>
+                        <span class="user-edit-tooltip-wrap" title="${escapeHtml(editTooltip)}">
+                            <button
+                                type="button"
+                                class="update-btn icon-btn user-edit-btn"
+                                data-user-id="${escapeHtml(user.id)}"
+                                ${isOnline ? 'disabled' : ''}
+                                aria-label="Edit user name"
+                            >
+                                <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                                    <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm18-11.5c.39-.39.39-1.02 0-1.41L19.66 3c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75L21 5.75z"/>
+                                </svg>
+                            </button>
+                        </span>
                     </td>
                 </tr>
             `;
@@ -2782,6 +3012,14 @@
                 });
             });
 
+            document.querySelectorAll('.user-edit-btn').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const userId = button.getAttribute('data-user-id');
+                    if (!userId) return;
+                    openEditUserNameModal(userId);
+                });
+            });
+
             // Query filter element to check if we're in filtered mode
             const usersRoleFilter = document.getElementById('users-role-filter');
             const filterValue = usersRoleFilter?.value || '';
@@ -2798,6 +3036,8 @@
                 console.error('Users panel elements not found in DOM');
                 return;
             }
+
+            initUserNameModalHandlers();
             
             try {
                 usersStatus.textContent = 'Loading users...';
@@ -2829,8 +3069,37 @@
                     renderUsersTable([]);
                     return;
                 }
+
+                const userIds = data.map((user) => user.id).filter(Boolean);
+                let namesById = {};
+
+                if (userIds.length > 0) {
+                    const { data: profileNames, error: namesError } = await supabase
+                        .from('profiles')
+                        .select('id, FName, LName')
+                        .in('id', userIds);
+
+                    if (namesError) {
+                        console.warn('Unable to load user names from profiles:', namesError);
+                    } else {
+                        namesById = (profileNames || []).reduce((accumulator, profile) => {
+                            accumulator[profile.id] = {
+                                FName: profile.FName || '',
+                                LName: profile.LName || ''
+                            };
+                            return accumulator;
+                        }, {});
+                    }
+                }
+
+                const enrichedUsers = data.map((user) => ({
+                    ...user,
+                    FName: namesById[user.id]?.FName || '',
+                    LName: namesById[user.id]?.LName || ''
+                }));
+
                 // Sort by role priority: super > admin > user
-                allUsersData = data.sort((a, b) => {
+                allUsersData = enrichedUsers.sort((a, b) => {
                     const priorityDiff = getRolePriority(b.role) - getRolePriority(a.role);
                     if (priorityDiff !== 0) return priorityDiff;
                     // If same role, sort by email
@@ -2888,7 +3157,7 @@
                 const usersBody = document.getElementById('users-body');
                 const usersStatus = document.getElementById('users-status');
                 if (usersBody) {
-                    usersBody.innerHTML = '<tr><td colspan="5">Error loading users.</td></tr>';
+                    usersBody.innerHTML = '<tr><td colspan="6">Error loading users.</td></tr>';
                 }
                 if (usersStatus) {
                     usersStatus.textContent = 'Failed to load users.';
@@ -3067,6 +3336,18 @@
                     },
                     (payload) => {
                         console.log('[Realtime] Profile change detected:', payload.eventType, payload);
+                        
+                        // PREVENTIVE MEASURE: Check if currently edited user went online
+                        if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+                            const userWentOnline = payload.old.is_online === false && payload.new.is_online === true;
+                            const isEditingThisUser = window.currentlyEditingUserId === payload.new.id;
+                            
+                            if (userWentOnline && isEditingThisUser) {
+                                console.log('[Realtime] User being edited went online, closing modal');
+                                closeEditUserNameModal();
+                                window.showToast('User went online. Edit modal closed.', 'warning');
+                            }
+                        }
                         
                         // Check if users panel is currently visible
                         const usersPanel = document.getElementById('users-panel');

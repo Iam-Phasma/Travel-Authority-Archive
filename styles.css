@@ -640,7 +640,11 @@ button:hover {
 }
 
 .status--error {
-    color: #a1251b;
+    color: #a1251b !important;
+}
+
+#edit-user-name-status {
+    margin-top: 16px;
 }
 
 .status--shake {
@@ -1330,6 +1334,18 @@ button:hover {
     background: rgba(255, 213, 0, 0.583);
     transform: none;
     box-shadow: none;
+}
+
+.update-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(15, 26, 31, 0.12);
+    color: rgba(15, 26, 31, 0.45);
+}
+
+.user-edit-tooltip-wrap {
+    display: inline-flex;
+    align-items: center;
 }
 
 .modal {
@@ -2539,8 +2555,17 @@ button:hover {
     border: 1px solid rgba(15, 26, 31, 0.08);
 }
 
+.user-filter-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr)) auto;
+    gap: 16px;
+    width: 100%;
+    align-items: end;
+}
+
 .user-filter-bar .filter-field {
-    max-width: 300px;
+    max-width: none;
+    min-width: 0;
 }
 
 .user-filter-bar .filter-field label {
@@ -2549,6 +2574,15 @@ button:hover {
     font-size: 0.9rem;
     font-weight: 600;
     color: var(--ink);
+}
+
+.user-filter-bar .filter-field select.filter-select {
+    width: 100%;
+}
+
+.user-filter-clear-btn {
+    white-space: nowrap;
+    align-self: end;
 }
 
 .access-select {
@@ -2588,7 +2622,7 @@ button:hover {
 
 /* Users Table Specific Styles */
 .users-panel {
-    width: min(900px, calc(100vw - 36px));
+    width: min(1280px, calc(100vw - 36px));
 }
 
 .users-table-wrap {
@@ -2599,7 +2633,7 @@ button:hover {
 
 .users-table {
     width: 100%;
-    min-width: 700px;
+    min-width: 1020px;
     table-layout: auto;
 }
 
@@ -2610,7 +2644,7 @@ button:hover {
 
 .users-table th:first-child,
 .users-table td:first-child {
-    min-width: 200px;
+    min-width: 210px;
     position: static;
     white-space: nowrap;
     overflow: hidden;
@@ -2619,21 +2653,33 @@ button:hover {
 
 .users-table th:nth-child(2),
 .users-table td:nth-child(2) {
-    width: 150px;
-    text-align: center;
+    min-width: 240px;
+    text-align: left;
     white-space: nowrap;
 }
 
 .users-table th:nth-child(3),
 .users-table td:nth-child(3) {
-    width: 150px;
+    width: 120px;
     text-align: center;
     white-space: nowrap;
 }
 
 .users-table th:nth-child(4),
 .users-table td:nth-child(4) {
-    width: 150px;
+    width: 140px;
+    text-align: center;
+}
+
+.users-table th:nth-child(5),
+.users-table td:nth-child(5) {
+    width: 170px;
+    text-align: center;
+}
+
+.users-table th:nth-child(6),
+.users-table td:nth-child(6) {
+    width: 120px;
     text-align: center;
 }
 
@@ -2663,14 +2709,18 @@ button:hover {
         min-width: 0;
     }
 
-    .user-filter-bar > div {
-        flex-direction: column !important;
-        gap: 12px !important;
+    .user-filter-row {
+        grid-template-columns: 1fr;
+        gap: 12px;
     }
 
     .user-filter-bar .filter-field {
-        width: 100% !important;
-        min-width: 100% !important;
+        width: 100%;
+        min-width: 100%;
+    }
+
+    .user-filter-clear-btn {
+        width: 100%;
     }
 
     .users-table {

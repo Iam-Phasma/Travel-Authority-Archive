@@ -745,6 +745,9 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
 
             const fileUrl = publicUrlData.publicUrl;
 
+            // Mark timestamp BEFORE database operation to suppress own realtime notification
+            window.adminRecentUploadTimestamp = Date.now();
+
             // Use minimal returning: some RLS setups allow INSERT but prevent RETURNING rows.
             const { error: insertError } = await supabase
                 .from("travel_authorities")

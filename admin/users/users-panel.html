@@ -3,33 +3,33 @@
     <p class="panel-description">Manage user accounts and roles. Only super users can modify user roles.</p>
     
     <div class="user-filter-bar">
-        <div style="display: flex; gap: 1rem; width: 100%; align-items: flex-end;">
-            <div class="filter-field" style="flex: 1; min-width: 120px;">
+        <div class="user-filter-row">
+            <div class="filter-field">
                 <label for="users-role-filter">Role</label>
-                <select id="users-role-filter" class="filter-select" style="width: 100%;">
+                <select id="users-role-filter" class="filter-select">
                     <option value="">All Roles</option>
                     <option value="super">Super</option>
                     <option value="admin">Admin</option>
                     <option value="user">User</option>
                 </select>
             </div>
-            <div class="filter-field" style="flex: 1; min-width: 120px;">
+            <div class="filter-field">
                 <label for="users-access-filter">Access</label>
-                <select id="users-access-filter" class="filter-select" style="width: 100%;">
+                <select id="users-access-filter" class="filter-select">
                     <option value="">All Access</option>
                     <option value="enabled">Enabled</option>
                     <option value="disabled">Disabled</option>
                 </select>
             </div>
-            <div class="filter-field" style="flex: 1; min-width: 120px;">
+            <div class="filter-field">
                 <label for="users-status-filter">Status</label>
-                <select id="users-status-filter" class="filter-select" style="width: 100%;">
+                <select id="users-status-filter" class="filter-select">
                     <option value="">All Status</option>
                     <option value="online">Online</option>
                     <option value="offline">Offline</option>
                 </select>
             </div>
-            <button id="clear-filters-btn" class="filter-btn clear-btn" type="button" title="Clear all filters">
+            <button id="clear-filters-btn" class="filter-btn clear-btn user-filter-clear-btn" type="button" title="Clear all filters">
                 Clear
             </button>
         </div>
@@ -39,15 +39,17 @@
         <table class="data-table users-table">
             <thead>
                 <tr>
+                    <th scope="col" class="text-left">Name</th>
                     <th scope="col" class="text-left">Email</th>
                     <th scope="col">Status</th>
                     <th scope="col">Access</th>
                     <th scope="col">Change Role</th>
+                    <th scope="col">Actions</th>
                 </tr>
             </thead>
             <tbody id="users-body">
                 <tr>
-                    <td colspan="5">Loading users...</td>
+                    <td colspan="6">Loading users...</td>
                 </tr>
             </tbody>
         </table>
@@ -56,3 +58,24 @@
         <span class="status" id="users-status">Manage user roles and permissions.</span>
     </div>
 </section>
+
+<div id="edit-user-name-modal" class="modal">
+    <div class="modal-content modal-form">
+        <h3>Edit User Name</h3>
+        <div class="fields">
+            <div>
+                <label for="edit-user-fname">First Name</label>
+                <input id="edit-user-fname" type="text" maxlength="60" placeholder="Enter first name" autocomplete="off">
+            </div>
+            <div>
+                <label for="edit-user-lname">Last Name</label>
+                <input id="edit-user-lname" type="text" maxlength="60" placeholder="Enter last name" autocomplete="off">
+            </div>
+        </div>
+        <p id="edit-user-name-status" class="status hidden"></p>
+        <div class="modal-actions">
+            <button class="modal-btn cancel" id="cancel-edit-user-name" type="button">Cancel</button>
+            <button class="modal-btn confirm" id="confirm-edit-user-name" type="button">Save</button>
+        </div>
+    </div>
+</div>
