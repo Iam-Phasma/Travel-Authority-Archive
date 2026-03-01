@@ -271,7 +271,6 @@
                             filter: `id=eq.${user.id}`
                         },
                         (payload) => {
-                            console.log('[Realtime] Profile change detected:', payload);
                             
                             // Check if access was disabled
                             if (payload.new && payload.new.access_enabled === false) {
@@ -295,9 +294,7 @@
                             }
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('[Realtime] Access monitoring status:', status);
-                    });
+                    .subscribe((status) => {});
             } catch (err) {
                 console.error("Error setting up access monitoring:", err);
             }
@@ -1101,14 +1098,11 @@
                         table: 'employee_list'
                     },
                     (payload) => {
-                        console.log('[Realtime] Employee change detected in dashboard:', payload.eventType);
                         // Silently refresh the employee filter dropdown
                         loadEmployeesForFilter();
                     }
                 )
-                .subscribe((status) => {
-                    console.log('[Realtime] Dashboard employee subscription status:', status);
-                });
+                .subscribe((status) => {});
         };
 
         // Initialize employee realtime subscription
@@ -1354,8 +1348,6 @@
                         table: 'travel_authorities'
                     },
                     (payload) => {
-                        console.log('[Realtime] Change detected:', payload.eventType, payload);
-                        
                         // Check if this is a demo file - suppress toast for regular users
                         let isDemo = false;
                         let changedToDemo = false;
@@ -1373,7 +1365,6 @@
                         // Don't show toast for demo files on dashboard (regular users)
                         // EXCEPT when a file was just updated to demo status (admin forgot to mark it initially)
                         if (isDemo && !changedToDemo) {
-                            console.log('[Realtime] Suppressing notification - demo file change');
                             return;
                         }
                         
@@ -1398,9 +1389,7 @@
                         showToast(`${message} - Click Reload to refresh`, 'info', 30000);
                     }
                 )
-                .subscribe((status) => {
-                    console.log('[Realtime] Subscription status:', status);
-                });
+                .subscribe((status) => {});
         };
 
         // Initialize realtime subscription

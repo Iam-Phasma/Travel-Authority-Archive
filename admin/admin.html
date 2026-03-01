@@ -216,7 +216,6 @@
                             filter: `id=eq.${user.id}`
                         },
                         (payload) => {
-                            console.log('[Realtime] Admin profile change detected:', payload);
                             
                             // Check if access was disabled
                             if (payload.new && payload.new.access_enabled === false) {
@@ -233,9 +232,7 @@
                             }
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('[Realtime] Admin access monitoring status:', status);
-                    });
+                    .subscribe((status) => {});
             } catch (err) {
                 console.error("Error setting up admin access monitoring:", err);
             }
@@ -269,7 +266,6 @@
                             filter: `id=eq.${user.id}`
                         },
                         async (payload) => {
-                            console.log('[Realtime] Session change detected:', payload);
                             
                             // Check if session_token changed
                             if (payload.new && payload.old && 
@@ -294,9 +290,7 @@
                             }
                         }
                     )
-                    .subscribe((status) => {
-                        console.log('[Realtime] Session monitoring status:', status);
-                    });
+                    .subscribe((status) => {});
 
                 // Initial check: verify session token is set in database
                 const { data, error } = await supabase
@@ -1767,8 +1761,6 @@
                         table: 'travel_authorities'
                     },
                     (payload) => {
-                        console.log('[Realtime] Change detected:', payload.eventType, payload);
-                        
                         // Check if this is from the admin's own recent action
                         const now = Date.now();
                         const timeSinceUpload = now - window.adminRecentUploadTimestamp;
@@ -1780,7 +1772,6 @@
                         const isOwnDelete = payload.eventType === 'DELETE' && timeSinceDelete < 3000;
                         
                         if (isOwnUpload || isOwnUpdate || isOwnDelete) {
-                            console.log('[Realtime] Suppressing notification - own action detected');
                             return;
                         }
                         
@@ -1806,9 +1797,7 @@
                         showToast(`${message} - Click Reload to refresh`, 'info', 30000);
                     }
                 )
-                .subscribe((status) => {
-                    console.log('[Realtime] Subscription status:', status);
-                });
+                .subscribe((status) => {});
         };
 
         // Initialize realtime subscription
@@ -3335,7 +3324,6 @@
                         table: 'profiles'
                     },
                     (payload) => {
-                        console.log('[Realtime] Profile change detected:', payload.eventType, payload);
                         
                         // PREVENTIVE MEASURE: Check if currently edited user went online
                         if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
@@ -3343,7 +3331,6 @@
                             const isEditingThisUser = window.currentlyEditingUserId === payload.new.id;
                             
                             if (userWentOnline && isEditingThisUser) {
-                                console.log('[Realtime] User being edited went online, closing modal');
                                 closeEditUserNameModal();
                                 window.showToast('User went online. Edit modal closed.', 'warning');
                             }
@@ -3381,9 +3368,7 @@
                         }
                     }
                 )
-                .subscribe((status) => {
-                    console.log('[Realtime] Profiles subscription status:', status);
-                });
+                .subscribe((status) => {});
         };
 
         // Expose for initialization
