@@ -216,12 +216,9 @@
                             filter: `id=eq.${user.id}`
                         },
                         (payload) => {
-                            // Prevent multiple simultaneous logouts
-                            if (logoutInProgress) return;
                             
                             // Check if access was disabled
-                            if (payload.new && payload.old && payload.new.access_enabled === false && payload.old.access_enabled !== false) {
-                                logoutInProgress = true;
+                            if (payload.new && payload.new.access_enabled === false) {
                                 showToast("Access disabled: You have been logged out.", "error");
                                 
                                 // Immediate logout
@@ -252,8 +249,6 @@
         // ⚠️ WARNING: This uses localStorage which users can view/modify via DevTools
         // However, we validate against the database token, so manipulation won't grant access
         // The database session_token field is the source of truth
-        let logoutInProgress = false; // Guard against multiple logout triggers
-        
         const setupSessionMonitoring = async () => {
             try {
                 const { data: sessionData } = await supabase.auth.getSession();
@@ -262,49 +257,6 @@
 
                 const localToken = localStorage.getItem('admin_session_token');
                 if (!localToken) return;
-
-                // Subscribe to changes on current user's session_token
-                const sessionChannel = supabase
-                    .channel('admin_session_monitoring')
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'UPDATE',
-                            schema: 'public',
-                            table: 'profiles',
-                            filter: `id=eq.${user.id}`
-                        },
-                        async (payload) => {
-                            // Prevent multiple simultaneous logouts
-                            if (logoutInProgress) return;
-                            
-                            // Check if session_token changed
-                            if (payload.new && payload.old && 
-                                payload.new.session_token !== payload.old.session_token) {
-                                
-                                const newToken = payload.new.session_token;
-                                
-                                // If the new token doesn't match local token, session was invalidated
-                                if (newToken && newToken !== localToken) {
-                                    logoutInProgress = true;
-                                    showToast("Your session has been invalidated. Logging out...", "warning");
-                                    
-                                    await new Promise(resolve => setTimeout(resolve, 1000));
-                                    
-                                    try {
-                                        await markCurrentUserOffline();
-                                        localStorage.removeItem('admin_session_token');
-                                        localStorage.removeItem('adminActivePanel');
-                                        await supabase.auth.signOut();
-                                    } catch (e) {
-                                        console.warn('Semi-graceful logout:', e);
-                                    }
-                                    window.location.href = '../index.html';
-                                }
-                            }
-                        }
-                    )
-                    .subscribe((status) => {});
 
                 // Initial check: verify session token is set in database
                 const { data, error } = await supabase
@@ -322,7 +274,6 @@
                             .eq("id", user.id);
                     } else if (data.session_token !== localToken) {
                         // Already logged in elsewhere - immediate logout
-                        logoutInProgress = true;
                         showToast("Logged out: Another device logged into this account.", "warning");
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         try {
@@ -2752,6 +2703,7 @@
         let editUserNameData = null;
         let userNameModalHandlersInitialized = false;
         window.currentlyEditingUserId = null; // Track which user is being edited
+        window.currentlyChangingRoleUserId = null; // Track which user's role is being changed
 
         const closeEditUserNameModal = () => {
             const modal = document.getElementById('edit-user-name-modal');
@@ -2932,6 +2884,8 @@
                 const nameDisplay = formatHeaderLikeName(user.FName, user.LName, useCompactName) || fullEmail.split('@')[0] || 'Unknown User';
                 const editDisabledReason = "Can't edit: user is online.";
                 const editTooltip = isOnline ? editDisabledReason : 'Edit user name';
+                const roleDisabledReason = isOnline ? "Can't change role: user is online." : (!accessEnabled ? "Can't change role: access is disabled." : "");
+                const roleTooltip = roleDisabledReason || 'Change user role';
                 return `
                 <tr class="${!accessEnabled ? 'user-disabled' : ''}">
                     <td class="text-left">${escapeHtml(nameDisplay)}</td>
@@ -2944,12 +2898,14 @@
                         </select>
                     </td>
                     <td>
-                        <select class="role-select" data-user-id="${escapeHtml(user.id)}" data-current-role="${escapeHtml(user.role)}" ${!accessEnabled ? 'disabled' : ''}>
-                            <option value="">-- Select Role --</option>
-                            <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
-                            <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
-                            <option value="super" ${user.role === 'super' ? 'selected' : ''}>Super</option>
-                        </select>
+                        <span class="user-edit-tooltip-wrap" title="${escapeHtml(roleTooltip)}">
+                            <select class="role-select" data-user-id="${escapeHtml(user.id)}" data-current-role="${escapeHtml(user.role)}" ${!accessEnabled || isOnline ? 'disabled' : ''}>
+                                <option value="">-- Select Role --</option>
+                                <option value="user" ${user.role === 'user' ? 'selected' : ''}>User</option>
+                                <option value="admin" ${user.role === 'admin' ? 'selected' : ''}>Admin</option>
+                                <option value="super" ${user.role === 'super' ? 'selected' : ''}>Super</option>
+                            </select>
+                        </span>
                     </td>
                     <td>
                         <span class="user-edit-tooltip-wrap" title="${escapeHtml(editTooltip)}">
@@ -2982,11 +2938,18 @@
                         return;
                     }
 
+                    // Track which user's role is being changed
+                    window.currentlyChangingRoleUserId = userId;
+
                     // Confirm role change
                     const confirmChange = await window.adminShowConfirmation(
                         'Confirm Role Change',
                         `Change user role from "${currentRole}" to "${newRole}"?`
                     );
+                    
+                    // Clear tracking variable
+                    window.currentlyChangingRoleUserId = null;
+                    
                     if (!confirmChange) {
                         e.target.value = currentRole; // Reset to original
                         return;
@@ -3185,10 +3148,23 @@
                     usersStatus.classList.remove('status--error');
                 }
 
+                // Double-check user is still offline before changing role
+                const targetUser = allUsersData.find(u => u.id === userId);
+                if (targetUser && targetUser.is_online) {
+                    // User went online between modal confirmation and now - prevent role change
+                    selectElement.value = originalRole; // Revert the select
+                    const errorMessage = 'User went online. Role change cancelled.';
+                    if (usersStatus) {
+                        usersStatus.textContent = errorMessage;
+                        usersStatus.classList.add('status--error');
+                    }
+                    window.showToast(errorMessage, "warning");
+                    return;
+                }
+
                 // Get current logged-in user ID
                 const { data: sessionData } = await supabase.auth.getSession();
                 const currentUserId = sessionData?.session?.user?.id;
-                const isChangingOwnRole = userId === currentUserId;
 
                 // Call server-side RPC function that validates permissions
                 // CRITICAL: This RPC function MUST verify that the calling user is 'super'
@@ -3208,43 +3184,6 @@
                     usersStatus.textContent = 'Role updated successfully';
                 }
                 window.showToast(`Role changed to ${newRole}`, "success");
-                
-                // If user changed their own role, logout after showing success message
-                if (isChangingOwnRole) {
-                    logoutInProgress = true;
-                    setTimeout(async () => {
-                        window.showToast('Your role has changed. Logging out...', "warning");
-                        await new Promise(resolve => setTimeout(resolve, 1500));
-                        await markCurrentUserOffline();
-                        localStorage.removeItem('admin_session_token');
-                        localStorage.removeItem('adminActivePanel');
-                        await supabase.auth.signOut();
-                        window.location.href = '../index.html';
-                    }, 1000);
-                    return;
-                }
-                
-                // For other users, invalidate their session token to force logout via realtime
-                // This works for all users (regular, admin, super) whose role changed
-                try {
-                    const newSessionToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                    const { error: updateError } = await supabase
-                        .from('profiles')
-                        .update({ session_token: newSessionToken })
-                        .eq('id', userId);
-                    
-                    if (!updateError) {
-                        // Check if this was a promotion from regular user to admin/super
-                        const originalRole = selectElement.getAttribute('data-current-role');
-                        if (originalRole === 'user' && (newRole === 'admin' || newRole === 'super')) {
-                            window.showToast(`User promoted to ${newRole}. Will be logged out to apply new permissions.`, "info");
-                        } else {
-                            window.showToast(`User will be logged out to apply role change`, "info");
-                        }
-                    }
-                } catch (err) {
-                    console.error('Failed to invalidate user session:', err);
-                }
                 
                 // Reload users to refresh the display
                 await loadUsers();
@@ -3373,10 +3312,22 @@
                         if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
                             const userWentOnline = payload.old.is_online === false && payload.new.is_online === true;
                             const isEditingThisUser = window.currentlyEditingUserId === payload.new.id;
+                            const isChangingRoleForThisUser = window.currentlyChangingRoleUserId === payload.new.id;
                             
                             if (userWentOnline && isEditingThisUser) {
                                 closeEditUserNameModal();
                                 window.showToast('User went online. Edit modal closed.', 'warning');
+                            }
+                            
+                            if (userWentOnline && isChangingRoleForThisUser) {
+                                // Close confirmation modal if user went online during role change
+                                const confirmModal = document.getElementById('admin-confirm-modal');
+                                const cancelBtn = document.getElementById('admin-confirm-cancel-btn');
+                                if (confirmModal && confirmModal.classList.contains('active')) {
+                                    confirmModal.classList.remove('active');
+                                    window.currentlyChangingRoleUserId = null;
+                                    window.showToast('User went online. Role change cancelled.', 'warning');
+                                }
                             }
                         }
                         
