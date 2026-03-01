@@ -3204,6 +3204,20 @@
                     return;
                 }
                 
+                // For other users, invalidate their session token to trigger auto-logout via realtime
+                // This will cause them to logout automatically if they are online
+                const newSessionToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ session_token: newSessionToken })
+                    .eq('id', userId);
+                
+                if (updateError) {
+                    console.error('Failed to invalidate user session:', updateError);
+                } else {
+                    window.showToast(`${newRole} will be logged out to apply role change`, "info");
+                }
+                
                 // Reload users to refresh the display
                 await loadUsers();
 

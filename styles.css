@@ -2736,9 +2736,8 @@ button:hover {
     .users-table th:first-child,
     .users-table td:first-child {
         min-width: 150px;
-        max-width: 200px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        word-wrap: break-word;
+        white-space: normal;
     }
 }
 
@@ -2761,9 +2760,8 @@ button:hover {
     .users-table th:first-child,
     .users-table td:first-child {
         min-width: 120px;
-        max-width: 160px;
-        overflow: hidden;
-        text-overflow: ellipsis;
+        word-wrap: break-word;
+        white-space: normal;
     }
 
     .users-table th:nth-child(2),
