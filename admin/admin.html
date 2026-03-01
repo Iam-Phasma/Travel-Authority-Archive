@@ -2635,14 +2635,16 @@
         
         // Load saved state from localStorage
         const savedAutoClearState = localStorage.getItem("autoClearFields");
-        if (savedAutoClearState === "true") {
+        if (autoClearCheckbox && savedAutoClearState === "true") {
             autoClearCheckbox.checked = true;
         }
         
         // Save state when checkbox changes
-        autoClearCheckbox.addEventListener("change", () => {
-            localStorage.setItem("autoClearFields", autoClearCheckbox.checked.toString());
-        });
+        if (autoClearCheckbox) {
+            autoClearCheckbox.addEventListener("change", () => {
+                localStorage.setItem("autoClearFields", autoClearCheckbox.checked.toString());
+            });
+        }
 
         // Load employees for admin filter (must be called inside viewPanelLoaded scope)
         // Load saved filters and sort from localStorage
@@ -3465,10 +3467,9 @@
 
         // Preload travel authorities data in the background for faster first load
         Promise.all([employeePanelLoaded, usersPanelLoaded, uploadPanelLoaded]).then(() => {
-            // Preload data if not already loaded
-            if (viewRows.length === 0) {
+            if (typeof loadTravelAuthorities === "function") {
                 loadTravelAuthorities(true).catch(err => {
-                    console.log("Background preload of travel authorities failed:", err);
+                    console.warn("Background preload of travel authorities failed:", err);
                 });
             }
         });

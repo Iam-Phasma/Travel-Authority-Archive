@@ -652,8 +652,6 @@ window.initEmployeeManagement = (supabase) => {
                     table: 'employee_list'
                 },
                 (payload) => {
-                    console.log('[Realtime] Employee change detected:', payload.eventType, payload);
-                    
                     // Refresh the employee table
                     renderEmployeeList();
                     
@@ -688,9 +686,7 @@ window.initEmployeeManagement = (supabase) => {
                     showToast(message, 'success', 3000);
                 }
             )
-            .subscribe((status) => {
-                console.log('[Realtime] Employee subscription status:', status);
-            });
+            .subscribe((status) => {});
     };
 
     // Initialize realtime subscription
