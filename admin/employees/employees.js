@@ -632,4 +632,67 @@ window.initEmployeeManagement = (supabase) => {
 
     // Expose renderEmployeeList to window for panel switching
     window.employeeRenderList = renderEmployeeList;
+
+    // Realtime subscription for employee_list changes
+    let employeeRealtimeChannel = null;
+    const setupEmployeeRealtimeSubscription = () => {
+        // Clean up existing subscription if any
+        if (employeeRealtimeChannel) {
+            supabase.removeChannel(employeeRealtimeChannel);
+        }
+
+        // Subscribe to all changes (INSERT, UPDATE, DELETE) on employee_list table
+        employeeRealtimeChannel = supabase
+            .channel('employee_list_admin_changes')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*', // Listen to all events
+                    schema: 'public',
+                    table: 'employee_list'
+                },
+                (payload) => {
+                    console.log('[Realtime] Employee change detected:', payload.eventType, payload);
+                    
+                    // Refresh the employee table
+                    renderEmployeeList();
+                    
+                    // Refresh upload multi-select dropdowns
+                    if (window.adminLoadEmployees) {
+                        window.adminLoadEmployees();
+                    }
+                    
+                    // Refresh admin view filter dropdown
+                    if (window.adminLoadEmployeesForFilter) {
+                        window.adminLoadEmployeesForFilter();
+                    }
+                    
+                    // Show toast notification with employee name
+                    let message = '';
+                    let employeeName = '';
+                    
+                    switch(payload.eventType) {
+                        case 'INSERT':
+                            employeeName = payload.new?.name || 'Official';
+                            message = `${employeeName} has been added to officials`;
+                            break;
+                        case 'UPDATE':
+                            employeeName = payload.new?.name || payload.old?.name || 'Official';
+                            message = `${employeeName} has been updated in officials`;
+                            break;
+                        case 'DELETE':
+                            employeeName = payload.old?.name || 'Official';
+                            message = `${employeeName} has been removed from officials`;
+                            break;
+                    }
+                    showToast(message, 'success', 3000);
+                }
+            )
+            .subscribe((status) => {
+                console.log('[Realtime] Employee subscription status:', status);
+            });
+    };
+
+    // Initialize realtime subscription
+    setupEmployeeRealtimeSubscription();
 };

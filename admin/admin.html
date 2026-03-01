@@ -1635,24 +1635,56 @@
             }
         };
 
-        // Poll for new records every 30 seconds
-        const pollForNewData = async () => {
-            if (!latestKnownTimestamp) return;
-            try {
-                const { data } = await supabase
-                    .from("travel_authorities")
-                    .select("created_at")
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .single();
-                const adminRefreshBtnEl = document.getElementById("admin-refresh-btn");
-                if (data && data.created_at > latestKnownTimestamp) {
-                    if (adminRefreshBtnEl) adminRefreshBtnEl.classList.add("has-new-data");
-                    showToast("New updates available - click Reload", "info", 30000);
-                }
-            } catch (e) {}
+        // Realtime subscription for travel_authorities changes
+        let realtimeChannel = null;
+        const setupRealtimeSubscription = () => {
+            // Clean up existing subscription if any
+            if (realtimeChannel) {
+                supabase.removeChannel(realtimeChannel);
+            }
+
+            // Subscribe to all changes (INSERT, UPDATE, DELETE) on travel_authorities table
+            realtimeChannel = supabase
+                .channel('travel_authorities_admin_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // Listen to all events
+                        schema: 'public',
+                        table: 'travel_authorities'
+                    },
+                    (payload) => {
+                        console.log('[Realtime] Change detected:', payload.eventType, payload);
+                        
+                        // Show notification with flashing refresh button
+                        let message = '';
+                        switch(payload.eventType) {
+                            case 'INSERT':
+                                message = 'New record added';
+                                break;
+                            case 'UPDATE':
+                                message = 'Record updated';
+                                break;
+                            case 'DELETE':
+                                message = 'Record deleted';
+                                break;
+                        }
+                        
+                        const adminRefreshBtnEl = document.getElementById("admin-refresh-btn");
+                        if (adminRefreshBtnEl) {
+                            adminRefreshBtnEl.classList.add("has-new-data");
+                        }
+                        
+                        showToast(`${message} - Click Reload to refresh`, 'info', 30000);
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[Realtime] Subscription status:', status);
+                });
         };
-        setInterval(pollForNewData, 30000);
+
+        // Initialize realtime subscription
+        setupRealtimeSubscription();
 
         // Delete modal handlers
         cancelDeleteBtn.addEventListener("click", () => {
@@ -1800,6 +1832,9 @@
                 adminEmployeesListForFilter = [];
             }
         };
+
+        // Expose globally for realtime subscription in employees.js
+        window.adminLoadEmployeesForFilter = loadAdminEmployeesForFilter;
 
         // Populate year filter from available data
         const populateAdminYearFilter = async () => {
@@ -2904,6 +2939,67 @@
             }
         };
 
+        // Realtime subscription for profiles changes (user status, role, access)
+        let profilesRealtimeChannel = null;
+        const setupProfilesRealtimeSubscription = () => {
+            // Clean up existing subscription if any
+            if (profilesRealtimeChannel) {
+                supabase.removeChannel(profilesRealtimeChannel);
+            }
+
+            // Subscribe to all changes (INSERT, UPDATE, DELETE) on profiles table
+            profilesRealtimeChannel = supabase
+                .channel('profiles_admin_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // Listen to all events
+                        schema: 'public',
+                        table: 'profiles'
+                    },
+                    (payload) => {
+                        console.log('[Realtime] Profile change detected:', payload.eventType, payload);
+                        
+                        // Check if users panel is currently visible
+                        const usersPanel = document.getElementById('users-panel');
+                        if (!usersPanel || usersPanel.classList.contains('hidden')) {
+                            // Users panel not visible, don't reload
+                            return;
+                        }
+                        
+                        // Determine what changed
+                        let changeType = '';
+                        if (payload.eventType === 'UPDATE' && payload.new && payload.old) {
+                            if (payload.new.is_online !== payload.old.is_online) {
+                                changeType = 'status';
+                            } else if (payload.new.role !== payload.old.role) {
+                                changeType = 'role';
+                            } else if (payload.new.access_enabled !== payload.old.access_enabled) {
+                                changeType = 'access';
+                            }
+                        }
+                        
+                        // Silently refresh the users table to show updated status/role/access
+                        loadUsers();
+                        
+                        // Optional: Show subtle notification for role/access changes only
+                        // (not for online status changes as those are frequent)
+                        if (changeType === 'role' || changeType === 'access') {
+                            const usersStatus = document.getElementById('users-status');
+                            if (usersStatus) {
+                                usersStatus.textContent = 'User list updated';
+                            }
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[Realtime] Profiles subscription status:', status);
+                });
+        };
+
+        // Expose for initialization
+        window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
+
         // ============================================
         // END USER MANAGEMENT
         // ============================================
@@ -2980,45 +3076,12 @@
                     // Load users for the User Management panel
                     await loadUsers();
                     
-                    // Start auto-refresh for user management panel (every 10 seconds)
-                    let userRefreshInterval = null;
-                    
-                    // Set up interval to refresh users table when panel is visible
-                    const startUserRefresh = () => {
-                        if (userRefreshInterval) return; // Already running
-                        
-                        userRefreshInterval = setInterval(async () => {
-                            // Only refresh if users panel is visible
-                            const usersPanel = document.getElementById('users-panel');
-                            if (usersPanel && !usersPanel.classList.contains('hidden')) {
-                                await loadUsers();
-                            }
-                        }, 10000); // 10 seconds
-                    };
-                    
-                    const stopUserRefresh = () => {
-                        if (userRefreshInterval) {
-                            clearInterval(userRefreshInterval);
-                            userRefreshInterval = null;
-                        }
-                    };
-                    
-                    // Monitor panel visibility
-                    const panelSwitchers = document.querySelectorAll('.switch-btn');
-                    panelSwitchers.forEach(btn => {
-                        btn.addEventListener('click', () => {
-                            const targetPanel = btn.getAttribute('data-panel');
-                            if (targetPanel === 'users-panel') {
-                                startUserRefresh();
-                            } else {
-                                stopUserRefresh();
-                            }
-                        });
-                    });
-                    
-                    // Always start the auto-refresh interval for super users
-                    // The interval itself checks panel visibility before making network calls
-                    startUserRefresh();
+                    // Initialize realtime subscription for profiles
+                    // This will automatically update the users table when:
+                    // - User status changes (online/offline)
+                    // - User role changes
+                    // - User access is enabled/disabled
+                    setupProfilesRealtimeSubscription();
                 });
             }
         })();

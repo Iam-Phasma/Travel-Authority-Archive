@@ -993,6 +993,38 @@
             }
         };
 
+        // Realtime subscription for employee_list changes in dashboard
+        let dashboardEmployeeRealtimeChannel = null;
+        const setupDashboardEmployeeRealtimeSubscription = () => {
+            // Clean up existing subscription if any
+            if (dashboardEmployeeRealtimeChannel) {
+                supabase.removeChannel(dashboardEmployeeRealtimeChannel);
+            }
+
+            // Subscribe to changes on employee_list table
+            dashboardEmployeeRealtimeChannel = supabase
+                .channel('employee_list_dashboard_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // Listen to all events
+                        schema: 'public',
+                        table: 'employee_list'
+                    },
+                    (payload) => {
+                        console.log('[Realtime] Employee change detected in dashboard:', payload.eventType);
+                        // Silently refresh the employee filter dropdown
+                        loadEmployeesForFilter();
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[Realtime] Dashboard employee subscription status:', status);
+                });
+        };
+
+        // Initialize employee realtime subscription
+        setupDashboardEmployeeRealtimeSubscription();
+
         // Populate year filter from available data
         const populateYearFilter = async () => {
             try {
@@ -1214,23 +1246,55 @@
 
         init();
 
-        // Poll for new records every 30 seconds
-        const pollForNewData = async () => {
-            if (!latestKnownTimestamp) return;
-            try {
-                const { data } = await supabase
-                    .from("travel_authorities")
-                    .select("created_at")
-                    .order("created_at", { ascending: false })
-                    .limit(1)
-                    .single();
-                if (data && data.created_at > latestKnownTimestamp) {
-                    if (refreshTableBtn) refreshTableBtn.classList.add("has-new-data");
-                    showToast("New updates available - click Reload", "info", 30000);
-                }
-            } catch (e) {}
+        // Realtime subscription for travel_authorities changes
+        let realtimeChannel = null;
+        const setupRealtimeSubscription = () => {
+            // Clean up existing subscription if any
+            if (realtimeChannel) {
+                supabase.removeChannel(realtimeChannel);
+            }
+
+            // Subscribe to all changes (INSERT, UPDATE, DELETE) on travel_authorities table
+            realtimeChannel = supabase
+                .channel('travel_authorities_dashboard_changes')
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*', // Listen to all events
+                        schema: 'public',
+                        table: 'travel_authorities'
+                    },
+                    (payload) => {
+                        console.log('[Realtime] Change detected:', payload.eventType, payload);
+                        
+                        // Show notification with flashing refresh button
+                        let message = '';
+                        switch(payload.eventType) {
+                            case 'INSERT':
+                                message = 'New record added';
+                                break;
+                            case 'UPDATE':
+                                message = 'Record updated';
+                                break;
+                            case 'DELETE':
+                                message = 'Record deleted';
+                                break;
+                        }
+                        
+                        if (refreshTableBtn) {
+                            refreshTableBtn.classList.add("has-new-data");
+                        }
+                        
+                        showToast(`${message} - Click Reload to refresh`, 'info', 30000);
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[Realtime] Subscription status:', status);
+                });
         };
-        setInterval(pollForNewData, 30000);
+
+        // Initialize realtime subscription
+        setupRealtimeSubscription();
 
         // Prevent browser back/forward navigation
         // This prevents users from accidentally navigating back to login or other pages
