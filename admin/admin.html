@@ -267,6 +267,27 @@
                         },
                         async (payload) => {
                             
+                            // Check if role changed (user was promoted or demoted)
+                            if (payload.new && payload.old && 
+                                payload.new.role !== payload.old.role) {
+                                // Role change detected - logout to apply new permissions
+                                showToast("Your role has been changed. Logging out...", "warning");
+                                
+                                // Give user time to see the toast before redirecting
+                                await new Promise(resolve => setTimeout(resolve, 1500));
+                                
+                                try {
+                                    await markCurrentUserOffline();
+                                    localStorage.removeItem('admin_session_token');
+                                    localStorage.removeItem('adminActivePanel');
+                                    await supabase.auth.signOut();
+                                } catch (e) {
+                                    console.warn('Semi-graceful logout:', e);
+                                }
+                                window.location.href = '../index.html';
+                                return;
+                            }
+                            
                             // Check if session_token changed
                             if (payload.new && payload.old && 
                                 payload.new.session_token !== payload.old.session_token) {
@@ -281,10 +302,14 @@
                                     // Wait 1 second for user to see the toast
                                     await new Promise(resolve => setTimeout(resolve, 1000));
                                     
-                                    await markCurrentUserOffline();
-                                    await supabase.auth.signOut();
-                                    localStorage.removeItem('admin_session_token');
-                                    localStorage.removeItem('adminActivePanel');
+                                    try {
+                                        await markCurrentUserOffline();
+                                        localStorage.removeItem('admin_session_token');
+                                        localStorage.removeItem('adminActivePanel');
+                                        await supabase.auth.signOut();
+                                    } catch (e) {
+                                        console.warn('Semi-graceful logout:', e);
+                                    }
                                     window.location.href = '../index.html';
                                 }
                             }
@@ -3204,18 +3229,26 @@
                     return;
                 }
                 
-                // For other users, invalidate their session token to trigger auto-logout via realtime
-                // This will cause them to logout automatically if they are online
-                const newSessionToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
-                const { error: updateError } = await supabase
-                    .from('profiles')
-                    .update({ session_token: newSessionToken })
-                    .eq('id', userId);
-                
-                if (updateError) {
-                    console.error('Failed to invalidate user session:', updateError);
-                } else {
-                    window.showToast(`${newRole} will be logged out to apply role change`, "info");
+                // For other users, invalidate their session token to force logout via realtime
+                // This works for all users (regular, admin, super) whose role changed
+                try {
+                    const newSessionToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                    const { error: updateError } = await supabase
+                        .from('profiles')
+                        .update({ session_token: newSessionToken })
+                        .eq('id', userId);
+                    
+                    if (!updateError) {
+                        // Check if this was a promotion from regular user to admin/super
+                        const originalRole = selectElement.getAttribute('data-current-role');
+                        if (originalRole === 'user' && (newRole === 'admin' || newRole === 'super')) {
+                            window.showToast(`User promoted to ${newRole}. Will be logged out to apply new permissions.`, "info");
+                        } else {
+                            window.showToast(`User will be logged out to apply role change`, "info");
+                        }
+                    }
+                } catch (err) {
+                    console.error('Failed to invalidate user session:', err);
                 }
                 
                 // Reload users to refresh the display
