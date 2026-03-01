@@ -1356,6 +1356,20 @@
                     (payload) => {
                         console.log('[Realtime] Change detected:', payload.eventType, payload);
                         
+                        // Check if this is a demo file - suppress toast for regular users
+                        let isDemo = false;
+                        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+                            isDemo = payload.new?.is_demo === true;
+                        } else if (payload.eventType === 'DELETE') {
+                            isDemo = payload.old?.is_demo === true;
+                        }
+                        
+                        // Don't show toast for demo files on dashboard (regular users)
+                        if (isDemo) {
+                            console.log('[Realtime] Suppressing notification - demo file change');
+                            return;
+                        }
+                        
                         // Show notification with flashing refresh button
                         let message = '';
                         switch(payload.eventType) {
