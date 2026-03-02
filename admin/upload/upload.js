@@ -26,6 +26,7 @@ const trackImagePresetUse = (presetName) => {
  * @returns {Promise<Blob>} A compressed JPEG blob
  */
 const compressImageForPdf = async (file) => {
+    console.log('compressImageForPdf called');
     const TARGET_IMAGE_SIZE_KB = 100;
     const READABLE_FALLBACK_MAX_KB = 35;
     const compressionPresets = [
@@ -379,6 +380,7 @@ window.prepareFileForStorage = async (file, taNumber) => {
 
 // Validate and process files (PDF and/or images combined)
 window.validateAndProcessFiles = async (fileInput, taNumber) => {
+    console.log('validateAndProcessFiles called');
     window.__uploadCompressionRun = {
         pdfPreset: '',
         imagePresetCounts: {},

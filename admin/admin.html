@@ -1258,14 +1258,23 @@
             const safeFileUrl = safeUrl(fileUrl);
             if (safeFileUrl === '#') return;
 
+            // Detect if on mobile
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
             if (!isGzipFileLink(safeFileUrl, fileName)) {
-                window.open(safeFileUrl, '_blank', 'noopener');
+                if (isMobile) {
+                    // Mobile: trigger download instead of window.open
+                    triggerDownload(safeFileUrl, fileName);
+                } else {
+                    // Desktop: open in new tab
+                    window.open(safeFileUrl, '_blank', 'noopener');
+                }
                 return;
             }
 
             if (typeof DecompressionStream !== 'function') {
-                showToast('This browser cannot open compressed files directly. Please update your browser.', 'warning', 4500);
-                window.open(safeFileUrl, '_blank', 'noopener');
+                showToast('This browser cannot open compressed files directly. Download will be triggered instead.', 'warning', 4500);
+                triggerDownload(safeFileUrl, fileName);
                 return;
             }
 
@@ -1282,13 +1291,43 @@
                 const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
 
                 const objectUrl = URL.createObjectURL(rebuiltBlob);
-                window.open(objectUrl, '_blank', 'noopener');
-                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+                
+                if (isMobile) {
+                    // Mobile: trigger download for blob URL
+                    triggerDownloadFromBlob(objectUrl, fileName);
+                    setTimeout(() => URL.revokeObjectURL(objectUrl), 5000);
+                } else {
+                    // Desktop: open in new tab
+                    window.open(objectUrl, '_blank', 'noopener');
+                    setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+                }
             } catch (error) {
                 console.error('Failed to reconstruct compressed file:', error);
-                showToast('Could not open compressed file. Opening original link instead.', 'warning', 3500);
-                window.open(safeFileUrl, '_blank', 'noopener');
+                showToast('Could not open compressed file. Download will be triggered instead.', 'warning', 3500);
+                triggerDownload(safeFileUrl, fileName);
             }
+        };
+
+        // Helper function to trigger file download
+        const triggerDownload = (url, fileName) => {
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName || 'download';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+
+        // Helper function to trigger download from blob URL
+        const triggerDownloadFromBlob = (blobUrl, fileName) => {
+            const link = document.createElement('a');
+            link.href = blobUrl;
+            link.download = fileName || 'download';
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         };
 
         // Show confirmation modal and return a Promise
@@ -1603,57 +1642,103 @@
                 });
             });
 
-            document.getElementById("view-edit-btn").addEventListener("click", () => {
-                const recordId = document.getElementById("view-edit-btn")._currentRecordId;
-                const record = recordCache.get(recordId);
-                if (!recordId || !record) return;
+            document.querySelectorAll(".update-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    const row = e.target.closest("tr");
+                    if (!row) return;
+                    const recordId = (row.getAttribute("data-id") || "").trim();
+                    const record = recordCache.get(recordId);
+                    if (!recordId || !record) return;
 
-                viewModal.classList.remove("show");
+                    updateRecordData = {
+                        id: recordId,
+                        file_url: record.file_url || "",
+                        file_name: record.file_name || "",
+                        ta_number: record.ta_number || "",
+                        purpose: record.purpose || "",
+                        destination: record.destination || "",
+                        employees: record.employees || "",
+                        travel_date: record.travel_date || "",
+                        travel_until: record.travel_until || "",
+                        is_demo: record.is_demo || false
+                    };
 
-                updateRecordData = {
-                    id: recordId,
-                    file_url: record.file_url || "",
-                    file_name: record.file_name || "",
-                    ta_number: record.ta_number || "",
-                    purpose: record.purpose || "",
-                    destination: record.destination || "",
-                    employees: record.employees || "",
-                    travel_date: record.travel_date || "",
-                    travel_until: record.travel_until || "",
-                    is_demo: record.is_demo || false
-                };
+                    updateTaInput.value = record.ta_number || "";
+                    updatePurposeInput.value = record.purpose || "";
+                    updateDestinationInput.value = record.destination || "";
+                    updateTravelDateInput.value = record.travel_date || "";
+                    updateTravelUntilInput.value = record.travel_until || "";
+                    updateScanFileInput.value = "";
+                    if (updateIsDemoCheckbox) updateIsDemoCheckbox.checked = record.is_demo || false;
 
-                updateTaInput.value = record.ta_number || "";
-                updatePurposeInput.value = record.purpose || "";
-                updateDestinationInput.value = record.destination || "";
-                updateTravelDateInput.value = record.travel_date || "";
-                updateTravelUntilInput.value = record.travel_until || "";
-                updateScanFileInput.value = "";
-                if (updateIsDemoCheckbox) updateIsDemoCheckbox.checked = record.is_demo || false;
+                    updateSelectedEmployees.length = 0;
+                    if (record.employees) {
+                        const employeeNames = parseEmployeeNames(record.employees);
+                        updateSelectedEmployees.push(...employeeNames);
+                    }
+                    updateEmployeesMultiSelect.updateDisplay();
+                    updateEmployeesMultiSelect.renderOptions();
 
-                updateSelectedEmployees.length = 0;
-                if (record.employees) {
-                    const employeeNames = parseEmployeeNames(record.employees);
-                    updateSelectedEmployees.push(...employeeNames);
-                }
-                updateEmployeesMultiSelect.updateDisplay();
-                updateEmployeesMultiSelect.renderOptions();
+                    updateStatus.textContent = "";
+                    updateStatus.classList.remove("status--error");
+                    updateStatus.classList.add("hidden");
 
-                updateStatus.textContent = "";
-                updateStatus.classList.remove("status--error");
-                updateStatus.classList.add("hidden");
-
-                updateModal.classList.add("show");
-            });
-
-            viewFileLink.addEventListener('click', async (e) => {
-                e.preventDefault();
-                const fileUrl = viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '';
-                const fileName = viewFileLink.dataset.fileName || viewFileLink.textContent || 'Open file';
-                if (!fileUrl || fileUrl === '#') return;
-                await openStoredFile(fileUrl, fileName);
+                    updateModal.classList.add("show");
+                });
             });
         };
+
+        // Set up modal event listeners (only once, not on every render)
+        viewFileLink.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const fileUrl = viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '';
+            const fileName = viewFileLink.dataset.fileName || viewFileLink.textContent || 'Open file';
+            if (!fileUrl || fileUrl === '#') return;
+            await openStoredFile(fileUrl, fileName);
+        });
+
+        document.getElementById("view-edit-btn").addEventListener("click", () => {
+            const recordId = document.getElementById("view-edit-btn")._currentRecordId;
+            const record = recordCache.get(recordId);
+            if (!recordId || !record) return;
+
+            viewModal.classList.remove("show");
+
+            updateRecordData = {
+                id: recordId,
+                file_url: record.file_url || "",
+                file_name: record.file_name || "",
+                ta_number: record.ta_number || "",
+                purpose: record.purpose || "",
+                destination: record.destination || "",
+                employees: record.employees || "",
+                travel_date: record.travel_date || "",
+                travel_until: record.travel_until || "",
+                is_demo: record.is_demo || false
+            };
+
+            updateTaInput.value = record.ta_number || "";
+            updatePurposeInput.value = record.purpose || "";
+            updateDestinationInput.value = record.destination || "";
+            updateTravelDateInput.value = record.travel_date || "";
+            updateTravelUntilInput.value = record.travel_until || "";
+            updateScanFileInput.value = "";
+            if (updateIsDemoCheckbox) updateIsDemoCheckbox.checked = record.is_demo || false;
+
+            updateSelectedEmployees.length = 0;
+            if (record.employees) {
+                const employeeNames = parseEmployeeNames(record.employees);
+                updateSelectedEmployees.push(...employeeNames);
+            }
+            updateEmployeesMultiSelect.updateDisplay();
+            updateEmployeesMultiSelect.renderOptions();
+
+            updateStatus.textContent = "";
+            updateStatus.classList.remove("status--error");
+            updateStatus.classList.add("hidden");
+
+            updateModal.classList.add("show");
+        });
 
         const updateViewFooter = () => {
             const filteredCount = applyAdminClientFilters(viewRows).length;
