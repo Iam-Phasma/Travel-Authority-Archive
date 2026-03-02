@@ -1148,7 +1148,7 @@
             employee: "",
             year: currentYear,
             travelDate: "",
-            matchAll: false
+            matchAll: true
         };
         let adminActiveSort = {
             by: "",
@@ -1198,8 +1198,8 @@
             const isFilterActive = adminActiveFilters.taNumber || 
                 adminActiveFilters.employee || 
                 (adminActiveFilters.year && adminActiveFilters.year !== new Date().getFullYear().toString()) || 
-                adminActiveFilters.travelDate || 
-                adminActiveFilters.matchAll;
+                adminActiveFilters.travelDate ||
+                adminActiveFilters.matchAll === false;
             
             // Check if sort is active
             const isSortActive = adminActiveSort.by !== "";
@@ -2063,12 +2063,12 @@
             adminActiveFilters.employee = "";
             adminActiveFilters.year = "";
             adminActiveFilters.travelDate = "";
-            adminActiveFilters.matchAll = false;
+            adminActiveFilters.matchAll = true;
             adminFilterTaNumberInput.value = "";
             adminFilterEmployeeSelect.value = "";
             adminFilterYearSelect.value = "";
             adminFilterTravelDateInput.value = "";
-            adminFilterMatchAllCheckbox.checked = false;
+            adminFilterMatchAllCheckbox.checked = true;
             saveAdminFiltersToStorage();
             updateAdminButtonStates();
             renderViewRows(viewRows);
@@ -2677,7 +2677,7 @@
         if (adminFilterEmployeeSelect) adminFilterEmployeeSelect.value = adminActiveFilters.employee || "";
         if (adminFilterYearSelect) adminFilterYearSelect.value = adminActiveFilters.year || "";
         if (adminFilterTravelDateInput) adminFilterTravelDateInput.value = adminActiveFilters.travelDate || "";
-        if (adminFilterMatchAllCheckbox) adminFilterMatchAllCheckbox.checked = adminActiveFilters.matchAll || false;
+        if (adminFilterMatchAllCheckbox) adminFilterMatchAllCheckbox.checked = adminActiveFilters.matchAll !== undefined ? adminActiveFilters.matchAll : true;
         
         if (adminSortBySelect) adminSortBySelect.value = adminActiveSort.by || "ta";
         if (adminSortOrderSelect) adminSortOrderSelect.value = adminActiveSort.order || "asc";

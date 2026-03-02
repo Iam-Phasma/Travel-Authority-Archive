@@ -568,7 +568,7 @@
             employee: "",
             year: currentYear,
             travelDate: "",
-            matchAll: false
+            matchAll: true
         };
         let activeSort = {
             by: "",
@@ -617,8 +617,8 @@
             const isFilterActive = activeFilters.taNumber || 
                 activeFilters.employee || 
                 (activeFilters.year && activeFilters.year !== new Date().getFullYear().toString()) || 
-                activeFilters.travelDate || 
-                activeFilters.matchAll;
+                activeFilters.travelDate ||
+                activeFilters.matchAll === false;
             
             // Check if sort is active
             const isSortActive = activeSort.by !== "";
@@ -1200,12 +1200,12 @@
             activeFilters.employee = "";
             activeFilters.year = "";
             activeFilters.travelDate = "";
-            activeFilters.matchAll = false;
+            activeFilters.matchAll = true;
             filterTaNumberInput.value = "";
             filterEmployeeSelect.value = "";
             filterYearSelect.value = "";
             filterTravelDateInput.value = "";
-            filterMatchAllCheckbox.checked = false;
+            filterMatchAllCheckbox.checked = true;
             saveFiltersToStorage();
             updateButtonStates();
             renderRows(taRows);
@@ -1267,7 +1267,7 @@
             if (filterEmployeeSelect) filterEmployeeSelect.value = activeFilters.employee || "";
             if (filterYearSelect) filterYearSelect.value = activeFilters.year || "";
             if (filterTravelDateInput) filterTravelDateInput.value = activeFilters.travelDate || "";
-            if (filterMatchAllCheckbox) filterMatchAllCheckbox.checked = activeFilters.matchAll || false;
+            if (filterMatchAllCheckbox) filterMatchAllCheckbox.checked = activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;
             
             if (sortBySelect) sortBySelect.value = activeSort.by || "ta";
             if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "asc";
