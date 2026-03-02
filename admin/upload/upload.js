@@ -21,12 +21,12 @@ const trackImagePresetUse = (presetName) => {
 
 /**
  * Compress an image file using adaptive presets before embedding in a PDF.
- * Targets image payload around ~10KB while preserving readability first.
+ * Targets image payload around ~100KB while preserving readability first.
  * @param {File|Blob} file - The source image file (JPEG, PNG, etc.)
  * @returns {Promise<Blob>} A compressed JPEG blob
  */
 const compressImageForPdf = async (file) => {
-    const TARGET_IMAGE_SIZE_KB = 10;
+    const TARGET_IMAGE_SIZE_KB = 100;
     const READABLE_FALLBACK_MAX_KB = 35;
     const compressionPresets = [
         { maxDimension: 1800, jpegQuality: 0.82, name: 'Image High' },
