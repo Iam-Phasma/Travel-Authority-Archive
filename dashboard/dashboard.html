@@ -741,34 +741,37 @@
             const safeFileUrl = safeUrl(fileUrl);
             if (safeFileUrl === '#') return;
 
-            if (!isGzipFileLink(safeFileUrl, fileName)) {
-                window.open(safeFileUrl, '_blank', 'noopener');
-                return;
-            }
+            // Check if browser supports DecompressionStream (most modern desktop browsers)
+            const supportsDecompression = typeof DecompressionStream === 'function';
+            const isCompressed = isGzipFileLink(safeFileUrl, fileName);
 
-            if (typeof DecompressionStream !== 'function') {
-                window.open(safeFileUrl, '_blank', 'noopener');
-                return;
-            }
+            // If compressed and browser supports decompression, decompress before opening
+            if (isCompressed && supportsDecompression) {
+                try {
+                    const response = await fetch(safeFileUrl, { cache: 'no-store' });
+                    if (!response.ok || !response.body) {
+                        throw new Error(`Download failed (${response.status})`);
+                    }
 
-            try {
-                const response = await fetch(safeFileUrl, { cache: 'no-store' });
-                if (!response.ok || !response.body) {
-                    throw new Error(`Download failed (${response.status})`);
+                    const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
+                    const decompressedBlob = await new Response(decompressedStream).blob();
+                    const mimeType = getReconstructedMimeType(fileName);
+                    const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+
+                    const objectUrl = URL.createObjectURL(rebuiltBlob);
+                    window.location.href = objectUrl;
+                    
+                    setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+                    return;
+                } catch (error) {
+                    console.error('Failed to decompress file:', error);
+                    // Fall through to opening the URL directly
                 }
-
-                const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
-                const decompressedBlob = await new Response(decompressedStream).blob();
-                const mimeType = getReconstructedMimeType(fileName);
-                const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
-
-                const objectUrl = URL.createObjectURL(rebuiltBlob);
-                window.open(objectUrl, '_blank', 'noopener');
-                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
-            } catch (error) {
-                console.error('Failed to reconstruct compressed file:', error);
-                window.open(safeFileUrl, '_blank', 'noopener');
             }
+
+            // For non-compressed files or when decompression not supported/failed:
+            // Just open the file URL directly in the same tab
+            window.location.href = safeFileUrl;
         };
         const viewModal = document.getElementById("view-modal");
         const closeViewBtn = document.getElementById("close-view");
