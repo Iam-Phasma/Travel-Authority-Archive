@@ -103,7 +103,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="../pdf-generator/ta-generator.js"></script>
+    <script src="../pdf-generator/ta-generator.js?v=20260313-7"></script>
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
     <script type="module">
@@ -831,9 +831,10 @@
 
                     // Prepare officials data with positions
                     const officialsData = headerDraftSelectedEmployees.map(name => {
-                        const employee = employeesList.find(emp => emp.name === name);
+                        const cleanName = String(name || '').trim();
+                        const employee = employeesList.find(emp => String(emp.name || '').trim() === cleanName);
                         return {
-                            name: name,
+                            name: cleanName,
                             position: employee ? employee.position : ''
                         };
                     });

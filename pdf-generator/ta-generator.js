@@ -10,16 +10,35 @@ const generateTAPDF = (formData) => {
     // Constants
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 15;
+    const margin = 10;
     const contentWidth = pageWidth - (2 * margin);
     
     // Column positions for section 2
     const officeCol = margin + 2;
-    const destinationCol = margin + 45;
-    const periodCol = margin + 110;
+    const nameTitleX = margin + 2;
+    const approvedByName = 'DR. ROGELIO T. GALERA JR., CESO III';
     
     // Master right-column divider X — all right-side vertical lines align here
-    const rightDivX = periodCol - 2; // = margin + 108
+    // Shifted further right (per requested alignment), while preserving Approved-by single-line fit
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    const approvedByNameWidth = doc.getTextWidth(approvedByName);
+    const minApprovedByColWidth = approvedByNameWidth + 4;
+    const defaultRightDivX = margin + 116;
+    let rightDivX = defaultRightDivX;
+    const maxRightDivXForApprovedBy = pageWidth - margin - minApprovedByColWidth;
+    if (rightDivX > maxRightDivXForApprovedBy) {
+        rightDivX = maxRightDivXForApprovedBy;
+    }
+
+    const periodCol = rightDivX + 2;
+
+    // Align Office/Destination divider with Transportation|Travel Allowance divider
+    const officeDestinationDivX = margin + ((rightDivX - margin) / 2);
+    const destinationCol = officeDestinationDivX + 2;
+
+    // Shared right-side alignment anchor for TA number and checkbox columns
+    const rightPanelAlignX = rightDivX + 14;
 
     // Generate TA Number (Year-Month-)
     const today = new Date();
@@ -42,7 +61,7 @@ const generateTAPDF = (formData) => {
 
     // TA Number (left-aligned for handwritten completion)
     doc.setFontSize(9);
-    doc.text(`No. ${taNumber}`, pageWidth - 80, 40);
+    doc.text(`No. ${taNumber}`, rightPanelAlignX, 40);
 
     // Title
     doc.setFontSize(12);
@@ -50,7 +69,7 @@ const generateTAPDF = (formData) => {
     doc.text('AUTHORITY TO TRAVEL', pageWidth / 2, 50, { align: 'center' });
 
     let yPos = 60;
-    const borderTop = 55;
+    const borderTop = 10;
 
     // Section 1: Name of Officials/Employees and Position
     doc.setLineWidth(0.3);
@@ -60,7 +79,7 @@ const generateTAPDF = (formData) => {
     yPos += 5;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text('Name of Officials/Employees:', margin + 2, yPos);
+    doc.text('Name of Officials/Employees:', nameTitleX, yPos);
     doc.text('Position:', rightDivX + 5, yPos);
     
     yPos += 5;
@@ -68,7 +87,8 @@ const generateTAPDF = (formData) => {
     
     // Display officials and positions
     formData.officials.forEach((official, index) => {
-        doc.text(official.name, margin + 10, yPos);
+        const officialName = String(official.name || '').trim();
+        doc.text(officialName, nameTitleX, yPos);
         if (official.position) {
             doc.text(official.position, rightDivX + 5, yPos);
         }
@@ -114,7 +134,7 @@ const generateTAPDF = (formData) => {
     doc.text(purposeLines, margin + 2, yPos);
     
     // Checkboxes on the right
-    const checkboxX = rightDivX + 8;
+    const checkboxX = rightPanelAlignX;
     doc.rect(checkboxX, yPos - 3, 3, 3);
     doc.text('Official Business', checkboxX + 5, yPos);
     
@@ -131,49 +151,47 @@ const generateTAPDF = (formData) => {
     const tableTop = yPos;
     yPos += 5;
 
-    // Table: 4 columns on the left, dedicated "Please check" column on the right
+    // Table: 4 columns on the left with row grid, dedicated "Please check" column on the right
     const tableHeaders = ['Honorarium', 'Transportation', 'Travel Allowance', 'Total Amount'];
-    const checkColX = rightDivX + 2;
+    const checkColX = rightPanelAlignX;
     const leftFourColWidth = (rightDivX - margin) / 4;
+    const dashRowCount = 5;
+    const dashRowStep = 4;
+
+    const tableHeaderY = yPos;
+    const firstDashRowY = tableHeaderY + 4;
 
     doc.setFont('helvetica', 'bold');
     for (let i = 0; i < 4; i++) {
-        doc.text(tableHeaders[i], margin + (leftFourColWidth * i) + 2, yPos);
+        doc.text(tableHeaders[i], margin + (leftFourColWidth * i) + 2, tableHeaderY);
     }
 
-    yPos += 5;
+    // Header separator line for the 4-column financial sub-table
+    doc.line(margin, tableHeaderY + 2, rightDivX, tableHeaderY + 2);
+
     doc.setFont('helvetica', 'normal');
+    for (let rowIndex = 0; rowIndex < dashRowCount; rowIndex++) {
+        const rowY = firstDashRowY + (rowIndex * dashRowStep);
 
-    // Row 1 of dashes - 4 left columns
-    for (let j = 0; j < 4; j++) {
-        doc.text('-', margin + (leftFourColWidth * j) + leftFourColWidth / 2, yPos, { align: 'center' });
+        // Row separator lines so each row is its own cell
+        doc.line(margin, rowY + 2, rightDivX, rowY + 2);
     }
-    yPos += 5;
 
-    // Row 2: 4 left columns + "Please check:" in right column
-    for (let j = 0; j < 4; j++) {
-        doc.text('-', margin + (leftFourColWidth * j) + leftFourColWidth / 2, yPos, { align: 'center' });
-    }
-    doc.text('Please check:', checkColX, yPos);
-    yPos += 5;
+    // Right-side checklist aligned horizontally with the first row of the left sub-table
+    const pleaseCheckY = firstDashRowY;
+    const cashAdvanceY = pleaseCheckY + 6;
+    const reimbursementY = cashAdvanceY + 6;
 
-    // Row 3: 4 left columns + Cash Advance in right column
-    for (let j = 0; j < 4; j++) {
-        doc.text('-', margin + (leftFourColWidth * j) + leftFourColWidth / 2, yPos, { align: 'center' });
-    }
-    doc.rect(checkColX, yPos - 3, 3, 3);
-    doc.text('Cash Advance', checkColX + 5, yPos);
-    yPos += 5;
+    doc.text('Please check:', checkColX, pleaseCheckY);
+    doc.rect(checkColX, cashAdvanceY - 3, 3, 3);
+    doc.text('Cash Advance', checkColX + 5, cashAdvanceY);
+    doc.rect(checkColX, reimbursementY - 3, 3, 3);
+    doc.text('Reimbursement', checkColX + 5, reimbursementY);
 
-    // Row 4: 4 left columns + Reimbursement in right column
-    for (let j = 0; j < 4; j++) {
-        doc.text('-', margin + (leftFourColWidth * j) + leftFourColWidth / 2, yPos, { align: 'center' });
-    }
-    doc.rect(checkColX, yPos - 3, 3, 3);
-    doc.text('Reimbursement', checkColX + 5, yPos);
-    yPos += 3;
-
-    const tableBottom = yPos;
+    const leftTableBottom = firstDashRowY + ((dashRowCount - 1) * dashRowStep) + 2;
+    const rightTableBottom = reimbursementY + 3;
+    const tableBottom = Math.max(leftTableBottom, rightTableBottom);
+    yPos = tableBottom;
 
     // Section 5: Approval Section
     doc.line(margin, yPos, pageWidth - margin, yPos);
@@ -189,11 +207,14 @@ const generateTAPDF = (formData) => {
     doc.text('Funds Available:', midDivX + 2, yPos);
     doc.text('Approved by:', rightDivX + 2, yPos);
 
-    yPos += 10;
+    const approvalNameTopGap = 14;
+    const approvalBottomGap = 6;
+
+    yPos += approvalNameTopGap;
     doc.setFont('helvetica', 'bold');
     doc.text('DR. FREDDIE B. BULAUAN', margin + 2, yPos);
     doc.text('DANICA A. DE SILVA', midDivX + 2, yPos);
-    doc.text('DR. ROGELIO T. GALERA JR., CESO III', rightDivX + 2, yPos);
+    doc.text(approvedByName, rightDivX + 2, yPos);
     
     yPos += 4;
     doc.setFont('helvetica', 'normal');
@@ -202,7 +223,7 @@ const generateTAPDF = (formData) => {
     doc.text('Accountant III', midDivX + 2, yPos);
     doc.text('Director IV', rightDivX + 2, yPos);
 
-    yPos += 10;
+    yPos += approvalBottomGap;
 
     // Draw approval section vertical dividers
     doc.line(midDivX, approvalTop, midDivX, yPos);
@@ -242,7 +263,7 @@ const generateTAPDF = (formData) => {
     doc.line(rightDivX, section1Top, rightDivX, section2Top);
     
     // Section 2: Office/Destination/Period dividers
-    doc.line(destinationCol - 2, section2Top, destinationCol - 2, section3Top);
+    doc.line(officeDestinationDivX, section2Top, officeDestinationDivX, section3Top);
     doc.line(rightDivX, section2Top, rightDivX, section3Top);
     
     // Section 4: 4-left-column dividers, plus rightDivX separator for "Please check" column
