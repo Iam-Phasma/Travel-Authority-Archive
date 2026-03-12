@@ -92,8 +92,9 @@ const generateTAPDF = (formData) => {
     yPos += 5;
     doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
+    const positionColX = rightDivX + 2;
     doc.text('Name of Officials/Employees:', nameTitleX, yPos);
-    doc.text('Position:', rightDivX + 5, yPos);
+    doc.text('Position:', positionColX, yPos);
     
     yPos += 5;
     doc.setFont('helvetica', 'normal');
@@ -103,7 +104,7 @@ const generateTAPDF = (formData) => {
         const officialName = String(official.name || '').trim();
         doc.text(officialName, nameTitleX, yPos);
         if (official.position) {
-            doc.text(official.position, rightDivX + 5, yPos);
+            doc.text(official.position, positionColX, yPos);
         }
         yPos += 4;
     });
@@ -120,19 +121,52 @@ const generateTAPDF = (formData) => {
     doc.text('Destination:', destinationCol, yPos);
     doc.text('Period of Travel:', periodCol, yPos);
 
-    yPos += 5;
+    const section2ContentY = yPos + 5;
     doc.setFont('helvetica', 'normal');
-    doc.text('CHED IV, Lipa City, Batangas', officeCol, yPos);
-    doc.text(formData.destination, destinationCol, yPos);
-    
+
+    const officeMaxWidth = officeDestinationDivX - officeCol - 3;
+    const destinationMaxWidth = rightDivX - destinationCol - 3;
+    const periodMaxWidth = (pageWidth - margin) - periodCol - 3;
+
+    const officeText = 'CHED IV, Lipa City, Batangas';
+    const destinationText = String(formData.destination || '');
+
     // Format period of travel
-    let periodText = formData.travelDateFormatted;
-    if (formData.travelEnd) {
+    let periodText = String(formData.travelDateFormatted || '');
+    if (formData.travelEnd && formData.travelEndFormatted) {
         periodText += ` - ${formData.travelEndFormatted}`;
     }
-    doc.text(periodText, periodCol, yPos);
 
-    yPos += 5;
+    const officeLines = doc.splitTextToSize(officeText, officeMaxWidth);
+    const destinationLines = doc.splitTextToSize(destinationText, destinationMaxWidth);
+    const periodLines = doc.splitTextToSize(periodText, periodMaxWidth);
+
+    const normalizeLines = (lines) => {
+        if (Array.isArray(lines)) {
+            return lines.length ? lines : [''];
+        }
+        return [String(lines || '')];
+    };
+
+    const officeColumnLines = normalizeLines(officeLines);
+    const destinationColumnLines = normalizeLines(destinationLines);
+    const periodColumnLines = normalizeLines(periodLines);
+
+    // Use the same text-array rendering behavior as Purpose for consistent line spacing.
+    doc.text(officeColumnLines, officeCol, section2ContentY);
+    doc.text(destinationColumnLines, destinationCol, section2ContentY);
+    doc.text(periodColumnLines, periodCol, section2ContentY);
+
+    const section2LineHeight = (doc.getFontSize() * doc.getLineHeightFactor()) / doc.internal.scaleFactor;
+
+    const section2MaxLines = Math.max(
+        officeColumnLines.length,
+        destinationColumnLines.length,
+        periodColumnLines.length,
+        1
+    );
+    const section2BottomPadding = 3;
+    yPos = section2ContentY + (section2MaxLines * section2LineHeight) + section2BottomPadding;
 
     // Section 3: Purpose of Travel
     doc.line(margin, yPos, pageWidth - margin, yPos);
@@ -143,26 +177,39 @@ const generateTAPDF = (formData) => {
 
     yPos += 5;
     doc.setFont('helvetica', 'normal');
-    const purposeLines = doc.splitTextToSize(formData.purpose, rightDivX - margin - 4);
-    doc.text(purposeLines, margin + 2, yPos);
+    const purposeLinesRaw = doc.splitTextToSize(String(formData.purpose || ''), rightDivX - margin - 4);
+    const purposeLines = Array.isArray(purposeLinesRaw)
+        ? (purposeLinesRaw.length ? purposeLinesRaw : [''])
+        : [String(purposeLinesRaw || '')];
+    const purposeStartY = yPos;
+    doc.text(purposeLines, margin + 2, purposeStartY);
+
+    const purposeLineHeight = (doc.getFontSize() * doc.getLineHeightFactor()) / doc.internal.scaleFactor;
+    const purposeTextHeight = purposeLines.length * purposeLineHeight;
+    const purposeContentHeight = Math.max(purposeTextHeight, 18);
+    const purposeContentBottomY = purposeStartY + purposeContentHeight;
+    yPos = purposeContentBottomY + 2;
     
     // Checkboxes on the right
     const checkboxX = rightPanelAlignX;
-    const officialBusinessBoxY = yPos - 3;
-    const officialTimeOnlyBoxY = yPos + 6;
+    const checkboxGroupHeight = 12;
+    const section3Height = yPos - section3Top;
+    const officialBusinessBoxY = section3Top + ((section3Height - checkboxGroupHeight) / 2);
+    const officialBusinessTextY = officialBusinessBoxY + 3;
+    const officialTimeOnlyBoxY = officialBusinessBoxY + 9;
+    const officialTimeOnlyTextY = officialTimeOnlyBoxY + 3;
+
     doc.rect(checkboxX, officialBusinessBoxY, 3, 3);
-    doc.text('Official Business', checkboxX + 5, yPos);
+    doc.text('Official Business', checkboxX + 5, officialBusinessTextY);
     
     doc.rect(checkboxX, officialTimeOnlyBoxY, 3, 3);
-    doc.text('Official Time Only', checkboxX + 5, yPos + 9);
+    doc.text('Official Time Only', checkboxX + 5, officialTimeOnlyTextY);
 
     if (travelType === 'official_business') {
         drawCheckboxMark(checkboxX, officialBusinessBoxY);
     } else {
         drawCheckboxMark(checkboxX, officialTimeOnlyBoxY);
     }
-
-    yPos += Math.max(purposeLines.length * 5, 18);
 
     // Vertical separator in Purpose section aligned to rightDivX
     doc.line(rightDivX, section3Top, rightDivX, yPos);
@@ -237,7 +284,7 @@ const generateTAPDF = (formData) => {
     doc.text('Approved by:', rightDivX + 2, yPos);
 
     const approvalNameTopGap = 14;
-    const approvalBottomGap = 6;
+    const approvalBottomGap = 3;
 
     yPos += approvalNameTopGap;
     doc.setFont('helvetica', 'bold');
@@ -247,7 +294,7 @@ const generateTAPDF = (formData) => {
     
     yPos += 4;
     doc.setFont('helvetica', 'normal');
-    doc.setFontSize(7);
+    doc.setFontSize(8);
     doc.text('Chief Administrative Officer', margin + 2, yPos);
     doc.text('Accountant III', midDivX + 2, yPos);
     doc.text('Director IV', rightDivX + 2, yPos);

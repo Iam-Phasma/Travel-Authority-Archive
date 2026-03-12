@@ -15,7 +15,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html?v=20260313-5')
+        fetch('../header/header.html?v=20260313-7')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -243,12 +243,19 @@
             }
         };
 
+        const clearDashboardClientState = () => {
+            localStorage.removeItem("dashboardFilters");
+            localStorage.removeItem("dashboardSort");
+            sessionStorage.removeItem("dashboardLoginMarker");
+        };
+
         // Initialize auto-logout (5 minutes warning, 6 minutes total)
         initAutoLogout(supabase, {
             warningTime: 5 * 60 * 1000, // 5 minutes
             logoutTime: 6 * 60 * 1000,   // 6 minutes (5 min warning + 1 min countdown)
             onLogout: async () => {
                 await markCurrentUserOffline();
+                clearDashboardClientState();
             }
         });
 
@@ -287,8 +294,13 @@
                                 
                                 // Immediate logout
                                 setTimeout(async () => {
-                                    await markCurrentUserOffline();
-                                    await supabase.auth.signOut();
+                                    try {
+                                        await markCurrentUserOffline();
+                                        clearDashboardClientState();
+                                        await supabase.auth.signOut();
+                                    } catch (error) {
+                                        console.error("Forced logout error:", error);
+                                    }
                                     window.location.href = '../index.html';
                                 }, 1000);
                             }
@@ -901,10 +913,12 @@
 
                     try {
                         await markCurrentUserOffline();
+                        clearDashboardClientState();
                         await supabase.auth.signOut();
                         window.location.href = "../index.html";
                     } catch (error) {
                         console.error("Logout error:", error);
+                        clearDashboardClientState();
                         window.location.href = "../index.html";
                     }
                 });
@@ -948,6 +962,20 @@
             }
 
             const user = sessionData.session.user;
+
+            // Clear persisted table state once per new authenticated session.
+            try {
+                const loginMarker = `${user.id}:${sessionData.session.access_token || ""}`;
+                const previousLoginMarker = sessionStorage.getItem("dashboardLoginMarker");
+
+                if (previousLoginMarker !== loginMarker) {
+                    localStorage.removeItem("dashboardFilters");
+                    localStorage.removeItem("dashboardSort");
+                    sessionStorage.setItem("dashboardLoginMarker", loginMarker);
+                }
+            } catch (storageError) {
+                console.warn("Unable to reset dashboard table state for new login:", storageError);
+            }
             
             // Verify user role from database (not localStorage which can be manipulated)
             const role = await getUserRole(user.id);
@@ -1844,7 +1872,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="../pdf-generator/ta-generator.js?v=20260313-9"></script>
+    <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
 
     </div>
 

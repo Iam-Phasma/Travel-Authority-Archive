@@ -250,11 +250,15 @@ export class AutoLogout {
                 await this.supabase.auth.signOut();
             }
             
-            // Clear local storage (session tokens, filters, sort, and panel state)
+            // Clear persisted client state on logout.
             localStorage.removeItem('admin_session_token');
             localStorage.removeItem('adminActivePanel');
             localStorage.removeItem('adminFilters');
             localStorage.removeItem('adminSort');
+            localStorage.removeItem('dashboardFilters');
+            localStorage.removeItem('dashboardSort');
+            sessionStorage.removeItem('adminLoginMarker');
+            sessionStorage.removeItem('dashboardLoginMarker');
             
             // Redirect to login page
             window.location.href = '../index.html';

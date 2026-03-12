@@ -26,7 +26,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html?v=20260313-5')
+        fetch('../header/header.html?v=20260313-7')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -103,7 +103,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="../pdf-generator/ta-generator.js?v=20260313-9"></script>
+    <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
     <script type="module">
@@ -133,6 +133,14 @@
             } catch (error) {
                 console.warn("Offline marker skipped:", error.message);
             }
+        };
+
+        const clearAdminClientState = () => {
+            localStorage.removeItem('admin_session_token');
+            localStorage.removeItem('adminActivePanel');
+            localStorage.removeItem('adminFilters');
+            localStorage.removeItem('adminSort');
+            sessionStorage.removeItem('adminLoginMarker');
         };
 
         // Initialize auto-logout (5 minutes warning, 6 minutes total)
@@ -227,9 +235,8 @@
                                 setTimeout(async () => {
                                     try {
                                         await markCurrentUserOffline();
+                                        clearAdminClientState();
                                         await supabase.auth.signOut();
-                                        localStorage.removeItem('admin_session_token');
-                                        localStorage.removeItem('adminActivePanel');
                                     } catch (e) {
                                         console.warn('Semi-graceful logout:', e);
                                     }
@@ -280,8 +287,7 @@
                         await new Promise(resolve => setTimeout(resolve, 1000));
                         try {
                             await markCurrentUserOffline();
-                            localStorage.removeItem('admin_session_token');
-                            localStorage.removeItem('adminActivePanel');
+                            clearAdminClientState();
                             await supabase.auth.signOut();
                         } catch (e) {
                             console.warn('Semi-graceful logout:', e);
@@ -336,6 +342,20 @@
                 window.location.href = "../dashboard/dashboard.html";
                 return null;
             }
+
+            // Clear persisted table state once per new authenticated admin session.
+            try {
+                const loginMarker = `${user.id}:${sessionData.session.access_token || ""}`;
+                const previousLoginMarker = sessionStorage.getItem("adminLoginMarker");
+
+                if (previousLoginMarker !== loginMarker) {
+                    localStorage.removeItem("adminFilters");
+                    localStorage.removeItem("adminSort");
+                    sessionStorage.setItem("adminLoginMarker", loginMarker);
+                }
+            } catch (storageError) {
+                console.warn("Unable to reset admin table state for new login:", storageError);
+            }
             
             // Additional check: Verify session token matches database
             const localToken = localStorage.getItem('admin_session_token');
@@ -361,9 +381,8 @@
             if (profileData.session_token && profileData.session_token !== localToken) {
                 console.warn("Session token mismatch. Another device logged in.");
                 await markCurrentUserOffline();
+                clearAdminClientState();
                 await supabase.auth.signOut();
-                localStorage.removeItem('admin_session_token');
-                localStorage.removeItem('adminActivePanel');
                 window.location.href = "../index.html";
                 return;
             }
@@ -398,8 +417,8 @@
             if (role !== "admin" && role !== "super") {
                 console.warn("User is no longer an admin or super. Redirecting.");
                 await markCurrentUserOffline();
+                clearAdminClientState();
                 await supabase.auth.signOut();
-                localStorage.removeItem('adminActivePanel');
                 window.location.href = "../index.html";
             }
         };
@@ -943,19 +962,12 @@
 
                     try {
                         await markCurrentUserOffline();
-                        // Clear admin session token, panel memory, filters, and sort settings
-                        localStorage.removeItem('admin_session_token');
-                        localStorage.removeItem('adminActivePanel');
-                        localStorage.removeItem('adminFilters');
-                        localStorage.removeItem('adminSort');
+                        clearAdminClientState();
                         await supabase.auth.signOut();
                         window.location.href = "../index.html";
                     } catch (error) {
                         console.error("Logout error:", error);
-                        localStorage.removeItem('admin_session_token');
-                        localStorage.removeItem('adminActivePanel');
-                        localStorage.removeItem('adminFilters');
-                        localStorage.removeItem('adminSort');
+                        clearAdminClientState();
                         window.location.href = "../index.html";
                     }
                 });
@@ -3062,26 +3074,33 @@
         }
 
         // Load employees for admin filter (must be called inside viewPanelLoaded scope)
-        // Load saved filters and sort from localStorage
-        loadAdminFiltersFromStorage();
-        loadAdminSortFromStorage();
-        
-        // Restore UI state from loaded filters/sort
-        if (adminFilterTaNumberInput) adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";
-        if (adminFilterEmployeeSelect) adminFilterEmployeeSelect.value = adminActiveFilters.employee || "";
-        if (adminFilterYearSelect) adminFilterYearSelect.value = adminActiveFilters.year || "";
-        if (adminFilterTravelDateInput) adminFilterTravelDateInput.value = adminActiveFilters.travelDate || "";
-        if (adminFilterMatchAllCheckbox) adminFilterMatchAllCheckbox.checked = adminActiveFilters.matchAll !== undefined ? adminActiveFilters.matchAll : true;
-        
-        if (adminSortBySelect) adminSortBySelect.value = adminActiveSort.by || "ta";
-        if (adminSortOrderSelect) adminSortOrderSelect.value = adminActiveSort.order || "asc";
-        
-        loadAdminEmployeesForFilter();
-        
-        // Update button states after a short delay to ensure DOM is ready
-        setTimeout(() => {
-            updateAdminButtonStates();
-        }, 100);
+        // Delay restoring persisted table state until auth is fully resolved.
+        const restoreAdminTableState = () => {
+            loadAdminFiltersFromStorage();
+            loadAdminSortFromStorage();
+
+            if (adminFilterTaNumberInput) adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";
+            if (adminFilterEmployeeSelect) adminFilterEmployeeSelect.value = adminActiveFilters.employee || "";
+            if (adminFilterYearSelect) adminFilterYearSelect.value = adminActiveFilters.year || "";
+            if (adminFilterTravelDateInput) adminFilterTravelDateInput.value = adminActiveFilters.travelDate || "";
+            if (adminFilterMatchAllCheckbox) adminFilterMatchAllCheckbox.checked = adminActiveFilters.matchAll !== undefined ? adminActiveFilters.matchAll : true;
+
+            if (adminSortBySelect) adminSortBySelect.value = adminActiveSort.by || "ta";
+            if (adminSortOrderSelect) adminSortOrderSelect.value = adminActiveSort.order || "asc";
+
+            loadAdminEmployeesForFilter();
+
+            // Update button states after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                updateAdminButtonStates();
+            }, 100);
+        };
+
+        if (window.adminCurrentRole) {
+            restoreAdminTableState();
+        } else {
+            window.addEventListener('admin-role-ready', restoreAdminTableState, { once: true });
+        }
         
         }); // End of viewPanelLoaded.then()
 
