@@ -353,13 +353,41 @@
             });
         };
 
+        let headerButtonsInitialized = false;
         window.initHeaderButtons = () => {
+            if (headerButtonsInitialized) return;
+
             const userMenuBtn = document.getElementById('user-menu-btn');
             const headerPopup = document.getElementById('header-popup-panel');
+            const draftTaOption = document.getElementById('header-draft-ta-option');
             const settingsOption = document.getElementById('header-settings-option');
             const logoutOption = document.getElementById('header-logout-option');
+            const draftTaModal = document.getElementById('header-draft-ta-modal');
+            const draftTaForm = document.getElementById('header-draft-ta-form');
+            const draftTaCloseBtn = document.getElementById('header-draft-ta-close');
+            const draftTaClearBtn = document.getElementById('header-draft-ta-clear');
+            const draftTaCreateBtn = document.getElementById('header-draft-ta-create');
+            const draftTaPurposeInput = document.getElementById('header-draft-ta-purpose');
+            const draftTaDestinationInput = document.getElementById('header-draft-ta-destination');
+            const draftTaTravelDateInput = document.getElementById('header-draft-ta-travel-date');
+            const draftTaTravelEndInput = document.getElementById('header-draft-ta-travel-end');
+            const draftTaOfficialsDisplay = document.getElementById('header-draft-ta-officials-display');
+            const draftTaOfficialsDropdown = document.getElementById('header-draft-ta-officials-dropdown');
+            const draftTaOfficialsSearch = document.getElementById('header-draft-ta-officials-search');
+            const draftTaOfficialsOptions = document.getElementById('header-draft-ta-officials-options');
             const userEmailElement = document.getElementById('header-user-email');
             const userNameElement = document.getElementById('header-user-name');
+            const headerDraftSelectedEmployees = [];
+            let headerDraftEmployeesList = [];
+            let headerDraftEmployeesMultiSelect = null;
+
+            window.headerDraftSelectedEmployees = headerDraftSelectedEmployees;
+
+            if (!userMenuBtn || !headerPopup) {
+                return;
+            }
+
+            headerButtonsInitialized = true;
 
             const capitalizeWords = (str) => {
                 if (!str) return '';
@@ -399,6 +427,234 @@
                 }
                 window.__headerNameResizeHandler = renderName;
                 window.addEventListener('resize', window.__headerNameResizeHandler);
+            };
+
+            const loadHeaderDraftEmployees = async () => {
+                try {
+                    const { data, error } = await supabase
+                        .from('employee_list')
+                        .select('name, position, is_active')
+                        .order('is_active', { ascending: false })
+                        .order('name', { ascending: true });
+
+                    if (error) {
+                        throw error;
+                    }
+
+                    headerDraftEmployeesList = data || [];
+                } catch (error) {
+                    console.error('Failed to load officials for Draft TA:', error);
+                    headerDraftEmployeesList = [];
+                }
+
+                return headerDraftEmployeesList;
+            };
+
+            const createHeaderDraftOfficialsMultiSelect = () => {
+                if (!draftTaOfficialsDisplay || !draftTaOfficialsDropdown || !draftTaOfficialsSearch || !draftTaOfficialsOptions) {
+                    return null;
+                }
+
+                const closeDropdown = () => {
+                    draftTaOfficialsSearch.value = '';
+                    draftTaOfficialsDropdown.classList.remove('show');
+                };
+
+                const updateDisplay = () => {
+                    if (headerDraftSelectedEmployees.length === 0) {
+                        draftTaOfficialsDisplay.innerHTML = '<span class="multiselect-placeholder">Select officials...</span>';
+                        return;
+                    }
+
+                    draftTaOfficialsDisplay.innerHTML = headerDraftSelectedEmployees.map(name =>
+                        `<span class="multiselect-tag">${escapeHtml(name)}<button type="button" class="multiselect-remove" data-name="${escapeHtml(name)}">&times;</button></span>`
+                    ).join('');
+
+                    draftTaOfficialsDisplay.querySelectorAll('.multiselect-remove').forEach((btn) => {
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const name = btn.getAttribute('data-name');
+                            const index = headerDraftSelectedEmployees.indexOf(name);
+
+                            if (index > -1) {
+                                headerDraftSelectedEmployees.splice(index, 1);
+                                updateDisplay();
+                                renderOptions();
+                            }
+                        });
+                    });
+                };
+
+                const renderOptions = () => {
+                    const searchTerm = draftTaOfficialsSearch.value.toLowerCase();
+                    const filteredEmployees = headerDraftEmployeesList.filter((emp) =>
+                        emp.name.toLowerCase().includes(searchTerm) && !headerDraftSelectedEmployees.includes(emp.name)
+                    );
+
+                    if (filteredEmployees.length === 0) {
+                        if (searchTerm.trim()) {
+                            draftTaOfficialsOptions.innerHTML = `
+                                <div class="multiselect-no-options">
+                                    No matching officials found
+                                    <br>
+                                    <button type="button" class="multiselect-add-btn">Add "${escapeHtml(draftTaOfficialsSearch.value.trim())}"</button>
+                                </div>
+                            `;
+
+                            const addBtn = draftTaOfficialsOptions.querySelector('.multiselect-add-btn');
+                            if (addBtn) {
+                                addBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const nameToAdd = draftTaOfficialsSearch.value.trim();
+
+                                    if (!nameToAdd) return;
+
+                                    const namePattern = /^[a-zA-ZÀ-ÿ\s\-'.,]+$/;
+                                    if (!namePattern.test(nameToAdd)) {
+                                        alert('Only letters, spaces, hyphens, apostrophes, periods, and commas are allowed.');
+                                        return;
+                                    }
+
+                                    if (nameToAdd.length > 30) {
+                                        alert('Official name cannot exceed 30 characters.');
+                                        return;
+                                    }
+
+                                    const existingEmployee = headerDraftEmployeesList.find(emp => emp.name.toLowerCase() === nameToAdd.toLowerCase());
+                                    if (existingEmployee) {
+                                        if (!headerDraftSelectedEmployees.includes(existingEmployee.name)) {
+                                            headerDraftSelectedEmployees.push(existingEmployee.name);
+                                            draftTaOfficialsSearch.value = '';
+                                            updateDisplay();
+                                            renderOptions();
+                                        }
+                                        return;
+                                    }
+
+                                    if (!headerDraftSelectedEmployees.includes(nameToAdd)) {
+                                        headerDraftSelectedEmployees.push(nameToAdd);
+                                    }
+
+                                    draftTaOfficialsSearch.value = '';
+                                    updateDisplay();
+                                    renderOptions();
+                                });
+                            }
+                        } else {
+                            draftTaOfficialsOptions.innerHTML = '<div class="multiselect-no-options">No officials available</div>';
+                        }
+                        return;
+                    }
+
+                    draftTaOfficialsOptions.innerHTML = filteredEmployees.map((emp) => {
+                        const inactiveClass = emp.is_active === false ? ' inactive-employee' : '';
+                        const inactiveLabel = emp.is_active === false ? ' <span class="inactive-label">(Inactive)</span>' : '';
+                        return `<div class="multiselect-option${inactiveClass}" data-name="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</div>`;
+                    }).join('');
+
+                    draftTaOfficialsOptions.querySelectorAll('.multiselect-option').forEach((option) => {
+                        option.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const name = option.getAttribute('data-name');
+
+                            if (!headerDraftSelectedEmployees.includes(name)) {
+                                headerDraftSelectedEmployees.push(name);
+                                draftTaOfficialsSearch.value = '';
+                                updateDisplay();
+                                renderOptions();
+                            }
+                        });
+                    });
+                };
+
+                draftTaOfficialsDisplay.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const shouldOpen = !draftTaOfficialsDropdown.classList.contains('show');
+
+                    if (!shouldOpen) {
+                        closeDropdown();
+                        return;
+                    }
+
+                    draftTaOfficialsDropdown.classList.add('show');
+                    renderOptions();
+                    draftTaOfficialsSearch.focus();
+                });
+
+                draftTaOfficialsSearch.addEventListener('input', renderOptions);
+                draftTaOfficialsSearch.addEventListener('click', (e) => e.stopPropagation());
+
+                document.addEventListener('click', (e) => {
+                    const headerPopupPanel = document.getElementById('header-popup-panel');
+                    const userMenuButton = document.getElementById('user-menu-btn');
+
+                    if (headerPopupPanel && (headerPopupPanel.contains(e.target) || e.target === userMenuButton || userMenuButton?.contains(e.target))) {
+                        return;
+                    }
+
+                    closeDropdown();
+                });
+
+                return { updateDisplay, renderOptions, closeDropdown };
+            };
+
+            const ensureHeaderDraftOfficialsMultiSelect = async () => {
+                if (!headerDraftEmployeesMultiSelect) {
+                    headerDraftEmployeesMultiSelect = createHeaderDraftOfficialsMultiSelect();
+                    headerDraftEmployeesMultiSelect?.updateDisplay();
+                }
+
+                await loadHeaderDraftEmployees();
+                headerDraftEmployeesMultiSelect?.renderOptions();
+            };
+
+            const closeDraftTaModal = () => {
+                if (!draftTaModal) return;
+                headerDraftEmployeesMultiSelect?.closeDropdown();
+                draftTaModal.classList.remove('show');
+                document.body.classList.remove('header-modal-open');
+
+                // Clear all form fields
+                if (draftTaPurposeInput) draftTaPurposeInput.value = '';
+                if (draftTaDestinationInput) draftTaDestinationInput.value = '';
+                if (draftTaTravelDateInput) draftTaTravelDateInput.value = '';
+                if (draftTaTravelEndInput) {
+                    draftTaTravelEndInput.value = '';
+                    draftTaTravelEndInput.setCustomValidity('');
+                }
+
+                // Clear selected officials
+                headerDraftSelectedEmployees = [];
+                headerDraftEmployeesMultiSelect?.updateDisplay();
+            };
+
+            const clearDraftTaForm = () => {
+                // Clear all form fields but keep modal open
+                if (draftTaPurposeInput) draftTaPurposeInput.value = '';
+                if (draftTaDestinationInput) draftTaDestinationInput.value = '';
+                if (draftTaTravelDateInput) draftTaTravelDateInput.value = '';
+                if (draftTaTravelEndInput) {
+                    draftTaTravelEndInput.value = '';
+                    draftTaTravelEndInput.setCustomValidity('');
+                }
+
+                // Clear selected officials
+                headerDraftSelectedEmployees = [];
+                headerDraftEmployeesMultiSelect?.updateDisplay();
+
+                // Focus back on purpose input
+                draftTaPurposeInput?.focus();
+            };
+
+            const openDraftTaModal = async () => {
+                if (!draftTaModal) return;
+                await ensureHeaderDraftOfficialsMultiSelect();
+                headerPopup.classList.remove('show');
+                draftTaModal.classList.add('show');
+                document.body.classList.add('header-modal-open');
+                window.requestAnimationFrame(() => {
+                    draftTaPurposeInput?.focus();
+                });
             };
 
             // Fetch and display user email and name
@@ -457,6 +713,128 @@
                     headerPopup.classList.toggle('show');
                 });
             }
+
+            if (draftTaForm) {
+                draftTaForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                });
+            }
+
+            if (draftTaOption) {
+                draftTaOption.addEventListener('click', () => {
+                    void openDraftTaModal();
+                });
+            }
+
+            if (draftTaCloseBtn) {
+                draftTaCloseBtn.addEventListener('click', closeDraftTaModal);
+            }
+
+            if (draftTaClearBtn) {
+                draftTaClearBtn.addEventListener('click', clearDraftTaForm);
+            }
+
+            if (draftTaTravelDateInput && draftTaTravelEndInput) {
+                const validateTravelDates = () => {
+                    const travelDate = draftTaTravelDateInput.value;
+                    const travelEnd = draftTaTravelEndInput.value;
+
+                    if (travelDate && travelEnd && travelEnd < travelDate) {
+                        draftTaTravelEndInput.setCustomValidity('Travel end date cannot be before travel date');
+                    } else {
+                        draftTaTravelEndInput.setCustomValidity('');
+                    }
+                };
+
+                draftTaTravelDateInput.addEventListener('change', validateTravelDates);
+                draftTaTravelEndInput.addEventListener('change', validateTravelDates);
+            }
+
+            if (draftTaCreateBtn) {
+                draftTaCreateBtn.addEventListener('click', () => {
+                    // Validate required fields
+                    if (!draftTaPurposeInput?.value.trim()) {
+                        alert('Please enter the purpose of travel.');
+                        draftTaPurposeInput?.focus();
+                        return;
+                    }
+
+                    if (!draftTaDestinationInput?.value.trim()) {
+                        alert('Please enter the destination.');
+                        draftTaDestinationInput?.focus();
+                        return;
+                    }
+
+                    if (!draftTaTravelDateInput?.value) {
+                        alert('Please select the travel date.');
+                        draftTaTravelDateInput?.focus();
+                        return;
+                    }
+
+                    if (headerDraftSelectedEmployees.length === 0) {
+                        alert('Please select at least one official.');
+                        return;
+                    }
+
+                    // Check date validation
+                    const travelDate = draftTaTravelDateInput.value;
+                    const travelEnd = draftTaTravelEndInput?.value;
+
+                    if (travelDate && travelEnd && travelEnd < travelDate) {
+                        alert('Travel end date cannot be before travel date.');
+                        draftTaTravelEndInput?.focus();
+                        return;
+                    }
+
+                    // Format dates
+                    const formatDate = (dateStr) => {
+                        if (!dateStr) return '';
+                        const date = new Date(dateStr + 'T00:00:00');
+                        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                    };
+
+                    // Prepare officials data with positions
+                    const officialsData = headerDraftSelectedEmployees.map(name => {
+                        const employee = headerDraftEmployeesList.find(emp => emp.name === name);
+                        return {
+                            name: name,
+                            position: employee ? employee.position : ''
+                        };
+                    });
+
+                    // Prepare form data
+                    const formData = {
+                        purpose: draftTaPurposeInput.value.trim(),
+                        destination: draftTaDestinationInput.value.trim(),
+                        travelDateFormatted: formatDate(travelDate),
+                        travelEndFormatted: travelEnd ? formatDate(travelEnd) : '',
+                        travelEnd: travelEnd,
+                        officials: officialsData
+                    };
+
+                    // Generate PDF
+                    if (window.generateTAPDF) {
+                        window.generateTAPDF(formData);
+                        closeDraftTaModal();
+                    } else {
+                        alert('PDF generator not loaded. Please refresh the page.');
+                    }
+                });
+            }
+
+            if (draftTaModal) {
+                draftTaModal.addEventListener('click', (e) => {
+                    if (e.target === draftTaModal) {
+                        closeDraftTaModal();
+                    }
+                });
+            }
+
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && draftTaModal?.classList.contains('show')) {
+                    closeDraftTaModal();
+                }
+            });
 
             // Handle settings option click
             if (settingsOption && headerPopup) {
@@ -1425,6 +1803,8 @@
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="../pdf-generator/ta-generator.js"></script>
 
     </div>
 

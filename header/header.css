@@ -271,6 +271,68 @@
 }
 
 /* ============================================
+   HEADER DRAFT TA MODAL STYLES
+   ============================================ */
+
+body.header-modal-open {
+    overflow: hidden;
+}
+
+#header-draft-ta-modal {
+    z-index: 1250;
+    padding: 24px;
+}
+
+.header-draft-ta-modal-content {
+    max-width: 780px;
+    max-height: 92vh;
+}
+
+.header-draft-ta-fields {
+    gap: 16px;
+}
+
+.header-draft-ta-fields .field-row {
+    align-items: start;
+}
+
+
+.header-draft-ta-fields .multiselect-dropdown {
+    z-index: 25;
+}
+
+.header-draft-ta-date-input {
+    width: 100%;
+    border-radius: 12px;
+    border: 1px solid rgba(15, 26, 31, 0.12);
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 1rem;
+    font-family: inherit;
+    color: var(--ink);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.header-draft-ta-date-input {
+    min-height: 47px;
+    padding: 12px 14px 12px 40px;
+}
+
+.header-draft-ta-date-input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    opacity: 0.72;
+}
+
+.header-draft-ta-date-input:focus {
+    border-color: rgba(95, 183, 177, 0.8);
+    box-shadow: 0 0 0 3px rgba(95, 183, 177, 0.18);
+}
+
+.header-draft-ta-actions {
+    margin-top: 6px;
+}
+
+/* ============================================
    LOGIN PAGE HEADER STYLES
    ============================================ */
 
@@ -317,6 +379,14 @@ header {
 
     .sticky-header-left {
         gap: 10px;
+    }
+
+    #header-draft-ta-modal {
+        padding: 16px;
+    }
+
+    .header-draft-ta-modal-content {
+        max-width: 100%;
     }
 
     .sticky-header-logo {
