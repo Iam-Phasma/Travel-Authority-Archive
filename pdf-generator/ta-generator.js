@@ -40,14 +40,27 @@ const generateTAPDF = (formData) => {
     // Shared right-side alignment anchor for TA number and checkbox columns
     const rightPanelAlignX = rightDivX + 14;
 
-    // Generate TA Number (Year-Month-)
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, '0');
+    // Generate TA Number (Year-Month-) using Date Requested when provided
+    const fallbackToday = new Date();
+    const requestedDateInput = formData.dateRequested;
+    const requestedDate = requestedDateInput ? new Date(`${requestedDateInput}T00:00:00`) : fallbackToday;
+    const taBaseDate = Number.isNaN(requestedDate.getTime()) ? fallbackToday : requestedDate;
+    const year = taBaseDate.getFullYear();
+    const month = String(taBaseDate.getMonth() + 1).padStart(2, '0');
     const taNumber = `${year}-${month}-`;
 
     // Format date requested
-    const dateRequested = today.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const dateRequested = formData.dateRequestedFormatted || taBaseDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    const travelType = formData.travelType === 'official_time_only' ? 'official_time_only' : 'official_business';
+    const fundingOption = formData.fundingOption === 'cash_advance' ? 'cash_advance' : 'reimbursement';
+
+    const drawCheckboxMark = (x, y, size = 3) => {
+        const prevWidth = typeof doc.getLineWidth === 'function' ? doc.getLineWidth() : 0.3;
+        doc.setLineWidth(0.35);
+        doc.line(x + 0.5, y + (size * 0.55), x + (size * 0.45), y + size - 0.4);
+        doc.line(x + (size * 0.45), y + size - 0.4, x + size - 0.4, y + 0.5);
+        doc.setLineWidth(prevWidth);
+    };
 
     // Header
     doc.setFontSize(11);
@@ -135,11 +148,19 @@ const generateTAPDF = (formData) => {
     
     // Checkboxes on the right
     const checkboxX = rightPanelAlignX;
-    doc.rect(checkboxX, yPos - 3, 3, 3);
+    const officialBusinessBoxY = yPos - 3;
+    const officialTimeOnlyBoxY = yPos + 6;
+    doc.rect(checkboxX, officialBusinessBoxY, 3, 3);
     doc.text('Official Business', checkboxX + 5, yPos);
     
-    doc.rect(checkboxX, yPos + 6, 3, 3);
+    doc.rect(checkboxX, officialTimeOnlyBoxY, 3, 3);
     doc.text('Official Time Only', checkboxX + 5, yPos + 9);
+
+    if (travelType === 'official_business') {
+        drawCheckboxMark(checkboxX, officialBusinessBoxY);
+    } else {
+        drawCheckboxMark(checkboxX, officialTimeOnlyBoxY);
+    }
 
     yPos += Math.max(purposeLines.length * 5, 18);
 
@@ -181,12 +202,20 @@ const generateTAPDF = (formData) => {
     const pleaseCheckY = firstDashRowY;
     const cashAdvanceY = pleaseCheckY + 6;
     const reimbursementY = cashAdvanceY + 6;
+    const cashAdvanceBoxY = cashAdvanceY - 3;
+    const reimbursementBoxY = reimbursementY - 3;
 
     doc.text('Please check:', checkColX, pleaseCheckY);
-    doc.rect(checkColX, cashAdvanceY - 3, 3, 3);
+    doc.rect(checkColX, cashAdvanceBoxY, 3, 3);
     doc.text('Cash Advance', checkColX + 5, cashAdvanceY);
-    doc.rect(checkColX, reimbursementY - 3, 3, 3);
+    doc.rect(checkColX, reimbursementBoxY, 3, 3);
     doc.text('Reimbursement', checkColX + 5, reimbursementY);
+
+    if (fundingOption === 'cash_advance') {
+        drawCheckboxMark(checkColX, cashAdvanceBoxY);
+    } else {
+        drawCheckboxMark(checkColX, reimbursementBoxY);
+    }
 
     const leftTableBottom = firstDashRowY + ((dashRowCount - 1) * dashRowStep) + 2;
     const rightTableBottom = reimbursementY + 3;

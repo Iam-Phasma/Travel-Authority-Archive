@@ -15,7 +15,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html')
+        fetch('../header/header.html?v=20260313-5')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -369,6 +369,9 @@
             const draftTaCreateBtn = document.getElementById('header-draft-ta-create');
             const draftTaPurposeInput = document.getElementById('header-draft-ta-purpose');
             const draftTaDestinationInput = document.getElementById('header-draft-ta-destination');
+            const draftTaTravelTypeSelect = document.getElementById('header-draft-ta-travel-type');
+            const draftTaFundingOptionSelect = document.getElementById('header-draft-ta-funding-option');
+            const draftTaDateRequestInput = document.getElementById('header-draft-ta-date-request');
             const draftTaTravelDateInput = document.getElementById('header-draft-ta-travel-date');
             const draftTaTravelEndInput = document.getElementById('header-draft-ta-travel-end');
             const draftTaOfficialsDisplay = document.getElementById('header-draft-ta-officials-display');
@@ -427,6 +430,27 @@
                 }
                 window.__headerNameResizeHandler = renderName;
                 window.addEventListener('resize', window.__headerNameResizeHandler);
+            };
+
+            const getTodayLocalISO = () => {
+                const now = new Date();
+                const tzOffsetMs = now.getTimezoneOffset() * 60000;
+                return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+            };
+
+            const setDraftTaDateRequestDefault = () => {
+                if (draftTaDateRequestInput && !draftTaDateRequestInput.value) {
+                    draftTaDateRequestInput.value = getTodayLocalISO();
+                }
+            };
+
+            const setDraftTaOptionDefaults = () => {
+                if (draftTaTravelTypeSelect && !draftTaTravelTypeSelect.value) {
+                    draftTaTravelTypeSelect.value = 'official_business';
+                }
+                if (draftTaFundingOptionSelect && !draftTaFundingOptionSelect.value) {
+                    draftTaFundingOptionSelect.value = 'reimbursement';
+                }
             };
 
             const loadHeaderDraftEmployees = async () => {
@@ -617,6 +641,9 @@
                 // Clear all form fields
                 if (draftTaPurposeInput) draftTaPurposeInput.value = '';
                 if (draftTaDestinationInput) draftTaDestinationInput.value = '';
+                if (draftTaTravelTypeSelect) draftTaTravelTypeSelect.value = 'official_business';
+                if (draftTaFundingOptionSelect) draftTaFundingOptionSelect.value = 'reimbursement';
+                if (draftTaDateRequestInput) draftTaDateRequestInput.value = '';
                 if (draftTaTravelDateInput) draftTaTravelDateInput.value = '';
                 if (draftTaTravelEndInput) {
                     draftTaTravelEndInput.value = '';
@@ -624,7 +651,7 @@
                 }
 
                 // Clear selected officials
-                headerDraftSelectedEmployees = [];
+                headerDraftSelectedEmployees.length = 0;
                 headerDraftEmployeesMultiSelect?.updateDisplay();
             };
 
@@ -632,6 +659,9 @@
                 // Clear all form fields but keep modal open
                 if (draftTaPurposeInput) draftTaPurposeInput.value = '';
                 if (draftTaDestinationInput) draftTaDestinationInput.value = '';
+                if (draftTaTravelTypeSelect) draftTaTravelTypeSelect.value = 'official_business';
+                if (draftTaFundingOptionSelect) draftTaFundingOptionSelect.value = 'reimbursement';
+                if (draftTaDateRequestInput) draftTaDateRequestInput.value = getTodayLocalISO();
                 if (draftTaTravelDateInput) draftTaTravelDateInput.value = '';
                 if (draftTaTravelEndInput) {
                     draftTaTravelEndInput.value = '';
@@ -639,7 +669,7 @@
                 }
 
                 // Clear selected officials
-                headerDraftSelectedEmployees = [];
+                headerDraftSelectedEmployees.length = 0;
                 headerDraftEmployeesMultiSelect?.updateDisplay();
 
                 // Focus back on purpose input
@@ -649,6 +679,8 @@
             const openDraftTaModal = async () => {
                 if (!draftTaModal) return;
                 await ensureHeaderDraftOfficialsMultiSelect();
+                setDraftTaDateRequestDefault();
+                setDraftTaOptionDefaults();
                 headerPopup.classList.remove('show');
                 draftTaModal.classList.add('show');
                 document.body.classList.add('header-modal-open');
@@ -779,6 +811,9 @@
                     // Check date validation
                     const travelDate = draftTaTravelDateInput.value;
                     const travelEnd = draftTaTravelEndInput?.value;
+                    const dateRequest = draftTaDateRequestInput?.value || getTodayLocalISO();
+                    const travelType = draftTaTravelTypeSelect?.value || 'official_business';
+                    const fundingOption = draftTaFundingOptionSelect?.value || 'reimbursement';
 
                     if (travelDate && travelEnd && travelEnd < travelDate) {
                         alert('Travel end date cannot be before travel date.');
@@ -807,6 +842,10 @@
                     const formData = {
                         purpose: draftTaPurposeInput.value.trim(),
                         destination: draftTaDestinationInput.value.trim(),
+                        travelType,
+                        fundingOption,
+                        dateRequested: dateRequest,
+                        dateRequestedFormatted: formatDate(dateRequest),
                         travelDateFormatted: formatDate(travelDate),
                         travelEndFormatted: travelEnd ? formatDate(travelEnd) : '',
                         travelEnd: travelEnd,
@@ -1805,7 +1844,7 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="../pdf-generator/ta-generator.js?v=20260313-7"></script>
+    <script src="../pdf-generator/ta-generator.js?v=20260313-9"></script>
 
     </div>
 
