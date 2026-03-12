@@ -941,7 +941,7 @@
             try {
                 const { data, error } = await supabase
                     .from("employee_list")
-                    .select("name, is_active")
+                    .select("name, position, is_active")
                     .order("is_active", { ascending: false })
                     .order("name", { ascending: true });
 
