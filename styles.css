@@ -2246,13 +2246,14 @@ button:hover {
     margin-top: 12px;
     max-height: 400px;
     overflow-y: auto;
+    overflow-x: auto;
     scroll-behavior: smooth;
 }
 
 .employee-table-header {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     padding: 12px 14px;
     background: rgba(255, 255, 255, 0.95);
     border-bottom: 1px solid rgba(15, 26, 31, 0.1);
@@ -2267,7 +2268,18 @@ button:hover {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    flex: 1;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.employee-header-position {
+    font-size: 0.9rem;
+    color: rgba(15, 26, 31, 0.7);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: left;
+    flex: 0 0 170px;
 }
 
 .employee-header-action {
@@ -2277,13 +2289,13 @@ button:hover {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: center;
-    min-width: 148px;
+    flex: 0 0 148px;
 }
 
 .employee-item {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    gap: 12px;
     padding: 12px 14px;
     border-bottom: 1px solid rgba(15, 26, 31, 0.08);
     transition: background 150ms ease;
@@ -2301,11 +2313,24 @@ button:hover {
     font-size: 0.95rem;
     color: var(--ink);
     font-weight: 500;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.employee-position {
+    font-size: 0.95rem;
+    color: rgba(15, 26, 31, 0.82);
+    flex: 0 0 170px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .employee-item-actions {
     display: flex;
     gap: 8px;
+    justify-content: center;
+    flex: 0 0 148px;
 }
 
 .edit-employee-btn {
@@ -2727,6 +2752,16 @@ button:hover {
         min-width: 0;
     }
 
+    .employee-header-position,
+    .employee-position {
+        flex-basis: 130px;
+    }
+
+    .employee-header-action,
+    .employee-item-actions {
+        flex-basis: 132px;
+    }
+
     .user-filter-row {
         grid-template-columns: 1fr;
         gap: 12px;
@@ -2763,6 +2798,21 @@ button:hover {
     .users-panel,
     .employees-panel {
         padding: 12px;
+    }
+
+    .employee-table-header,
+    .employee-item {
+        gap: 8px;
+    }
+
+    .employee-header-position,
+    .employee-position {
+        flex-basis: 110px;
+    }
+
+    .employee-header-action,
+    .employee-item-actions {
+        flex-basis: 120px;
     }
 
     .users-table {

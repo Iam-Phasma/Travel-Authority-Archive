@@ -24,6 +24,8 @@ window.initEmployeeManagement = (supabase) => {
 
     // Employee Management Functionality
     const employeeNameInput = document.getElementById("employee-name");
+    const employeePositionInput = document.getElementById("employee-position");
+    const employeePositionSuggestions = document.getElementById("employee-position-suggestions");
     const addEmployeeBtn = document.getElementById("add-employee-btn");
     const employeeStatus = document.getElementById("employee-status");
     const employeeListContainer = document.getElementById("employee-list");
@@ -36,11 +38,33 @@ window.initEmployeeManagement = (supabase) => {
     const confirmDeleteEmployeeBtn = document.getElementById("confirm-delete-employee");
     const editEmployeeModal = document.getElementById("edit-employee-modal");
     const editEmployeeNameInput = document.getElementById("edit-employee-name");
+    const editEmployeePositionInput = document.getElementById("edit-employee-position");
     const editEmployeeStatus = document.getElementById("edit-employee-status");
     const cancelEditEmployeeBtn = document.getElementById("cancel-edit-employee");
     const confirmEditEmployeeBtn = document.getElementById("confirm-edit-employee");
     let deleteEmployeeData = null;
     let editEmployeeData = null;
+
+    const renderPositionSuggestions = (employees = []) => {
+        if (!employeePositionSuggestions) return;
+
+        const seen = new Set();
+        const positions = [];
+
+        (employees || []).forEach(emp => {
+            const position = String(emp?.position || '').trim();
+            if (!position) return;
+            const key = position.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            positions.push(position);
+        });
+
+        positions.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        employeePositionSuggestions.innerHTML = positions
+            .map(position => `<option value="${escapeHtml(position)}"></option>`)
+            .join('');
+    };
 
     const renderEmployeeList = async (filteredData = null) => {
         try {
@@ -48,7 +72,8 @@ window.initEmployeeManagement = (supabase) => {
                 employeeListContainer.innerHTML = `
                     <div class="employee-table-header">
                         <span class="employee-header-name">Name</span>
-                        <span class="employee-header-action">Action</span>
+                        <span class="employee-header-position">Position</span>
+                        <span class="employee-header-action">Actions</span>
                     </div>
                     <p class="loading-text">Loading officials...</p>
                 `;
@@ -58,7 +83,7 @@ window.initEmployeeManagement = (supabase) => {
                 
                 const { data, error } = await supabase
                     .from("employee_list")
-                    .select("id, name, is_active")
+                    .select("id, name, position, is_active")
                     .order("is_active", { ascending: false })
                     .order("name", { ascending: true });
 
@@ -75,11 +100,14 @@ window.initEmployeeManagement = (supabase) => {
                 allEmployeesData = filteredData;
             }
 
+            renderPositionSuggestions(allEmployeesCache);
+
             if (!allEmployeesData || allEmployeesData.length === 0) {
                 employeeListContainer.innerHTML = `
                     <div class="employee-table-header">
                         <span class="employee-header-name">Name</span>
-                        <span class="employee-header-action">Action</span>
+                        <span class="employee-header-position">Position</span>
+                        <span class="employee-header-action">Actions</span>
                     </div>
                     <p class="no-employees">No officials found.</p>
                 `;
@@ -92,7 +120,8 @@ window.initEmployeeManagement = (supabase) => {
             const tableHeader = `
                 <div class="employee-table-header">
                     <span class="employee-header-name">Name</span>
-                    <span class="employee-header-action">Action</span>
+                    <span class="employee-header-position">Position</span>
+                    <span class="employee-header-action">Actions</span>
                 </div>
             `;
 
@@ -113,13 +142,14 @@ window.initEmployeeManagement = (supabase) => {
                 return `
                 <div class="employee-item${inactiveClass}">
                     <span class="employee-name">${escapeHtml(emp.name)}${inactiveLabel}</span>
+                    <span class="employee-position">${escapeHtml(emp.position || '—')}</span>
                     <div class="employee-item-actions">
                         <button class="toggle-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" data-active="${isActive}" aria-label="${toggleLabel}" title="${toggleLabel}">
                             <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                 ${toggleIcon}
                             </svg>
                         </button>
-                        <button class="edit-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" aria-label="Update official" title="Update official">
+                        <button class="edit-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" data-position="${escapeHtml(emp.position || '')}" aria-label="Update official" title="Update official">
                             <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                 <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                             </svg>
@@ -192,9 +222,13 @@ window.initEmployeeManagement = (supabase) => {
                 btn.addEventListener('click', () => {
                     editEmployeeData = {
                         id: btn.getAttribute('data-id'),
-                        name: btn.getAttribute('data-name')
+                        name: btn.getAttribute('data-name'),
+                        position: btn.getAttribute('data-position') || ''
                     };
                     editEmployeeNameInput.value = editEmployeeData.name;
+                    if (editEmployeePositionInput) {
+                        editEmployeePositionInput.value = editEmployeeData.position || 'Not specified';
+                    }
                     editEmployeeStatus.classList.add('hidden');
                     editEmployeeModal.classList.add('show');
                 });
@@ -233,7 +267,8 @@ window.initEmployeeManagement = (supabase) => {
             employeeListContainer.innerHTML = `
                 <div class="employee-table-header">
                     <span class="employee-header-name">Name</span>
-                    <span class="employee-header-action">Action</span>
+                    <span class="employee-header-position">Position</span>
+                    <span class="employee-header-action">Actions</span>
                 </div>
                 <p class="error-text">Failed to load officials.</p>
             `;
@@ -397,9 +432,19 @@ window.initEmployeeManagement = (supabase) => {
 
     addEmployeeBtn.addEventListener("click", async () => {
         const employeeName = employeeNameInput.value.trim();
+        const employeePosition = employeePositionInput.value.trim();
 
         if (!employeeName) {
             employeeStatus.textContent = "Please enter an official name.";
+            employeeStatus.classList.add("status--error");
+            employeeStatus.classList.remove("status--shake");
+            void employeeStatus.offsetWidth;
+            employeeStatus.classList.add("status--shake");
+            return;
+        }
+
+        if (!employeePosition) {
+            employeeStatus.textContent = "Please enter an official position.";
             employeeStatus.classList.add("status--error");
             employeeStatus.classList.remove("status--shake");
             void employeeStatus.offsetWidth;
@@ -440,7 +485,7 @@ window.initEmployeeManagement = (supabase) => {
 
             const { error } = await supabase
                 .from("employee_list")
-                .insert([{ name: employeeName, is_active: true }]);
+                .insert([{ name: employeeName, position: employeePosition, is_active: true }]);
 
             if (error) {
                 console.error("Database insert error:", error);
@@ -463,6 +508,7 @@ window.initEmployeeManagement = (supabase) => {
 
             employeeStatus.textContent = "Official added successfully!";
             employeeNameInput.value = "";
+            employeePositionInput.value = "";
             setDropdownVisible(false);
             await renderEmployeeList();
             // Refresh the global employee list for dropdowns
@@ -522,6 +568,9 @@ window.initEmployeeManagement = (supabase) => {
         editEmployeeModal.classList.remove("show");
         editEmployeeData = null;
         editEmployeeNameInput.value = "";
+        if (editEmployeePositionInput) {
+            editEmployeePositionInput.value = "";
+        }
         editEmployeeStatus.classList.add("hidden");
     });
 
@@ -529,6 +578,7 @@ window.initEmployeeManagement = (supabase) => {
         if (!editEmployeeData || !editEmployeeData.id) return;
 
         const newName = editEmployeeNameInput.value.trim();
+        const newPosition = (editEmployeePositionInput?.value || '').trim() || 'Not specified';
         if (!newName) {
             editEmployeeStatus.textContent = "Please enter an official name.";
             editEmployeeStatus.classList.remove("hidden", "status--success", "status--shake");
@@ -559,7 +609,9 @@ window.initEmployeeManagement = (supabase) => {
             return;
         }
 
-        if (newName === editEmployeeData.name) {
+        const originalPosition = (editEmployeeData.position || '').trim() || 'Not specified';
+
+        if (newName === editEmployeeData.name && newPosition === originalPosition) {
             editEmployeeStatus.textContent = "No changes made.";
             editEmployeeStatus.classList.remove("hidden", "status--error", "status--shake");
             editEmployeeStatus.classList.add("status--success");
@@ -574,7 +626,7 @@ window.initEmployeeManagement = (supabase) => {
 
             const { data: updatedRows, error } = await supabase
                 .from("employee_list")
-                .update({ name: newName })
+                .update({ name: newName, position: newPosition })
                 .eq("id", editEmployeeData.id)
                 .select();
 
@@ -598,6 +650,9 @@ window.initEmployeeManagement = (supabase) => {
                 editEmployeeModal.classList.remove("show");
                 editEmployeeData = null;
                 editEmployeeNameInput.value = "";
+                if (editEmployeePositionInput) {
+                    editEmployeePositionInput.value = "";
+                }
                 editEmployeeStatus.classList.add("hidden");
             }, 1000);
             
@@ -606,7 +661,7 @@ window.initEmployeeManagement = (supabase) => {
             if (window.adminLoadEmployees) {
                 await window.adminLoadEmployees();
             }
-            showToast("Official updated successfully!", "success");
+            showToast(`Official "${newName}" updated (Position: ${newPosition}).`, "success");
         } catch (error) {
             console.error("Edit employee error:", error);
             const message = error && error.message ? error.message : "Failed to update official.";
@@ -623,6 +678,9 @@ window.initEmployeeManagement = (supabase) => {
             editEmployeeModal.classList.remove("show");
             editEmployeeData = null;
             editEmployeeNameInput.value = "";
+            if (editEmployeePositionInput) {
+                editEmployeePositionInput.value = "";
+            }
             editEmployeeStatus.classList.add("hidden");
         }
     });

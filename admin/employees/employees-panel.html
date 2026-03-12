@@ -8,6 +8,11 @@
                 <div id="employee-autocomplete-list" class="autocomplete-dropdown hidden" style="display: none;"></div>
             </div>
         </div>
+        <div>
+            <label for="employee-position">Position <span class="required">*</span></label>
+            <input id="employee-position" type="text" placeholder="Enter position" required autocomplete="off" list="employee-position-suggestions">
+            <datalist id="employee-position-suggestions"></datalist>
+        </div>
     </div>
     <div class="row">
         <button id="add-employee-btn" type="button">Add Official</button>

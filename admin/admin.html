@@ -697,7 +697,7 @@
                                     // Insert into database
                                     const { error } = await supabase
                                         .from('employee_list')
-                                        .insert([{ name: nameToAdd, is_active: true }]);
+                                        .insert([{ name: nameToAdd, position: 'Not specified', is_active: true }]);
                                     
                                     if (error) {
                                         console.error('Database insert error:', error);

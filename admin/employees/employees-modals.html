@@ -11,11 +11,15 @@
 
 <div id="edit-employee-modal" class="modal">
     <div class="modal-content modal-form">
-        <h3>Update Official Name</h3>
+        <h3>Update Official Details</h3>
         <div class="fields">
             <div>
                 <label for="edit-employee-name">Official Name <span class="required">*</span></label>
                 <input id="edit-employee-name" type="text" placeholder="Enter official name" maxlength="30" pattern="[a-zA-ZÀ-ÿ\s\-'.,]+" title="Only letters, spaces, hyphens, apostrophes, periods, and commas allowed" required>
+            </div>
+            <div>
+                <label for="edit-employee-position">Position</label>
+                <input id="edit-employee-position" type="text" placeholder="Enter position" autocomplete="off" list="employee-position-suggestions">
             </div>
         </div>
         <span class="status hidden" id="edit-employee-status"></span>
