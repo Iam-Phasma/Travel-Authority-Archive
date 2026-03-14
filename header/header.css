@@ -281,11 +281,17 @@ body.header-modal-open {
 #header-draft-ta-modal {
     z-index: 1250;
     padding: 24px;
+    height: 100svh;
+    overflow-y: auto;
+    align-items: flex-start;
 }
 
 .header-draft-ta-modal-content {
     max-width: 780px;
     max-height: calc(100vh - 48px);
+    max-height: calc(100svh - 48px);
+    margin: auto;
+    flex-shrink: 0;
 }
 
 .header-draft-ta-fields {
