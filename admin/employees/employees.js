@@ -42,6 +42,8 @@ window.initEmployeeManagement = (supabase) => {
     const editEmployeeStatus = document.getElementById("edit-employee-status");
     const cancelEditEmployeeBtn = document.getElementById("cancel-edit-employee");
     const confirmEditEmployeeBtn = document.getElementById("confirm-edit-employee");
+    const editEmployeeRecordsNote = document.getElementById("edit-employee-records-note");
+    let editEmployeeNameWarningShown = false;
     let deleteEmployeeData = null;
     let editEmployeeData = null;
 
@@ -230,6 +232,8 @@ window.initEmployeeManagement = (supabase) => {
                         editEmployeePositionInput.value = editEmployeeData.position || 'Not specified';
                     }
                     editEmployeeStatus.classList.add('hidden');
+                    if (editEmployeeRecordsNote) editEmployeeRecordsNote.classList.add('hidden');
+                    editEmployeeNameWarningShown = false;
                     editEmployeeModal.classList.add('show');
                 });
             });
@@ -565,6 +569,8 @@ window.initEmployeeManagement = (supabase) => {
     });
 
     cancelEditEmployeeBtn.addEventListener("click", () => {
+        if (editEmployeeRecordsNote) editEmployeeRecordsNote.classList.add('hidden');
+        editEmployeeNameWarningShown = false;
         editEmployeeModal.classList.remove("show");
         editEmployeeData = null;
         editEmployeeNameInput.value = "";
@@ -620,6 +626,23 @@ window.initEmployeeManagement = (supabase) => {
             return;
         }
 
+        // Warn if the name change will leave existing records with the old name
+        if (!editEmployeeNameWarningShown && newName !== editEmployeeData.name && editEmployeeRecordsNote) {
+            const { count } = await supabase
+                .from('travel_authorities')
+                .select('id', { count: 'exact', head: true })
+                .ilike('employees', `%${editEmployeeData.name}%`);
+            if (count && count > 0) {
+                editEmployeeRecordsNote.textContent = `Note: ${count} existing record${count === 1 ? '' : 's'} reference this name and will keep the old name. Click Update again to confirm.`;
+                editEmployeeRecordsNote.classList.remove('hidden');
+                editEmployeeNameWarningShown = true;
+                return;
+            } else {
+                editEmployeeRecordsNote.classList.add('hidden');
+            }
+        }
+        editEmployeeNameWarningShown = false;
+
         try {
             editEmployeeStatus.textContent = "Updating official...";
             editEmployeeStatus.classList.remove("hidden", "status--error", "status--success");
@@ -654,6 +677,7 @@ window.initEmployeeManagement = (supabase) => {
                     editEmployeePositionInput.value = "";
                 }
                 editEmployeeStatus.classList.add("hidden");
+                if (editEmployeeRecordsNote) editEmployeeRecordsNote.classList.add('hidden');
             }, 1000);
             
             await renderEmployeeList();
@@ -682,7 +706,14 @@ window.initEmployeeManagement = (supabase) => {
                 editEmployeePositionInput.value = "";
             }
             editEmployeeStatus.classList.add("hidden");
+            if (editEmployeeRecordsNote) editEmployeeRecordsNote.classList.add('hidden');
+            editEmployeeNameWarningShown = false;
         }
+    });
+
+    editEmployeeNameInput.addEventListener('input', () => {
+        editEmployeeNameWarningShown = false;
+        if (editEmployeeRecordsNote) editEmployeeRecordsNote.classList.add('hidden');
     });
 
     // Initialize - Load employees when module is initialized

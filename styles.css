@@ -643,6 +643,10 @@ button:hover {
     color: #a1251b !important;
 }
 
+.status--warning {
+    color: #92620a;
+}
+
 #edit-user-name-status {
     margin-top: 16px;
 }
