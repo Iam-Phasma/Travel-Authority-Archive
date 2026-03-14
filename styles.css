@@ -2185,7 +2185,13 @@ button:hover {
 /* Employee Management Styles */
 .employees-panel {
     width: min(700px, calc(100vw - 36px));
-    overflow: visible;
+    min-width: 0;
+    overflow-x: hidden;
+    overflow-y: visible;
+}
+
+.employees-panel > * {
+    min-width: 0;
 }
 
 .employees-panel .fields {
@@ -2208,6 +2214,7 @@ button:hover {
     margin-top: 32px;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
     box-sizing: border-box;
 }
 
@@ -2256,6 +2263,8 @@ button:hover {
 
 .employee-list {
     width: 100%;
+    max-width: 100%;
+    min-width: 0;
     background: rgba(255, 255, 255, 0.75);
     border-radius: 16px;
     border: 1px solid rgba(15, 26, 31, 0.12);
@@ -2264,6 +2273,9 @@ button:hover {
     max-height: 400px;
     overflow-y: auto;
     overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    touch-action: pan-x pan-y;
     scroll-behavior: smooth;
 }
 
@@ -2271,7 +2283,7 @@ button:hover {
     display: flex;
     align-items: center;
     width: 100%;
-    min-width: 0;
+    min-width: 590px;
     gap: 12px;
     padding: 12px 14px;
     background: rgba(255, 255, 255, 0.95);
@@ -2287,7 +2299,7 @@ button:hover {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    flex: 1 1 auto;
+    flex: 1 0 220px;
     min-width: 0;
 }
 
@@ -2315,7 +2327,7 @@ button:hover {
     display: flex;
     align-items: center;
     width: 100%;
-    min-width: 0;
+    min-width: 590px;
     gap: 12px;
     padding: 12px 14px;
     border-bottom: 1px solid rgba(15, 26, 31, 0.08);
@@ -2334,7 +2346,7 @@ button:hover {
     font-size: 0.95rem;
     color: var(--ink);
     font-weight: 500;
-    flex: 1 1 auto;
+    flex: 1 0 220px;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2770,28 +2782,16 @@ button:hover {
         gap: 12px;
     }
 
+    .employees-panel,
+    .employee-list-container,
+    .employee-list {
+        max-width: 100%;
+    }
+
     .employee-search-wrapper {
         flex: 0 0 auto;
         width: 100%;
         min-width: 0;
-    }
-
-    .employee-header-position,
-    .employee-position {
-        flex: 0 0 120px;
-    }
-
-    .employee-header-action,
-    .employee-item-actions {
-        flex: 0 0 112px;
-        min-width: 112px;
-        gap: 6px;
-    }
-
-    .employee-item-actions .icon-btn {
-        width: 32px;
-        height: 32px;
-        padding: 0;
     }
 
     .user-filter-row {
@@ -2835,28 +2835,7 @@ button:hover {
     .employee-table-header,
     .employee-item {
         gap: 8px;
-    }
-
-    .employee-header-position,
-    .employee-position {
-        flex: 0 0 96px;
-    }
-
-    .employee-header-action,
-    .employee-item-actions {
-        flex: 0 0 102px;
-        min-width: 102px;
-        gap: 4px;
-    }
-
-    .employee-item-actions .icon-btn {
-        width: 30px;
-        height: 30px;
-    }
-
-    .employee-item-actions .icon-btn svg {
-        width: 14px;
-        height: 14px;
+        padding: 10px 10px;
     }
 
     .users-table {
