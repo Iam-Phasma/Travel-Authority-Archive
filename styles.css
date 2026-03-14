@@ -2188,6 +2188,22 @@ button:hover {
     overflow: visible;
 }
 
+.employees-panel .fields {
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.employees-panel .fields > div,
+.employees-panel .autocomplete-wrapper {
+    width: 100%;
+    min-width: 0;
+}
+
+.employees-panel input[type="text"] {
+    max-width: 100%;
+    min-width: 0;
+}
+
 .employee-list-container {
     margin-top: 32px;
     width: 100%;
@@ -2239,6 +2255,7 @@ button:hover {
 }
 
 .employee-list {
+    width: 100%;
     background: rgba(255, 255, 255, 0.75);
     border-radius: 16px;
     border: 1px solid rgba(15, 26, 31, 0.12);
@@ -2253,6 +2270,8 @@ button:hover {
 .employee-table-header {
     display: flex;
     align-items: center;
+    width: 100%;
+    min-width: 0;
     gap: 12px;
     padding: 12px 14px;
     background: rgba(255, 255, 255, 0.95);
@@ -2295,6 +2314,8 @@ button:hover {
 .employee-item {
     display: flex;
     align-items: center;
+    width: 100%;
+    min-width: 0;
     gap: 12px;
     padding: 12px 14px;
     border-bottom: 1px solid rgba(15, 26, 31, 0.08);
@@ -2315,6 +2336,9 @@ button:hover {
     font-weight: 500;
     flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .employee-position {
@@ -2754,12 +2778,20 @@ button:hover {
 
     .employee-header-position,
     .employee-position {
-        flex-basis: 130px;
+        flex: 0 0 120px;
     }
 
     .employee-header-action,
     .employee-item-actions {
-        flex-basis: 132px;
+        flex: 0 0 112px;
+        min-width: 112px;
+        gap: 6px;
+    }
+
+    .employee-item-actions .icon-btn {
+        width: 32px;
+        height: 32px;
+        padding: 0;
     }
 
     .user-filter-row {
@@ -2807,12 +2839,24 @@ button:hover {
 
     .employee-header-position,
     .employee-position {
-        flex-basis: 110px;
+        flex: 0 0 96px;
     }
 
     .employee-header-action,
     .employee-item-actions {
-        flex-basis: 120px;
+        flex: 0 0 102px;
+        min-width: 102px;
+        gap: 4px;
+    }
+
+    .employee-item-actions .icon-btn {
+        width: 30px;
+        height: 30px;
+    }
+
+    .employee-item-actions .icon-btn svg {
+        width: 14px;
+        height: 14px;
     }
 
     .users-table {
