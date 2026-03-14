@@ -1413,6 +1413,7 @@
                     }
 
                     viewModal.classList.add("show");
+                    document.body.style.overflow = 'hidden';
                 });
             });
         };
@@ -1466,11 +1467,13 @@
 
         closeViewBtn.addEventListener("click", () => {
             viewModal.classList.remove("show");
+            document.body.style.overflow = '';
         });
 
         viewModal.addEventListener("click", (e) => {
             if (e.target === viewModal) {
                 viewModal.classList.remove("show");
+                document.body.style.overflow = '';
             }
         });
 

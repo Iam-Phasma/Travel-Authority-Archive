@@ -2010,6 +2010,7 @@
                     }
 
                     viewModal.classList.add("show");
+                    document.body.style.overflow = 'hidden';
                     document.getElementById("view-edit-btn")._currentRecordId = recordId;
                 });
             });
@@ -2075,6 +2076,7 @@
             if (!recordId || !record) return;
 
             viewModal.classList.remove("show");
+            document.body.style.overflow = '';
 
             updateRecordData = {
                 id: recordId,
@@ -2329,6 +2331,7 @@
 
         closeViewBtn.addEventListener("click", () => {
             viewModal.classList.remove("show");
+            document.body.style.overflow = '';
         });
 
         // Refresh button
@@ -3054,6 +3057,7 @@
         viewModal.addEventListener("click", (e) => {
             if (e.target === viewModal) {
                 viewModal.classList.remove("show");
+                document.body.style.overflow = '';
             }
         });
 
