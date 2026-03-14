@@ -285,7 +285,7 @@ body.header-modal-open {
 
 .header-draft-ta-modal-content {
     max-width: 780px;
-    max-height: 92vh;
+    max-height: calc(100vh - 48px);
 }
 
 .header-draft-ta-fields {
