@@ -1205,7 +1205,7 @@
                     const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
 
                     const objectUrl = URL.createObjectURL(rebuiltBlob);
-                    window.location.href = objectUrl;
+                    window.open(objectUrl, '_blank', 'noopener');
                     
                     setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
                     return;
@@ -1216,8 +1216,8 @@
             }
 
             // For non-compressed files or when decompression not supported/failed:
-            // Just open the file URL directly in the same tab
-            window.location.href = safeFileUrl;
+            // Open the file URL in a new tab
+            window.open(safeFileUrl, '_blank', 'noopener');
         };
         const viewModal = document.getElementById("view-modal");
         const closeViewBtn = document.getElementById("close-view");
