@@ -9,6 +9,213 @@
     <link rel="stylesheet" href="../styles.css">
     <link rel="stylesheet" href="../header/header.css">
     <link rel="stylesheet" href="../footer/footer.css">
+    <style>
+    /* === Dashboard Sidebar Layout === */
+    .dashboard-wrapper {
+        display: flex;
+        align-items: flex-start;
+        gap: 20px;
+        width: 100%;
+        max-width: min(1550px, calc(100vw - 36px));
+        margin-bottom: 50px;
+    }
+    .dash-sidebar {
+        flex-shrink: 0;
+        width: 200px;
+        background: rgba(255, 255, 255, 0.62);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+        padding: 14px 10px;
+        position: sticky;
+        top: 82px;
+        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+    }
+    .dash-sidebar.collapsed {
+        width: 56px;
+    }
+    .dash-sidebar-top {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 10px;
+        padding: 0 2px;
+    }
+    .dash-sidebar-toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 9px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        color: #0b1c3b;
+        transition: background 0.18s, color 0.18s;
+        padding: 0;
+    }
+    .dash-sidebar-toggle:hover {
+        background: rgba(47, 111, 179, 0.12);
+        color: #2f6fb3;
+        box-shadow: none;
+    }
+    .dash-sidebar-toggle svg {
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+        transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dash-sidebar.collapsed .dash-sidebar-toggle svg {
+        transform: rotate(180deg);
+    }
+    .dash-sidebar-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+    .dash-sidebar-tab {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 9px;
+        border-radius: 12px;
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        color: rgba(11, 28, 59, 0.6);
+        font-size: 0.875rem;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-weight: 500;
+        white-space: nowrap;
+        width: 100%;
+        text-align: left;
+        transition: background 0.18s, color 0.18s;
+    }
+    .dash-sidebar-tab:hover {
+        background: rgba(47, 111, 179, 0.1);
+        color: #2f6fb3;
+        box-shadow: none;
+    }
+    .dash-sidebar-tab.active {
+        background: rgba(47, 111, 179, 0.13);
+        color: #2f6fb3;
+        font-weight: 600;
+    }
+    .dash-sidebar-tab svg {
+        width: 20px;
+        height: 20px;
+        fill: currentColor;
+        flex-shrink: 0;
+    }
+    .dash-sidebar-label {
+        overflow: hidden;
+        transition: opacity 0.18s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 160px;
+        opacity: 1;
+    }
+    .dash-sidebar.collapsed .dash-sidebar-label {
+        opacity: 0;
+        max-width: 0;
+        pointer-events: none;
+    }
+    .dash-sidebar.collapsed .dash-sidebar-tab {
+        width: 36px;
+        height: 36px;
+        padding: 8px;
+        justify-content: center;
+        gap: 0;
+        margin: 0 auto;
+    }
+    .dash-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .dash-tab-pane {
+        display: none;
+    }
+    .dash-tab-pane.active {
+        display: block;
+        animation: fadeUp 280ms ease-out both;
+    }
+    .dash-content #ta-panel {
+        margin-top: 0;
+        margin-bottom: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+    /* Insights */
+    .insights-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 20px;
+    }
+    .insight-card {
+        background: rgba(255, 255, 255, 0.62);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+        padding: 24px;
+    }
+    .insight-card:nth-child(1) { animation: fadeUp 300ms ease-out both; }
+    .insight-card:nth-child(2) { animation: fadeUp 300ms 80ms ease-out both; }
+    .insight-card:nth-child(3) { animation: fadeUp 300ms 160ms ease-out both; }
+    .insight-card-title {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: rgba(11, 28, 59, 0.55);
+        text-transform: uppercase;
+        letter-spacing: 0.07em;
+        margin-bottom: 14px;
+    }
+    .insight-chart-placeholder {
+        height: 220px;
+        background: rgba(47, 111, 179, 0.04);
+        border: 2px dashed rgba(47, 111, 179, 0.18);
+        border-radius: 14px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        color: rgba(11, 28, 59, 0.3);
+        font-size: 0.8rem;
+    }
+    .insight-chart-placeholder svg {
+        width: 34px;
+        height: 34px;
+        fill: rgba(47, 111, 179, 0.22);
+    }
+    @media (max-width: 768px) {
+        .dashboard-wrapper {
+            flex-direction: column;
+            gap: 10px;
+        }
+        .dash-sidebar {
+            width: 100% !important;
+            position: static;
+            padding: 10px 12px;
+        }
+        .dash-sidebar-top {
+            display: none;
+        }
+        .dash-sidebar-nav {
+            flex-direction: row;
+        }
+        .dash-sidebar-tab {
+            flex: 1;
+            justify-content: center;
+            padding: 10px 8px;
+        }
+        .dash-sidebar.collapsed .dash-sidebar-label {
+            opacity: 1;
+            max-width: 120px;
+            pointer-events: auto;
+        }
+    }
+    </style>
 </head>
 <body>
     <div id="header-container"></div>
@@ -43,7 +250,26 @@
             <h2 class="page-title">Dashboard</h2>
             <p class="page-description">You are logged in as a regular user. You have access to view and download documents.<br>For filed but unrecorded Travel Authorities, request an advance copy from the Office of the Director, subject to availability.</p>
         </div>
-        <main class="shell">
+        <div class="dashboard-wrapper">
+            <aside class="dash-sidebar collapsed" id="dash-sidebar">
+                <div class="dash-sidebar-top">
+                    <button class="dash-sidebar-toggle" id="dash-sidebar-toggle" aria-label="Toggle sidebar">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                    </button>
+                </div>
+                <nav class="dash-sidebar-nav" aria-label="Dashboard sections">
+                    <button class="dash-sidebar-tab active" data-tab="insights" aria-selected="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+                        <span class="dash-sidebar-label">Insights</span>
+                    </button>
+                    <button class="dash-sidebar-tab" data-tab="files" aria-selected="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+                        <span class="dash-sidebar-label">Files</span>
+                    </button>
+                </nav>
+            </aside>
+            <div class="dash-content">
+                <div class="dash-tab-pane" id="tab-files">
         <section class="panel wide-panel" id="ta-panel">
             <div class="panel-head">
                 <h2>Records</h2>
@@ -158,7 +384,34 @@
                 <button id="ta-more" class="pagination-btn" type="button">Load more</button>
             </div>
         </section>
-    </main>
+                </div>
+                <div class="dash-tab-pane active" id="tab-insights">
+                    <div class="insights-grid">
+                        <div class="insight-card">
+                            <h3 class="insight-card-title">Travel Frequency</h3>
+                            <div class="insight-chart-placeholder">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
+                                <span>Chart coming soon</span>
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <h3 class="insight-card-title">Officials Summary</h3>
+                            <div class="insight-chart-placeholder">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 13h2v-2H3v2zm0 4h2v-2H3v2zm0-8h2V7H3v2zm4 4h14v-2H7v2zm0 4h14v-2H7v2zM7 7v2h14V7H7z"/></svg>
+                                <span>Chart coming soon</span>
+                            </div>
+                        </div>
+                        <div class="insight-card">
+                            <h3 class="insight-card-title">Destinations</h3>
+                            <div class="insight-chart-placeholder">
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                                <span>Chart coming soon</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <div id="view-modal" class="modal">
         <div class="modal-content modal-form">
@@ -1871,6 +2124,31 @@
             if (e.target === document.getElementById('settings-modal')) {
                 document.getElementById('settings-modal').classList.remove('show');
             }
+        });
+
+        // Sidebar collapse toggle
+        const dashSidebar = document.getElementById('dash-sidebar');
+        const dashSidebarToggle = document.getElementById('dash-sidebar-toggle');
+        if (dashSidebar && dashSidebarToggle) {
+            dashSidebarToggle.addEventListener('click', () => {
+                dashSidebar.classList.toggle('collapsed');
+            });
+        }
+
+        // Sidebar tab switching
+        document.querySelectorAll('.dash-sidebar-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = tab.getAttribute('data-tab');
+                document.querySelectorAll('.dash-sidebar-tab').forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                document.querySelectorAll('.dash-tab-pane').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                const pane = document.getElementById(`tab-${target}`);
+                if (pane) pane.classList.add('active');
+            });
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
