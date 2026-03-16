@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 – Page Not Found | CTAA</title>
+    <link rel="icon" type="image/png" href="assets/CHED-Logo.png">
+
+    <!-- Dynamically resolve the correct base path so all relative asset
+         URLs work whether the 404 is triggered from a root or sub-directory path. -->
+    <base id="base-tag" href="/">
+    <script>
+        (function () {
+            var base = document.getElementById('base-tag');
+            if (location.host === 'iam-phasma.github.io') {
+                base.href = 'https://iam-phasma.github.io/Travel-Authority-Archive/';
+            } else {
+                base.href = location.origin + '/';
+            }
+        })();
+    </script>
+
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="header/header.css">
+    <link rel="stylesheet" href="footer/footer.css">
+
+    <style>
+        /* ── 404 section ── */
+        .not-found-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
+            text-align: center;
+            padding: 40px 18px 60px;
+            gap: 24px;
+        }
+
+        .not-found-illustration {
+            width: 220px;
+            height: auto;
+        }
+
+        .not-found-code {
+            font-size: 5rem;
+            font-weight: 900;
+            color: var(--sea);
+            line-height: 1;
+            letter-spacing: -3px;
+        }
+
+        .not-found-title {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: var(--ink);
+            margin: 0;
+        }
+
+        .not-found-desc {
+            font-size: 0.95rem;
+            color: rgba(11, 28, 59, 0.68);
+            max-width: 420px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .not-found-home-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 28px;
+            background: var(--ink);
+            color: var(--mist);
+            border: none;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 150ms ease, box-shadow 150ms ease;
+        }
+
+        .not-found-home-btn:hover,
+        .not-found-home-btn:focus {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 18px rgba(15, 26, 31, 0.25);
+            outline: none;
+        }
+
+        .not-found-home-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: var(--mist);
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+<body class="login-page">
+
+    <!-- ── Header ── -->
+    <header>
+        <div class="logo-row" aria-label="Government logos">
+            <img src="assets/CHED-Logo.png" alt="CHED logo">
+            <img src="assets/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas logo">
+        </div>
+        <h1>CHEDRO IV TRAVEL AUTHORITY ARCHIVE</h1>
+        <p class="tagline">This portal stores scanned copies of travel authority documents filed by CHEDRO IV officials. Use the given email and password to view and download files.</p>
+    </header>
+
+    <!-- ── 404 Content ── -->
+    <main>
+        <section class="not-found-section">
+
+            <!-- Illustration: document with magnifying glass -->
+            <svg class="not-found-illustration" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
+                <!-- Document shadow -->
+                <ellipse cx="95" cy="188" rx="62" ry="8" fill="rgba(47,111,179,0.10)"/>
+                <!-- Document body -->
+                <rect x="28" y="18" width="120" height="158" rx="10" ry="10" fill="#e8f1fc" stroke="#c2d8f5" stroke-width="2"/>
+                <!-- Folded corner -->
+                <path d="M116 18 L148 50 L116 50 Z" fill="#c2d8f5"/>
+                <path d="M116 18 L148 50 H116 Z" fill="#d6e8fb" stroke="#c2d8f5" stroke-width="1.5"/>
+                <!-- Lines on document -->
+                <rect x="44" y="62" width="72" height="7" rx="3" fill="#b9d0ef"/>
+                <rect x="44" y="78" width="88" height="7" rx="3" fill="#b9d0ef"/>
+                <rect x="44" y="94" width="64" height="7" rx="3" fill="#b9d0ef"/>
+                <rect x="44" y="110" width="80" height="7" rx="3" fill="#b9d0ef"/>
+                <rect x="44" y="126" width="52" height="7" rx="3" fill="#b9d0ef"/>
+                <!-- Question mark on document -->
+                <text x="88" y="158" font-family="Arial, sans-serif" font-size="34" font-weight="900" fill="#2f6fb3" text-anchor="middle" opacity="0.32">?</text>
+
+                <!-- Magnifying glass handle -->
+                <line x1="155" y1="152" x2="195" y2="186" stroke="#2f6fb3" stroke-width="9" stroke-linecap="round"/>
+                <!-- Magnifying glass lens ring -->
+                <circle cx="141" cy="138" r="32" fill="none" stroke="#2f6fb3" stroke-width="10"/>
+                <!-- Lens glass glare -->
+                <circle cx="141" cy="138" r="22" fill="rgba(207,228,255,0.55)"/>
+                <!-- Glare highlight -->
+                <path d="M128 122 Q132 118 138 120" stroke="rgba(255,255,255,0.85)" stroke-width="3" fill="none" stroke-linecap="round"/>
+            </svg>
+
+            <div class="not-found-code" aria-hidden="true">404</div>
+            <h2 class="not-found-title">Page Not Found</h2>
+            <p class="not-found-desc">
+                The page you are looking for was moved, removed, renamed,<br>
+                or might have never existed.
+            </p>
+
+            <a href="index.html" class="not-found-home-btn">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                </svg>
+                Return
+            </a>
+        </section>
+    </main>
+
+    <!-- ── Footer ── -->
+    <footer class="gov-footer">
+        <div class="footer-content">
+            <div class="footer-left">
+                <img src="assets/govph-seal.jpg" alt="Government of the Philippines seal" class="footer-seal">
+                <div class="footer-left-text">
+                    <h3>ABOUT CHED REGIONAL OFFICE IV</h3>
+                    <p>Learn more about the Commission on Higher Education <br> (CHED) Regional Office IV.</p><br>
+                    <div class="footer-links"><br>
+                        <a href="https://www.facebook.com/ched4" target="_blank" rel="noopener noreferrer">Facebook</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
