@@ -263,6 +263,92 @@
         flex-shrink: 0;
         white-space: nowrap;
     }
+    .dest-switcher {
+        display: flex;
+        background: rgba(47, 111, 179, 0.08);
+        border-radius: 8px;
+        padding: 2px;
+        gap: 1px;
+    }
+    .dest-switch-btn {
+        font-size: 0.72rem;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-weight: 500;
+        color: rgba(11, 28, 59, 0.55);
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        padding: 3px 8px;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: background 0.15s, color 0.15s;
+    }
+    .dest-switch-btn.active {
+        background: #fff;
+        color: #2f6fb3;
+        font-weight: 600;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .dest-chart-wrap {
+        display: flex;
+        gap: 16px;
+        align-items: flex-start;
+    }
+    .dest-legend {
+        flex: 1;
+        min-width: 0;
+        max-height: 220px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        align-self: center;
+    }
+    .dest-legend::-webkit-scrollbar { width: 4px; }
+    .dest-legend::-webkit-scrollbar-track { background: transparent; }
+    .dest-legend::-webkit-scrollbar-thumb { background: rgba(47,111,179,0.2); border-radius: 4px; }
+    .dest-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 6px;
+        border-radius: 8px;
+        transition: background 0.15s;
+    }
+    .dest-legend-item:hover { background: rgba(47,111,179,0.07); }
+    .dest-legend-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+    .dest-legend-label {
+        font-size: 0.79rem;
+        color: rgba(11,28,59,0.72);
+        font-weight: 500;
+        flex: 1;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .dest-legend-meta {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+        flex-shrink: 0;
+    }
+    .dest-legend-count {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: rgba(11,28,59,0.5);
+    }
+    .dest-legend-pct {
+        font-size: 0.73rem;
+        color: #2f6fb3;
+        min-width: 38px;
+        text-align: right;
+    }
     @media (max-width: 768px) {
         .dashboard-wrapper {
             flex-direction: column;
@@ -476,10 +562,18 @@
                             <div id="os-list" class="os-officials-list"></div>
                         </div>
                         <div class="insight-card">
-                            <h3 class="insight-card-title">Destinations</h3>
-                            <div class="insight-chart-placeholder">
-                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-                                <span>Chart coming soon</span>
+                            <div class="insight-card-header">
+                                <h3 class="insight-card-title">Destinations</h3>
+                                <div class="dest-switcher">
+                                    <button class="dest-switch-btn active" data-view="region">By Region</button>
+                                    <button class="dest-switch-btn" data-view="calabarzon">Calabarzon</button>
+                                </div>
+                            </div>
+                            <div class="dest-chart-wrap">
+                                <div style="position: relative; width: 160px; height: 160px; flex-shrink: 0; align-self: center;">
+                                    <canvas id="dest-chart"></canvas>
+                                </div>
+                                <div id="dest-legend" class="dest-legend"></div>
                             </div>
                         </div>
                     </div>
@@ -2059,6 +2153,9 @@
 
             // Initialize Officials Summary chart
             void initOfficialsSummaryChart();
+
+            // Initialize Destinations chart
+            void initDestinationsChart();
             
             // Start activity-driven heartbeat to track online status
             // This avoids marking idle users as online just because their tab is open.
@@ -2283,6 +2380,191 @@
             }
         };
         // === End Officials Summary List ===
+
+        // === Destinations Chart ===
+        const initDestinationsChart = async () => {
+            const canvas = document.getElementById('dest-chart');
+            if (!canvas) return;
+
+            // Ordered entries: more specific keywords before broader ones to avoid false matches
+            const REGION_ENTRIES = [
+                ['NCR',         ['metro manila', 'national capital', 'quezon city', 'makati', 'pasig', 'taguig', 'marikina', 'caloocan', 'las piñas', 'las pinas', 'malabon', 'mandaluyong', 'muntinlupa', 'navotas', 'parañaque', 'paranaque', 'pasay', 'pateros', 'valenzuela', 'manila']],
+                ['CAR',         ['cordillera', 'baguio', 'benguet', 'ifugao', 'kalinga', 'apayao', 'abra', 'mountain province', 'tabuk']],
+                ['Region I',    ['ilocos norte', 'ilocos sur', 'la union', 'pangasinan', 'vigan', 'laoag', 'dagupan', 'urdaneta']],
+                ['Region II',   ['cagayan valley', 'batanes', 'isabela', 'nueva vizcaya', 'quirino', 'tuguegarao', 'bayombong', 'santiago city']],
+                ['Region III',  ['bulacan', 'pampanga', 'tarlac', 'nueva ecija', 'zambales', 'bataan', 'malolos', 'cabanatuan', 'clark', 'olongapo', 'subic', 'angeles']],
+                ['CALABARZON',  ['cavite', 'laguna', 'batangas', 'antipolo', 'calamba', 'santa rosa', 'bacoor', 'dasmariñas', 'dasmarinas', 'imus', 'tagaytay', 'lucena', 'cainta', 'taytay', 'biñan', 'binan', 'san pablo', 'cabuyao', 'lipa']],
+                ['MIMAROPA',    ['palawan', 'mindoro', 'romblon', 'marinduque', 'puerto princesa']],
+                ['Region V',    ['albay', 'camarines', 'catanduanes', 'sorsogon', 'naga', 'legazpi', 'bicol']],
+                ['Region VI',   ['iloilo', 'capiz', 'aklan', 'antique', 'guimaras', 'negros occidental', 'bacolod', 'kalibo', 'western visayas']],
+                ['Region VII',  ['cebu', 'bohol', 'negros oriental', 'siquijor', 'mandaue', 'lapu-lapu', 'tagbilaran', 'dumaguete', 'central visayas']],
+                ['Region VIII', ['leyte', 'samar', 'biliran', 'tacloban', 'ormoc', 'catbalogan', 'eastern visayas']],
+                ['Region IX',   ['zamboanga', 'dipolog', 'pagadian']],
+                ['Region X',    ['misamis oriental', 'misamis occidental', 'bukidnon', 'camiguin', 'lanao del norte', 'cagayan de oro', 'iligan', 'malaybalay', 'northern mindanao']],
+                ['Region XI',   ['davao', 'tagum', 'digos', 'compostela valley', 'mati']],
+                ['Region XII',  ['south cotabato', 'north cotabato', 'sultan kudarat', 'sarangani', 'general santos', 'koronadal', 'kidapawan']],
+                ['Region XIII', ['agusan', 'surigao', 'dinagat', 'butuan', 'caraga']],
+                ['BARMM',       ['cotabato city', 'maguindanao', 'lanao del sur', 'basilan', 'sulu', 'tawi-tawi', 'marawi', 'bangsamoro']],
+            ];
+
+            const CALABARZON_ENTRIES = [
+                ['Cavite',   ['cavite', 'bacoor', 'dasmariñas', 'dasmarinas', 'imus', 'tagaytay', 'general trias', 'trece martires', 'tanza', 'silang']],
+                ['Laguna',   ['laguna', 'calamba', 'santa rosa', 'biñan', 'binan', 'los baños', 'los banos', 'san pedro', 'cabuyao', 'pagsanjan', 'san pablo']],
+                ['Batangas', ['batangas', 'lipa', 'tanauan', 'nasugbu', 'lemery', 'bauan']],
+                ['Rizal',    ['antipolo', 'cainta', 'taytay', 'angono', 'binangonan', 'pililla', 'cardona']],
+                ['Quezon',   ['lucena', 'tayabas', 'quezon province', 'sariaya', 'tiaong', 'gumaca', 'infanta']],
+            ];
+
+            const classifyDest = (dest, entries) => {
+                if (!dest) return 'Others';
+                const d = dest.toLowerCase();
+                for (const [label, keywords] of entries) {
+                    for (const kw of keywords) {
+                        if (d.includes(kw)) return label;
+                    }
+                }
+                return 'Others';
+            };
+
+            const REGION_PALETTE = [
+                '#2563eb','#0891b2','#059669','#d97706','#dc2626',
+                '#7c3aed','#db2777','#0284c7','#16a34a','#ca8a04',
+                '#b91c1c','#0d9488','#4f46e5','#be185d','#15803d',
+                '#b45309','#6366f1','#64748b',
+            ];
+            const CALABARZON_PALETTE = ['#2563eb','#0891b2','#059669','#d97706','#dc2626'];
+
+            try {
+                const { data: tas, error } = await supabase
+                    .from('travel_authorities')
+                    .select('destination')
+                    .eq('is_demo', false);
+
+                if (error) throw error;
+
+                let destChart = null;
+
+                const centerLabelPlugin = {
+                    id: 'destCenterLabel',
+                    afterDraw(chart) {
+                        const { ctx, chartArea: { top, bottom, left, right } } = chart;
+                        const cx = (left + right) / 2;
+                        const cy = (top + bottom) / 2;
+                        const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                        ctx.save();
+                        ctx.font = 'bold 22px Arial, sans-serif';
+                        ctx.fillStyle = '#0b1c3b';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+                        ctx.fillText(total, cx, cy - 9);
+                        ctx.font = '10px Arial, sans-serif';
+                        ctx.fillStyle = 'rgba(11,28,59,0.4)';
+                        ctx.fillText('travels', cx, cy + 10);
+                        ctx.restore();
+                    }
+                };
+
+                const renderLegend = (labels, data, colors) => {
+                    const legend = document.getElementById('dest-legend');
+                    if (!legend) return;
+                    const total = data.reduce((a, b) => a + b, 0);
+                    legend.innerHTML = labels.map((label, i) => {
+                        const pct = total > 0 ? ((data[i] / total) * 100).toFixed(1) : '0.0';
+                        return `<div class="dest-legend-item">
+                            <span class="dest-legend-dot" style="background:${colors[i]}"></span>
+                            <span class="dest-legend-label">${label}</span>
+                            <span class="dest-legend-meta">
+                                <span class="dest-legend-count">${data[i]}</span>
+                                <span class="dest-legend-pct">${pct}%</span>
+                            </span>
+                        </div>`;
+                    }).join('');
+                };
+
+                const buildData = (entries, palette) => {
+                    const counts = {};
+                    (tas || []).forEach(ta => {
+                        const label = classifyDest(ta.destination, entries);
+                        counts[label] = (counts[label] || 0) + 1;
+                    });
+                    const sorted = Object.entries(counts)
+                        .filter(([k]) => k !== 'Others')
+                        .sort((a, b) => b[1] - a[1]);
+                    if (counts['Others']) sorted.push(['Others', counts['Others']]);
+                    const labels = sorted.map(e => e[0]);
+                    const data = sorted.map(e => e[1]);
+                    const colors = labels.map((l, i) =>
+                        l === 'Others' ? '#94a3b8' : palette[i % palette.length]
+                    );
+                    return { labels, data, colors };
+                };
+
+                const renderChart = (view) => {
+                    const entries = view === 'region' ? REGION_ENTRIES : CALABARZON_ENTRIES;
+                    const palette = view === 'region' ? REGION_PALETTE : CALABARZON_PALETTE;
+                    const { labels, data, colors } = buildData(entries, palette);
+
+                    if (!labels.length) {
+                        canvas.parentElement.innerHTML = '<div class="insight-chart-placeholder" style="height:220px"><span>No destination data yet</span></div>';
+                        return;
+                    }
+
+                    renderLegend(labels, data, colors);
+
+                    if (destChart) {
+                        destChart.data.labels = labels;
+                        destChart.data.datasets[0].data = data;
+                        destChart.data.datasets[0].backgroundColor = colors;
+                        destChart.update();
+                    } else {
+                        destChart = new Chart(canvas, {
+                            type: 'doughnut',
+                            data: {
+                                labels,
+                                datasets: [{
+                                    data,
+                                    backgroundColor: colors,
+                                    borderWidth: 2,
+                                    borderColor: 'rgba(255,255,255,0.85)',
+                                    hoverOffset: 6,
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                cutout: '60%',
+                                plugins: {
+                                    legend: { display: false },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: ctx => {
+                                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                                return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                            }
+                                        }
+                                    }
+                                }
+                            },
+                            plugins: [centerLabelPlugin]
+                        });
+                    }
+                };
+
+                renderChart('region');
+
+                document.querySelectorAll('.dest-switch-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.dest-switch-btn').forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        renderChart(btn.dataset.view);
+                    });
+                });
+            } catch (e) {
+                console.error('Destinations chart error:', e);
+            }
+        };
+        // === End Destinations Chart ===
 
         init();
 
