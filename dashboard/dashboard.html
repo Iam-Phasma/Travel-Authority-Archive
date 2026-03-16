@@ -170,6 +170,32 @@
         letter-spacing: 0.07em;
         margin-bottom: 14px;
     }
+    .insight-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 14px;
+        gap: 8px;
+    }
+    .insight-card-header .insight-card-title {
+        margin-bottom: 0;
+    }
+    .insight-year-select {
+        font-size: 0.75rem;
+        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        color: rgba(11, 28, 59, 0.7);
+        background: rgba(47, 111, 179, 0.07);
+        border: 1px solid rgba(47, 111, 179, 0.2);
+        border-radius: 8px;
+        padding: 4px 8px;
+        cursor: pointer;
+        outline: none;
+        flex-shrink: 0;
+    }
+    .insight-year-select:focus {
+        border-color: rgba(47, 111, 179, 0.5);
+        outline: none;
+    }
     .insight-chart-placeholder {
         height: 220px;
         background: rgba(47, 111, 179, 0.04);
@@ -388,10 +414,12 @@
                 <div class="dash-tab-pane active" id="tab-insights">
                     <div class="insights-grid">
                         <div class="insight-card">
-                            <h3 class="insight-card-title">Travel Frequency</h3>
-                            <div class="insight-chart-placeholder">
-                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
-                                <span>Chart coming soon</span>
+                            <div class="insight-card-header">
+                                <h3 class="insight-card-title">Travel Frequency</h3>
+                                <select class="insight-year-select" id="tf-year-select" aria-label="Select year"><option value="">Loading...</option></select>
+                            </div>
+                            <div style="position: relative; height: 220px;">
+                                <canvas id="tf-chart"></canvas>
                             </div>
                         </div>
                         <div class="insight-card">
@@ -1979,6 +2007,9 @@
             
             // Update button states after loading data
             updateButtonStates();
+
+            // Initialize Travel Frequency chart
+            void initTravelFrequencyYears();
             
             // Start activity-driven heartbeat to track online status
             // This avoids marking idle users as online just because their tab is open.
@@ -2028,6 +2059,122 @@
             // Initial heartbeat on page load
             updateHeartbeat(true);
         };
+
+        // === Travel Frequency Chart ===
+        let travelFrequencyChart = null;
+
+        const loadTravelFrequencyChart = async (year) => {
+            const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const counts = new Array(12).fill(0);
+
+            try {
+                const { data, error } = await supabase
+                    .from('travel_authorities')
+                    .select('travel_date')
+                    .eq('is_demo', false)
+                    .gte('travel_date', `${year}-01-01`)
+                    .lte('travel_date', `${year}-12-31`);
+
+                if (!error && data) {
+                    data.forEach(row => {
+                        if (row.travel_date) {
+                            const month = parseInt(row.travel_date.substring(5, 7), 10) - 1;
+                            if (month >= 0 && month < 12) counts[month]++;
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Travel frequency chart error:', e);
+            }
+
+            const canvas = document.getElementById('tf-chart');
+            if (!canvas) return;
+
+            if (travelFrequencyChart) {
+                travelFrequencyChart.data.datasets[0].data = counts;
+                travelFrequencyChart.update();
+                return;
+            }
+
+            travelFrequencyChart = new Chart(canvas, {
+                type: 'bar',
+                data: {
+                    labels: monthLabels,
+                    datasets: [{
+                        label: 'TAs Filed',
+                        data: counts,
+                        backgroundColor: 'rgba(47, 111, 179, 0.2)',
+                        borderColor: 'rgba(47, 111, 179, 0.65)',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                        borderSkipped: false,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: ctx => ` ${ctx.parsed.y} TA${ctx.parsed.y !== 1 ? 's' : ''}`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            border: { display: false },
+                            ticks: { color: 'rgba(11,28,59,0.45)', font: { size: 11 } }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(47,111,179,0.07)' },
+                            border: { display: false },
+                            ticks: {
+                                color: 'rgba(11,28,59,0.45)',
+                                font: { size: 11 },
+                                precision: 0,
+                                stepSize: 1
+                            }
+                        }
+                    }
+                }
+            });
+        };
+
+        const initTravelFrequencyYears = async () => {
+            const select = document.getElementById('tf-year-select');
+            if (!select) return;
+
+            try {
+                const { data, error } = await supabase
+                    .from('travel_authorities')
+                    .select('travel_date')
+                    .eq('is_demo', false);
+
+                if (!error && data) {
+                    const years = [...new Set(
+                        data.filter(r => r.travel_date).map(r => r.travel_date.substring(0, 4))
+                    )].sort((a, b) => b - a);
+
+                    select.innerHTML = years.length
+                        ? years.map(y => `<option value="${escapeHtml(y)}"${y === currentYear ? ' selected' : ''}>${escapeHtml(y)}</option>`).join('')
+                        : '<option value="">No data</option>';
+
+                    const selectedYear = select.value || years[0];
+                    if (selectedYear) await loadTravelFrequencyChart(selectedYear);
+                }
+            } catch (e) {
+                console.error('Failed to init travel frequency years:', e);
+            }
+
+            select.addEventListener('change', () => {
+                if (select.value) loadTravelFrequencyChart(select.value);
+            });
+        };
+        // === End Travel Frequency Chart ===
 
         init();
 
@@ -2151,6 +2298,7 @@
             });
         });
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
