@@ -149,11 +149,11 @@
     .insights-grid {
         display: flex;
         gap: 20px;
-        align-items: stretch;
+        align-items: flex-start;
         min-width: 0;
     }
     .insights-left-col {
-        flex: 1;
+        flex: 1 1 auto;
         min-width: 0;
         display: flex;
         flex-direction: column;
@@ -166,6 +166,7 @@
         border-radius: 20px;
         box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
         padding: 24px;
+        min-width: 0;
     }
     .insight-card-heading {
         display: flex;
@@ -176,11 +177,22 @@
     .insight-card > .insight-card-heading {
         margin-bottom: 16px;
     }
+    .insight-graph-scroll {
+        width: 100%;
+        min-width: 0;
+    }
+    .tf-chart-wrap {
+        position: relative;
+        width: 100%;
+        min-width: 0;
+        height: clamp(220px, 28vw, 300px);
+    }
     .insight-card-os {
-        flex: 1;
+        flex: 0 0 clamp(320px, 34vw, 430px);
         min-width: 0;
         min-height: 0;
-        width: calc(50% - 10px);
+        width: auto;
+        max-width: 100%;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -246,7 +258,8 @@
     .os-officials-list {
         max-height: none;
         flex: 1;
-        overflow-y: auto;
+        min-height: 0;
+        overflow: visible;
         display: flex;
         flex-direction: column;
         gap: 0;
@@ -255,7 +268,8 @@
         position: relative;
         border: 1px solid rgba(69, 122, 231, 0.15);
         border-radius: 12px;
-        overflow: hidden;
+        overflow-x: hidden;
+        overflow-y: auto;
         background: rgba(69, 122, 231, 0.02);
         flex: 1;
         min-height: 0;
@@ -272,13 +286,13 @@
         pointer-events: none;
         border-radius: 0 0 12px 12px;
     }
-    .os-officials-list::-webkit-scrollbar {
+    .os-list-wrap::-webkit-scrollbar {
         width: 4px;
     }
-    .os-officials-list::-webkit-scrollbar-track {
+    .os-list-wrap::-webkit-scrollbar-track {
         background: transparent;
     }
-    .os-officials-list::-webkit-scrollbar-thumb {
+    .os-list-wrap::-webkit-scrollbar-thumb {
         background: rgba(69, 122, 231, 0.2);
         border-radius: 4px;
     }
@@ -356,8 +370,15 @@
     }
     .dest-chart-wrap {
         display: flex;
-        gap: 16px;
-        align-items: flex-start;
+        gap: clamp(12px, 2vw, 20px);
+        align-items: center;
+    }
+    .dest-chart-canvas-wrap {
+        position: relative;
+        width: clamp(160px, 20vw, 220px);
+        height: clamp(160px, 20vw, 220px);
+        flex-shrink: 0;
+        align-self: center;
     }
     .dest-legend {
         flex: 1;
@@ -367,7 +388,8 @@
         display: flex;
         flex-direction: column;
         gap: 1px;
-        align-self: center;
+        align-self: stretch;
+        justify-content: center;
     }
     .dest-legend::-webkit-scrollbar { width: 4px; }
     .dest-legend::-webkit-scrollbar-track { background: transparent; }
@@ -414,21 +436,84 @@
         min-width: 38px;
         text-align: right;
     }
+    @media (max-width: 1120px) {
+        .insights-grid {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .insights-left-col {
+            width: 100%;
+            flex-basis: auto;
+        }
+        .insight-card-os {
+            width: 100%;
+            flex-basis: auto;
+            height: auto !important;
+        }
+        .insight-card-os .os-list-wrap {
+            max-height: clamp(240px, 54vh, 430px);
+        }
+    }
     @media (max-width: 768px) {
         .dashboard-wrapper {
             flex-direction: column;
             gap: 10px;
         }
-        .insights-grid {
-            flex-direction: column;
-        }
-        .insight-card-os {
+        .dash-content,
+        .insights-grid,
+        .insights-left-col {
             width: 100%;
-            height: auto !important;
         }
-        .dest-chart-wrap {
+        .insight-card {
+            padding: 20px;
+        }
+        .insight-card-os .os-list-wrap {
+            max-height: min(52vh, 360px);
+        }
+        .insight-card-header {
             flex-direction: column;
             align-items: stretch;
+        }
+        .insight-graph-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(69, 122, 231, 0.24) transparent;
+        }
+        .insight-graph-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+        .insight-graph-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .insight-graph-scroll::-webkit-scrollbar-thumb {
+            background: rgba(69, 122, 231, 0.24);
+            border-radius: 999px;
+        }
+        .insight-year-select {
+            align-self: flex-start;
+        }
+        .dest-switcher {
+            align-self: flex-start;
+        }
+        .tf-chart-wrap {
+            width: max(100%, 560px);
+            height: 240px;
+        }
+        .dest-chart-wrap {
+            width: max(100%, 520px);
+            align-items: center;
+        }
+        .dest-chart-canvas-wrap {
+            width: 180px;
+            height: 180px;
+            margin: 0;
+        }
+        .dest-legend {
+            max-height: 200px;
+            min-width: 220px;
+            justify-content: center;
         }
         .dash-sidebar {
             width: 100% !important;
@@ -633,8 +718,10 @@
                                     </div>
                                     <select class="insight-year-select" id="tf-year-select" aria-label="Select year"><option value="">Loading...</option></select>
                                 </div>
-                                <div style="position: relative; height: 220px;">
-                                    <canvas id="tf-chart"></canvas>
+                                <div class="insight-graph-scroll">
+                                    <div class="tf-chart-wrap">
+                                        <canvas id="tf-chart"></canvas>
+                                    </div>
                                 </div>
                             </div>
                             <div class="insight-card">
@@ -648,11 +735,13 @@
                                         <button class="dest-switch-btn" data-view="calabarzon">By Province</button>
                                     </div>
                                 </div>
-                                <div class="dest-chart-wrap">
-                                    <div style="position: relative; width: 160px; height: 160px; flex-shrink: 0; align-self: center;">
-                                        <canvas id="dest-chart"></canvas>
+                                <div class="insight-graph-scroll">
+                                    <div class="dest-chart-wrap">
+                                        <div class="dest-chart-canvas-wrap">
+                                            <canvas id="dest-chart"></canvas>
+                                        </div>
+                                        <div id="dest-legend" class="dest-legend"></div>
                                     </div>
-                                    <div id="dest-legend" class="dest-legend"></div>
                                 </div>
                             </div>
                         </div>
@@ -1534,15 +1623,24 @@
         let employeesListForFilter = [];
         let insightsHeightObserver = null;
         let insightsHeightFrame = null;
+        let insightsResizeTimeout = null;
+        let insightsViewportSettleTimeout = null;
+        let insightsBreakpointQuery = null;
 
         const syncInsightsLayout = () => {
             const leftColumn = document.querySelector('.insights-left-col');
             const officialsCard = document.querySelector('.insight-card-os');
+            const officialsListWrap = officialsCard?.querySelector('.os-list-wrap');
+            const officialsHeading = officialsCard?.querySelector('.insight-card-heading');
             const insightsPane = document.getElementById('tab-insights');
             if (!leftColumn || !officialsCard) return;
 
-            if (window.innerWidth <= 768) {
+            if (window.matchMedia('(max-width: 1120px)').matches) {
                 officialsCard.style.height = '';
+                if (officialsListWrap) {
+                    officialsListWrap.style.height = '';
+                    officialsListWrap.style.maxHeight = '';
+                }
                 return;
             }
 
@@ -1550,9 +1648,30 @@
                 return;
             }
 
-            const leftHeight = Math.ceil(leftColumn.getBoundingClientRect().height);
-            if (leftHeight > 0) {
-                officialsCard.style.height = `${leftHeight}px`;
+            const leftCards = leftColumn.querySelectorAll('.insight-card');
+            const leftStyles = window.getComputedStyle(leftColumn);
+            const leftGap = parseFloat(leftStyles.rowGap || leftStyles.gap) || 0;
+            const naturalLeftHeight = leftCards.length
+                ? Array.from(leftCards).reduce((total, card) => total + Math.ceil(card.getBoundingClientRect().height), 0)
+                    + Math.max(0, leftCards.length - 1) * leftGap
+                : Math.ceil(leftColumn.getBoundingClientRect().height);
+
+            if (naturalLeftHeight > 0) {
+                const cardHeight = naturalLeftHeight;
+                officialsCard.style.height = `${cardHeight}px`;
+
+                if (officialsListWrap) {
+                    const cardStyles = window.getComputedStyle(officialsCard);
+                    const paddingTop = parseFloat(cardStyles.paddingTop) || 0;
+                    const paddingBottom = parseFloat(cardStyles.paddingBottom) || 0;
+                    const headingHeight = officialsHeading
+                        ? Math.ceil(officialsHeading.getBoundingClientRect().height)
+                        : 0;
+                    const reservedSpace = Math.ceil(paddingTop + paddingBottom + headingHeight + 12);
+                    const desktopListHeight = Math.max(140, cardHeight - reservedSpace);
+                    officialsListWrap.style.height = `${desktopListHeight}px`;
+                    officialsListWrap.style.maxHeight = `${desktopListHeight}px`;
+                }
             }
         };
 
@@ -1562,6 +1681,27 @@
                 insightsHeightFrame = null;
                 syncInsightsLayout();
             });
+        };
+
+        const scheduleInsightsLayoutSync = () => {
+            queueInsightsLayoutSync();
+
+            if (insightsResizeTimeout !== null) {
+                window.clearTimeout(insightsResizeTimeout);
+            }
+            if (insightsViewportSettleTimeout !== null) {
+                window.clearTimeout(insightsViewportSettleTimeout);
+            }
+
+            insightsResizeTimeout = window.setTimeout(() => {
+                insightsResizeTimeout = null;
+                queueInsightsLayoutSync();
+            }, 180);
+
+            insightsViewportSettleTimeout = window.setTimeout(() => {
+                insightsViewportSettleTimeout = null;
+                queueInsightsLayoutSync();
+            }, 420);
         };
 
         const initInsightsLayoutSync = () => {
@@ -1579,7 +1719,14 @@
                 insightsHeightObserver.observe(leftColumn);
             }
 
-            window.addEventListener('resize', queueInsightsLayoutSync);
+            insightsBreakpointQuery = window.matchMedia('(max-width: 1120px)');
+            if (typeof insightsBreakpointQuery.addEventListener === 'function') {
+                insightsBreakpointQuery.addEventListener('change', scheduleInsightsLayoutSync);
+            } else if (typeof insightsBreakpointQuery.addListener === 'function') {
+                insightsBreakpointQuery.addListener(scheduleInsightsLayoutSync);
+            }
+
+            window.addEventListener('resize', scheduleInsightsLayoutSync);
             window.addEventListener('load', queueInsightsLayoutSync);
             queueInsightsLayoutSync();
         };
@@ -2853,6 +3000,7 @@
         if (dashSidebar && dashSidebarToggle) {
             dashSidebarToggle.addEventListener('click', () => {
                 dashSidebar.classList.toggle('collapsed');
+                scheduleInsightsLayoutSync();
             });
         }
 
@@ -2869,7 +3017,7 @@
                 tab.setAttribute('aria-selected', 'true');
                 const pane = document.getElementById(`tab-${target}`);
                 if (pane) pane.classList.add('active');
-                if (target === 'insights') queueInsightsLayoutSync();
+                if (target === 'insights') scheduleInsightsLayoutSync();
             });
         });
     </script>
