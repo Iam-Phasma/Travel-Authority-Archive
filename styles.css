@@ -1274,6 +1274,8 @@ button:hover {
 
 .switch-btn:hover {
     background: rgba(47, 111, 179, 0.1);
+    transform: none;
+    box-shadow: none;
 }
 
 .switch-btn.active {

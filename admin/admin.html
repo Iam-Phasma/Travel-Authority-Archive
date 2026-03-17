@@ -31,15 +31,18 @@
         display: flex;
         align-items: center;
         gap: 3px;
+        position: sticky;
+        top: 72px;
+        z-index: 30;
         width: fit-content;
         max-width: 100%;
-        margin: 0 auto 14px;
+        margin: 0 auto 22px;
         padding: 14px 10px;
         border-radius: 20px;
         background: rgba(255, 255, 255, 0.62);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+        box-shadow: none;
         overflow-x: auto;
     }
     .admin-panel-switcher .switch-btn {
@@ -116,7 +119,7 @@
             width: 100%;
             gap: 4px;
             padding: 10px 8px;
-            margin: 0 0 12px;
+            margin: 0 0 16px;
             justify-content: flex-start;
         }
         .admin-panel-switcher .switch-btn {
