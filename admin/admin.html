@@ -95,10 +95,16 @@
     .admin-panels #upload-panel {
         width: min(720px, 100%);
     }
-    .admin-panels #view-panel,
-    .admin-panels #employees-panel,
-    .admin-panels #users-panel {
+    .admin-panels #view-panel {
         width: 100%;
+        max-width: 100%;
+    }
+    .admin-panels #employees-panel {
+        width: min(800px, 100%);
+        max-width: 100%;
+    }
+    .admin-panels #users-panel {
+        width: min(980px, 100%);
         max-width: 100%;
     }
     @media (max-width: 768px) {

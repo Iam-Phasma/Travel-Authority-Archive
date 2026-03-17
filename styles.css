@@ -2305,7 +2305,7 @@ button:hover {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    flex: 1 0 220px;
+    flex: 0 0 210px;
     min-width: 0;
 }
 
@@ -2316,7 +2316,7 @@ button:hover {
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: left;
-    flex: 0 0 170px;
+    flex: 1 0 170px;
 }
 
 .employee-header-action {
@@ -2352,7 +2352,7 @@ button:hover {
     font-size: 0.95rem;
     color: var(--ink);
     font-weight: 500;
-    flex: 1 0 220px;
+    flex: 0 0 210px;
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -2362,7 +2362,7 @@ button:hover {
 .employee-position {
     font-size: 0.95rem;
     color: rgba(15, 26, 31, 0.82);
-    flex: 0 0 170px;
+    flex: 1 0 170px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
