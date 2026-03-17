@@ -337,12 +337,22 @@
         cursor: pointer;
         white-space: nowrap;
         transition: background 0.15s, color 0.15s;
+        transform: none;
+        box-shadow: none;
+    }
+    .dest-switch-btn:hover,
+    .dest-switch-btn:focus,
+    .dest-switch-btn:active {
+        background: rgba(255, 255, 255, 0.5);
+        color: #2f6fb3;
+        transform: none;
+        box-shadow: none;
     }
     .dest-switch-btn.active {
         background: #fff;
         color: #2f6fb3;
         font-weight: 600;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: none;
     }
     .dest-chart-wrap {
         display: flex;
