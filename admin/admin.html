@@ -20,6 +20,135 @@
             console.warn('pdf.js failed to load');
         }
     </script>
+    <style>
+    /* === Admin Top Switcher Layout === */
+    .admin-main {
+        width: 100%;
+        max-width: min(1550px, calc(100vw - 36px));
+        margin: 0 auto 50px;
+    }
+    .admin-panel-switcher {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        width: fit-content;
+        max-width: 100%;
+        margin: 0 auto 14px;
+        padding: 14px 10px;
+        border-radius: 20px;
+        background: rgba(255, 255, 255, 0.62);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+        overflow-x: auto;
+    }
+    .admin-panel-switcher .switch-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: auto;
+        height: 36px;
+        min-width: 132px;
+        gap: 8px;
+        border: none;
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(11, 28, 59, 0.6);
+        padding: 8px 14px;
+        white-space: nowrap;
+        transition: background 0.18s, color 0.18s;
+    }
+    .admin-panel-switcher .switch-btn:hover {
+        background: rgba(69, 122, 231, 0.1);
+        color: #457AE7;
+        box-shadow: none;
+    }
+    .admin-panel-switcher .switch-btn.active {
+        background: rgba(69, 122, 231, 0.13);
+        color: #457AE7;
+        font-weight: 600;
+    }
+    .admin-panel-switcher .switch-btn svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+        fill: currentColor;
+        flex-shrink: 0;
+    }
+    .admin-panel-switcher .switch-btn-label {
+        display: inline;
+        line-height: 1;
+    }
+    .admin-panels {
+        width: 100%;
+        min-width: 0;
+    }
+    .admin-panels > div {
+        width: 100%;
+        min-width: 0;
+    }
+    .admin-panels .panel {
+        margin-top: 0;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .admin-panels #upload-panel {
+        width: min(720px, 100%);
+    }
+    .admin-panels #view-panel,
+    .admin-panels #employees-panel,
+    .admin-panels #users-panel {
+        width: 100%;
+        max-width: 100%;
+    }
+    @media (max-width: 768px) {
+        .admin-main {
+            max-width: calc(100vw - 16px);
+            margin-bottom: 36px;
+        }
+        .admin-panel-switcher {
+            width: 100%;
+            gap: 4px;
+            padding: 10px 8px;
+            margin: 0 0 12px;
+            justify-content: flex-start;
+        }
+        .admin-panel-switcher .switch-btn {
+            width: auto;
+            height: 36px;
+            min-width: 0;
+            flex: 1 1 0;
+            padding: 7px 8px;
+            gap: 6px;
+        }
+        .admin-panel-switcher .switch-btn svg {
+            display: block;
+            width: 18px;
+            height: 18px;
+        }
+        .admin-panel-switcher .switch-btn-label {
+            display: inline;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 100%;
+        }
+        .admin-panels {
+            overflow-x: auto;
+        }
+        .admin-panel-switcher.compact-icons .switch-btn {
+            width: 34px;
+            height: 34px;
+            min-width: 34px;
+            flex: 0 0 34px;
+            padding: 7px;
+            gap: 0;
+        }
+        .admin-panel-switcher.compact-icons .switch-btn-label {
+            display: none;
+        }
+    }
+    </style>
 </head>
 <body>
     <div id="header-container"></div>
@@ -66,19 +195,36 @@
             <h2 class="page-title">Admin Panel</h2>
             <p class="page-description">Manage travel authority records, officials, and system settings.</p>
         </div>
-        <div class="panel-switcher">
-        <button class="switch-btn active" data-panel="upload-panel">Upload Files</button>
-        <button class="switch-btn" data-panel="view-panel">Manage Files </button>
-        <button class="switch-btn" data-panel="employees-panel">Manage Officials</button>
-        <button class="switch-btn hidden" id="users-panel-btn" data-panel="users-panel">Manage Users</button>
-    </div>
-        <div id="upload-panel-container"></div>
+        <div class="admin-main">
+            <div class="panel-switcher admin-panel-switcher" role="tablist" aria-label="Admin sections">
+                <button class="switch-btn active" data-panel="upload-panel" aria-selected="true" role="tab" aria-label="Upload Files">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5h3.5V16h4V7.5H17.5L12 2z"/></svg>
+                    <span class="switch-btn-label">Upload</span>
+                </button>
+                <button class="switch-btn" data-panel="view-panel" aria-selected="false" role="tab" aria-label="Manage Files">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+                    <span class="switch-btn-label">Files</span>
+                </button>
+                <button class="switch-btn" data-panel="employees-panel" aria-selected="false" role="tab" aria-label="Manage Officials">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v3h20V6c0-1.1-.9-2-2-2zm0 7H4v9c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-9zm-8 1.25A3.75 3.75 0 1 1 8.25 16 3.75 3.75 0 0 1 12 12.25z"/></svg>
+                    <span class="switch-btn-label">Officials</span>
+                </button>
+                <button class="switch-btn hidden" id="users-panel-btn" data-panel="users-panel" aria-selected="false" role="tab" aria-label="Manage Users">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.67 0-8 1.34-8 4v2h10v-2c0-1.15.43-2.2 1.13-3.06C10.2 13.34 9.03 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    <span class="switch-btn-label">Users</span>
+                </button>
+            </div>
 
-        <div id="view-panel-container"></div>
+            <div class="admin-panels">
+                <div id="upload-panel-container"></div>
 
-        <div id="employees-panel-container"></div>
+                <div id="view-panel-container"></div>
 
-        <div id="users-panel-container"></div>
+                <div id="employees-panel-container"></div>
+
+                <div id="users-panel-container"></div>
+            </div>
+        </div>
 
     </div>
     <!-- End of page-content -->
@@ -138,6 +284,7 @@
         const clearAdminClientState = () => {
             localStorage.removeItem('admin_session_token');
             localStorage.removeItem('adminActivePanel');
+            localStorage.removeItem('adminSidebarCollapsed');
             localStorage.removeItem('adminFilters');
             localStorage.removeItem('adminSort');
             sessionStorage.removeItem('adminLoginMarker');
@@ -1403,59 +1550,110 @@
         };
         window.bindTaFormatter = bindTaFormatter; // Expose for upload.js
 
-        // Panel switching logic
+        // Top switcher and panel switching logic
+        const adminPanelSwitcher = document.querySelector(".admin-panel-switcher");
         const switchButtons = document.querySelectorAll(".switch-btn");
 
-        switchButtons.forEach(btn => {
-            btn.addEventListener("click", () => {
-                const targetPanel = btn.getAttribute("data-panel");
-                
-                // Persist active panel
-                localStorage.setItem("adminActivePanel", targetPanel);
+        const updateAdminSwitcherLayout = () => {
+            if (!adminPanelSwitcher) return;
 
-                // Update active button
-                switchButtons.forEach(b => b.classList.remove("active"));
-                btn.classList.add("active");
+            const isSmallScreen = window.matchMedia("(max-width: 768px)").matches;
+            if (!isSmallScreen) {
+                adminPanelSwitcher.classList.remove("compact-icons");
+                return;
+            }
 
-                // Get dynamically loaded panels (they're loaded asynchronously)
-                const uploadPanel = document.getElementById("upload-panel");
-                const viewPanel = document.getElementById("view-panel");
-                const employeesPanel = document.getElementById("employees-panel");
-                const usersPanel = document.getElementById("users-panel");
+            adminPanelSwitcher.classList.remove("compact-icons");
+            window.requestAnimationFrame(() => {
+                const hasOverflow = adminPanelSwitcher.scrollWidth > (adminPanelSwitcher.clientWidth + 2);
+                adminPanelSwitcher.classList.toggle("compact-icons", hasOverflow);
+            });
+        };
 
-                // Show/hide panels
-                if (uploadPanel) uploadPanel.classList.add("hidden");
-                if (viewPanel) viewPanel.classList.add("hidden");
-                if (employeesPanel) employeesPanel.classList.add("hidden");
-                if (usersPanel) usersPanel.classList.add("hidden");
-                
-                if (targetPanel === "upload-panel") {
-                    if (uploadPanel) {
-                        uploadPanel.classList.remove("hidden");
-                    }
-                } else if (targetPanel === "view-panel") {
-                    if (viewPanel) {
-                        viewPanel.classList.remove("hidden");
-                        // Call loadTravelAuthoritiesIfNeeded if it exists on window
-                        if (window.loadTravelAuthoritiesIfNeeded) {
-                            window.loadTravelAuthoritiesIfNeeded();
-                        }
-                    }
-                } else if (targetPanel === "employees-panel") {
-                    if (employeesPanel) {
-                        employeesPanel.classList.remove("hidden");
-                        // Call renderEmployeeList if it exists on window
-                        if (window.employeeRenderList) {
-                            window.employeeRenderList();
-                        }
-                    }
-                } else if (targetPanel === "users-panel") {
-                    if (usersPanel) {
-                        usersPanel.classList.remove("hidden");
-                        // Wait for panel to load before calling loadUsers
-                        usersPanelLoaded.then(() => loadUsers());
+        window.addEventListener("resize", updateAdminSwitcherLayout);
+        window.addEventListener("load", updateAdminSwitcherLayout);
+        updateAdminSwitcherLayout();
+
+        const activateAdminPanel = (targetPanel) => {
+            if (!targetPanel) return;
+
+            // Persist active panel
+            localStorage.setItem("adminActivePanel", targetPanel);
+
+            // Update active button
+            switchButtons.forEach((button) => {
+                const isActive = button.getAttribute("data-panel") === targetPanel;
+                button.classList.toggle("active", isActive);
+                button.setAttribute("aria-selected", isActive ? "true" : "false");
+            });
+
+            // Get dynamically loaded panels (they're loaded asynchronously)
+            const uploadPanel = document.getElementById("upload-panel");
+            const viewPanel = document.getElementById("view-panel");
+            const employeesPanel = document.getElementById("employees-panel");
+            const usersPanel = document.getElementById("users-panel");
+
+            // Show/hide panels
+            if (uploadPanel) uploadPanel.classList.add("hidden");
+            if (viewPanel) viewPanel.classList.add("hidden");
+            if (employeesPanel) employeesPanel.classList.add("hidden");
+            if (usersPanel) usersPanel.classList.add("hidden");
+
+            let panelToReveal = null;
+
+            if (targetPanel === "upload-panel") {
+                if (uploadPanel) {
+                    uploadPanel.classList.remove("hidden");
+                    panelToReveal = uploadPanel;
+                }
+            } else if (targetPanel === "view-panel") {
+                if (viewPanel) {
+                    viewPanel.classList.remove("hidden");
+                    panelToReveal = viewPanel;
+                    // Call loadTravelAuthoritiesIfNeeded if it exists on window
+                    if (window.loadTravelAuthoritiesIfNeeded) {
+                        window.loadTravelAuthoritiesIfNeeded();
                     }
                 }
+            } else if (targetPanel === "employees-panel") {
+                if (employeesPanel) {
+                    employeesPanel.classList.remove("hidden");
+                    panelToReveal = employeesPanel;
+                    // Call renderEmployeeList if it exists on window
+                    if (window.employeeRenderList) {
+                        window.employeeRenderList();
+                    }
+                }
+            } else if (targetPanel === "users-panel") {
+                if (usersPanel) {
+                    usersPanel.classList.remove("hidden");
+                    panelToReveal = usersPanel;
+                    // Wait for panel to load before calling loadUsers
+                    usersPanelLoaded.then(() => loadUsers());
+                }
+            }
+
+            if (
+                panelToReveal &&
+                typeof panelToReveal.animate === "function" &&
+                !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+            ) {
+                panelToReveal.animate(
+                    [
+                        { opacity: 0, transform: "translateY(12px)" },
+                        { opacity: 1, transform: "translateY(0)" }
+                    ],
+                    {
+                        duration: 280,
+                        easing: "ease-out"
+                    }
+                );
+            }
+        };
+
+        switchButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                activateAdminPanel(button.getAttribute("data-panel"));
             });
         });
 
@@ -3905,6 +4103,7 @@
                     const usersPanelBtn = document.getElementById('users-panel-btn');
                     if (usersPanelBtn) {
                         usersPanelBtn.classList.remove('hidden');
+                        updateAdminSwitcherLayout();
                         // Restore users-panel if it was the last active panel
                         if (localStorage.getItem('adminActivePanel') === 'users-panel') {
                             usersPanelBtn.click();
