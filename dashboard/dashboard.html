@@ -167,6 +167,15 @@
         box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
         padding: 24px;
     }
+    .insight-card-heading {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+    }
+    .insight-card > .insight-card-heading {
+        margin-bottom: 16px;
+    }
     .insight-card-os {
         flex: 1;
         min-width: 0;
@@ -185,17 +194,20 @@
         color: rgba(11, 28, 59, 0.55);
         text-transform: uppercase;
         letter-spacing: 0.07em;
-        margin-bottom: 14px;
+        margin: 0;
+    }
+    .insight-card-subtitle {
+        font-size: 0.77rem;
+        line-height: 1.45;
+        color: rgba(11, 28, 59, 0.5);
+        margin: 0;
     }
     .insight-card-header {
         display: flex;
-        align-items: center;
+        align-items: flex-start;
         justify-content: space-between;
         margin-bottom: 14px;
         gap: 8px;
-    }
-    .insight-card-header .insight-card-title {
-        margin-bottom: 0;
     }
     .insight-year-select {
         font-size: 0.75rem;
@@ -605,7 +617,10 @@
                         <div class="insights-left-col">
                             <div class="insight-card">
                                 <div class="insight-card-header">
-                                    <h3 class="insight-card-title">Travel Frequency</h3>
+                                    <div class="insight-card-heading">
+                                        <h3 class="insight-card-title">Monthly Travel Authorities Filed</h3>
+                                        <p class="insight-card-subtitle">Counts how many travel authority records were filed each month for the selected year.</p>
+                                    </div>
                                     <select class="insight-year-select" id="tf-year-select" aria-label="Select year"><option value="">Loading...</option></select>
                                 </div>
                                 <div style="position: relative; height: 220px;">
@@ -614,10 +629,13 @@
                             </div>
                             <div class="insight-card">
                                 <div class="insight-card-header">
-                                    <h3 class="insight-card-title">Destinations</h3>
+                                    <div class="insight-card-heading">
+                                        <h3 class="insight-card-title" id="dest-card-title">Travel Destinations by Region</h3>
+                                        <p class="insight-card-subtitle" id="dest-card-subtitle">Groups destination records by Philippine region.</p>
+                                    </div>
                                     <div class="dest-switcher">
                                         <button class="dest-switch-btn active" data-view="region">By Region</button>
-                                        <button class="dest-switch-btn" data-view="calabarzon">Calabarzon</button>
+                                        <button class="dest-switch-btn" data-view="calabarzon">By Province</button>
                                     </div>
                                 </div>
                                 <div class="dest-chart-wrap">
@@ -629,7 +647,10 @@
                             </div>
                         </div>
                         <div class="insight-card insight-card-os">
-                            <h3 class="insight-card-title">Officials Summary</h3>
+                            <div class="insight-card-heading">
+                                <h3 class="insight-card-title">Travel Authorities by Official</h3>
+                                <p class="insight-card-subtitle">Ranks active officials by how many travel authority records include their names.</p>
+                            </div>
                             <div class="os-list-wrap">
                                 <div id="os-list" class="os-officials-list"></div>
                                 <div class="os-list-fade"></div>
@@ -2503,7 +2524,18 @@
         // === Destinations Chart ===
         const initDestinationsChart = async () => {
             const canvas = document.getElementById('dest-chart');
+            const title = document.getElementById('dest-card-title');
+            const subtitle = document.getElementById('dest-card-subtitle');
             if (!canvas) return;
+
+            const DESTINATION_TITLES = {
+                region: 'Travel Destinations by Region',
+                calabarzon: 'Travel Destinations by CALABARZON Province'
+            };
+            const DESTINATION_SUBTITLES = {
+                region: 'Groups destination records by Philippine region.',
+                calabarzon: 'Groups CALABARZON trips by province based on each destination entry.'
+            };
 
             // Ordered entries: more specific keywords before broader ones to avoid false matches
             const REGION_ENTRIES = [
@@ -2619,6 +2651,13 @@
                 };
 
                 const renderChart = (view) => {
+                    if (title) {
+                        title.textContent = DESTINATION_TITLES[view] || DESTINATION_TITLES.region;
+                    }
+                    if (subtitle) {
+                        subtitle.textContent = DESTINATION_SUBTITLES[view] || DESTINATION_SUBTITLES.region;
+                    }
+
                     const entries = view === 'region' ? REGION_ENTRIES : CALABARZON_ENTRIES;
                     const palette = view === 'region' ? REGION_PALETTE : CALABARZON_PALETTE;
                     const { labels, data, colors } = buildData(entries, palette);
