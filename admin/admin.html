@@ -78,6 +78,17 @@
         fill: currentColor;
         flex-shrink: 0;
     }
+    .admin-panel-switcher .switch-btn svg.icon-line {
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 1.9;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+    }
+    .admin-panel-switcher .switch-btn svg.icon-officials {
+        width: 23px;
+        height: 23px;
+    }
     .admin-panel-switcher .switch-btn-label {
         display: inline;
         line-height: 1;
@@ -215,11 +226,14 @@
                     <span class="switch-btn-label">Files</span>
                 </button>
                 <button class="switch-btn" data-panel="employees-panel" aria-selected="false" role="tab" aria-label="Manage Officials">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 4h-3.17L15 2H9L7.17 4H4c-1.1 0-2 .9-2 2v3h20V6c0-1.1-.9-2-2-2zm0 7H4v9c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2v-9zm-8 1.25A3.75 3.75 0 1 1 8.25 16 3.75 3.75 0 0 1 12 12.25z"/></svg>
+                    <svg class="icon-line icon-officials" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <circle cx="12" cy="10" r="4"></circle>
+                        <path d="M10 14.5v4l2-1.2 2 1.2v-4"></path>
+                    </svg>
                     <span class="switch-btn-label">Officials</span>
                 </button>
                 <button class="switch-btn hidden" id="users-panel-btn" data-panel="users-panel" aria-selected="false" role="tab" aria-label="Manage Users">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M16 11c1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3 1.34 3 3 3zm-8 0c1.66 0 3-1.34 3-3S9.66 5 8 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.67 0-8 1.34-8 4v2h10v-2c0-1.15.43-2.2 1.13-3.06C10.2 13.34 9.03 13 8 13zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     <span class="switch-btn-label">Users</span>
                 </button>
             </div>
