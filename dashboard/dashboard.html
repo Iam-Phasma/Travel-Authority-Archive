@@ -381,8 +381,10 @@
         align-self: center;
     }
     .dest-legend {
-        flex: 1;
+        flex: 1 1 auto;
         min-width: 0;
+        width: 100%;
+        max-width: 100%;
         max-height: clamp(220px, 45vh, 460px);
         overflow-y: auto;
         display: flex;
@@ -395,12 +397,14 @@
     .dest-legend::-webkit-scrollbar-track { background: transparent; }
     .dest-legend::-webkit-scrollbar-thumb { background: rgba(69,122,231,0.2); border-radius: 4px; }
     .dest-legend-item {
-        display: flex;
+        display: grid;
+        grid-template-columns: 8px minmax(0, 1fr) max-content;
         align-items: center;
-        gap: 7px;
+        column-gap: 20px;
         padding: 5px 6px;
         border-radius: 8px;
         transition: background 0.15s;
+        max-width: 100%;
     }
     .dest-legend-item:hover { background: rgba(69,122,231,0.07); }
     .dest-legend-dot {
@@ -413,22 +417,23 @@
         font-size: 0.9rem;
         color: rgba(11,28,59,0.72);
         font-weight: 500;
-        flex: 1;
         min-width: 0;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
     }
     .dest-legend-meta {
-        display: flex;
-        gap: 5px;
+        display: grid;
+        grid-template-columns: minmax(2ch, 3ch) minmax(5ch, 6ch);
+        column-gap: 20px;
         align-items: center;
-        flex-shrink: 0;
+        justify-items: end;
     }
     .dest-legend-count {
         font-size: 0.9rem;
         font-weight: 700;
         color: rgba(11,28,59,0.5);
+        text-align: right;
     }
     .dest-legend-pct {
         font-size: 0.9rem;
@@ -436,7 +441,7 @@
         min-width: 38px;
         text-align: right;
     }
-    @media (max-width: 1120px) {
+    @media (max-width: 950px) {
         .insights-grid {
             flex-direction: column;
             align-items: stretch;
@@ -1635,7 +1640,7 @@
             const insightsPane = document.getElementById('tab-insights');
             if (!leftColumn || !officialsCard) return;
 
-            if (window.matchMedia('(max-width: 1120px)').matches) {
+            if (window.matchMedia('(max-width: 950px)').matches) {
                 officialsCard.style.height = '';
                 if (officialsListWrap) {
                     officialsListWrap.style.height = '';
@@ -1719,7 +1724,7 @@
                 insightsHeightObserver.observe(leftColumn);
             }
 
-            insightsBreakpointQuery = window.matchMedia('(max-width: 1120px)');
+            insightsBreakpointQuery = window.matchMedia('(max-width: 950px)');
             if (typeof insightsBreakpointQuery.addEventListener === 'function') {
                 insightsBreakpointQuery.addEventListener('change', scheduleInsightsLayoutSync);
             } else if (typeof insightsBreakpointQuery.addListener === 'function') {
