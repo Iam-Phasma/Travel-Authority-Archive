@@ -371,7 +371,7 @@
     .dest-chart-wrap {
         display: flex;
         gap: clamp(12px, 2vw, 20px);
-        align-items: center;
+        align-items: flex-start;
     }
     .dest-chart-canvas-wrap {
         position: relative;
@@ -383,13 +383,13 @@
     .dest-legend {
         flex: 1;
         min-width: 0;
-        max-height: 220px;
+        max-height: clamp(220px, 45vh, 460px);
         overflow-y: auto;
         display: flex;
         flex-direction: column;
         gap: 1px;
         align-self: stretch;
-        justify-content: center;
+        justify-content: flex-start;
     }
     .dest-legend::-webkit-scrollbar { width: 4px; }
     .dest-legend::-webkit-scrollbar-track { background: transparent; }
@@ -511,9 +511,9 @@
             margin: 0;
         }
         .dest-legend {
-            max-height: 200px;
+            max-height: clamp(200px, 40vh, 400px);
             min-width: 220px;
-            justify-content: center;
+            justify-content: flex-start;
         }
         .dash-sidebar {
             width: 100% !important;
