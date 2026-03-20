@@ -63,7 +63,10 @@ $$;
 GRANT EXECUTE ON FUNCTION update_last_seen() TO authenticated;
 
 -- Step 3: Update the get_all_users_with_emails function to include online status
-CREATE OR REPLACE FUNCTION get_all_users_with_emails()
+-- and support session-token validation for single-session enforcement.
+CREATE OR REPLACE FUNCTION get_all_users_with_emails(
+    client_session_token TEXT DEFAULT NULL
+)
 RETURNS TABLE (
     id UUID,
     email TEXT,
@@ -77,14 +80,22 @@ SECURITY DEFINER
 AS $$
 DECLARE
     calling_user_role TEXT;
+    db_session_token TEXT;
 BEGIN
     -- Security Check: Only super users can view all users
-    SELECT p.role INTO calling_user_role
+    SELECT p.role, p.session_token INTO calling_user_role, db_session_token
     FROM profiles p
     WHERE p.id = auth.uid();
     
     IF calling_user_role != 'super' THEN
         RAISE EXCEPTION 'Permission denied: Only super users can view all users';
+    END IF;
+
+    -- Security Check: Validate session token for admin/super users
+    IF calling_user_role IN ('admin', 'super') THEN
+        IF client_session_token IS NULL OR db_session_token IS NULL OR client_session_token != db_session_token THEN
+            RAISE EXCEPTION 'Session invalid: Your session has expired or another device logged in. Please log in again.';
+        END IF;
     END IF;
     
     -- Return all users with their emails, roles, and online status
@@ -104,7 +115,7 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION get_all_users_with_emails() TO authenticated;
+GRANT EXECUTE ON FUNCTION get_all_users_with_emails(TEXT) TO authenticated;
 
 -- Step 4: Test the setup
 DO $$

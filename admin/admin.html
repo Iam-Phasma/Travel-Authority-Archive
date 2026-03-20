@@ -61,6 +61,10 @@
         white-space: nowrap;
         transition: background 0.18s, color 0.18s;
     }
+    .admin-panel-switcher .switch-btn.hidden,
+    .admin-panel-switcher .switch-btn[hidden] {
+        display: none !important;
+    }
     .admin-panel-switcher .switch-btn:hover {
         background: rgba(69, 122, 231, 0.1);
         color: #457AE7;
@@ -232,7 +236,7 @@
                     </svg>
                     <span class="switch-btn-label">Officials</span>
                 </button>
-                <button class="switch-btn hidden" id="users-panel-btn" data-panel="users-panel" aria-selected="false" role="tab" aria-label="Manage Users">
+                <button class="switch-btn hidden" hidden id="users-panel-btn" data-panel="users-panel" aria-selected="false" role="tab" aria-label="Manage Users">
                     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                     <span class="switch-btn-label">Users</span>
                 </button>
@@ -365,17 +369,32 @@
             return false;
         });
 
-        // Load users panel
-        const usersPanelLoaded = fetch('users/users-panel.html')
-            .then(r => r.text())
-            .then(panelHTML => {
-                document.getElementById('users-panel-container').innerHTML = panelHTML;
-                return true;
-            })
-            .catch(error => {
-                console.error('Error loading users panel:', error);
-                return false;
-            });
+        // Load users panel lazily (super users only)
+        let usersPanelLoadedPromise = null;
+        const loadUsersPanel = () => {
+            if (usersPanelLoadedPromise) {
+                return usersPanelLoadedPromise;
+            }
+
+            usersPanelLoadedPromise = fetch('users/users-panel.html')
+                .then((response) => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch users panel: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then((panelHTML) => {
+                    document.getElementById('users-panel-container').innerHTML = panelHTML;
+                    return true;
+                })
+                .catch((error) => {
+                    console.error('Error loading users panel:', error);
+                    usersPanelLoadedPromise = null;
+                    return false;
+                });
+
+            return usersPanelLoadedPromise;
+        };
 
         // Realtime subscription to monitor current admin's access status
         const setupAccessMonitoring = async () => {
@@ -511,6 +530,10 @@
                 console.warn("Access denied: User is not an admin or super. Redirecting to dashboard.");
                 window.location.href = "../dashboard/dashboard.html";
                 return null;
+            }
+
+            if (role !== 'super' && localStorage.getItem('adminActivePanel') === 'users-panel') {
+                localStorage.setItem('adminActivePanel', 'upload-panel');
             }
 
             // Clear persisted table state once per new authenticated admin session.
@@ -1597,8 +1620,38 @@
         window.addEventListener("load", updateAdminSwitcherLayout);
         updateAdminSwitcherLayout();
 
+        const isSuperUser = () => window.adminCurrentRole === 'super';
+
+        const enforceUsersPanelAccess = () => {
+            const usersPanelBtn = document.getElementById('users-panel-btn');
+            const usersPanel = document.getElementById('users-panel');
+            const shouldHideUsersAccess = !isSuperUser();
+
+            if (usersPanelBtn) {
+                usersPanelBtn.classList.toggle('hidden', shouldHideUsersAccess);
+                usersPanelBtn.toggleAttribute('hidden', shouldHideUsersAccess);
+            }
+
+            if (!isSuperUser() && usersPanel) {
+                usersPanel.classList.add('hidden');
+            }
+
+            if (!isSuperUser() && localStorage.getItem('adminActivePanel') === 'users-panel') {
+                localStorage.setItem('adminActivePanel', 'upload-panel');
+            }
+
+            updateAdminSwitcherLayout();
+        };
+
         const activateAdminPanel = (targetPanel) => {
             if (!targetPanel) return;
+
+            // Super-only panel hard gate.
+            if (targetPanel === 'users-panel' && !isSuperUser()) {
+                console.warn('Users panel is restricted to super users.');
+                activateAdminPanel('upload-panel');
+                return;
+            }
 
             // Persist active panel
             localStorage.setItem("adminActivePanel", targetPanel);
@@ -1648,11 +1701,40 @@
                     }
                 }
             } else if (targetPanel === "users-panel") {
+                const showUsersPanel = () => {
+                    const currentUsersPanel = document.getElementById("users-panel");
+                    if (!currentUsersPanel) {
+                        return;
+                    }
+
+                    currentUsersPanel.classList.remove("hidden");
+                    loadUsers();
+
+                    if (
+                        typeof currentUsersPanel.animate === "function" &&
+                        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
+                    ) {
+                        currentUsersPanel.animate(
+                            [
+                                { opacity: 0, transform: "translateY(12px)" },
+                                { opacity: 1, transform: "translateY(0)" }
+                            ],
+                            {
+                                duration: 280,
+                                easing: "ease-out"
+                            }
+                        );
+                    }
+                };
+
                 if (usersPanel) {
-                    usersPanel.classList.remove("hidden");
-                    panelToReveal = usersPanel;
-                    // Wait for panel to load before calling loadUsers
-                    usersPanelLoaded.then(() => loadUsers());
+                    showUsersPanel();
+                } else {
+                    loadUsersPanel().then((loaded) => {
+                        if (loaded) {
+                            showUsersPanel();
+                        }
+                    });
                 }
             }
 
@@ -3693,6 +3775,40 @@
         const loadUsers = async () => {
             const usersBody = document.getElementById('users-body');
             const usersStatus = document.getElementById('users-status');
+
+            if (!isSuperUser()) {
+                console.warn('Blocked non-super user from loading users panel data.');
+                if (usersBody) {
+                    usersBody.innerHTML = '<tr><td colspan="6">Permission denied.</td></tr>';
+                }
+                if (usersStatus) {
+                    usersStatus.textContent = 'Only super users can view this panel.';
+                    usersStatus.classList.add('status--error');
+                }
+                return;
+            }
+
+            const isLegacyGetUsersSignatureError = (rpcError) => {
+                if (!rpcError) return false;
+                const code = String(rpcError.code || '');
+                const combined = `${rpcError.message || ''} ${rpcError.details || ''} ${rpcError.hint || ''}`.toLowerCase();
+                if (!combined.includes('get_all_users_with_emails')) return false;
+                return code === 'PGRST202' || code === '42883' || combined.includes('schema cache') || combined.includes('does not exist');
+            };
+
+            const getUsersWithEmailRows = async () => {
+                let response = await supabase.rpc('get_all_users_with_emails', {
+                    client_session_token: localStorage.getItem('admin_session_token')
+                });
+
+                if (!response.error || !isLegacyGetUsersSignatureError(response.error)) {
+                    return response;
+                }
+
+                console.warn('Falling back to legacy get_all_users_with_emails() signature without client_session_token.');
+                response = await supabase.rpc('get_all_users_with_emails');
+                return response;
+            };
             
             if (!usersBody || !usersStatus) {
                 console.error('Users panel elements not found in DOM');
@@ -3706,9 +3822,7 @@
                 usersStatus.classList.remove('status--error');
                 // Use RPC function to get users with emails from auth.users
                 // This is secure because the RPC function validates super user permission
-                const { data, error } = await supabase.rpc('get_all_users_with_emails', {
-                    client_session_token: localStorage.getItem('admin_session_token')
-                });
+                const { data, error } = await getUsersWithEmailRows();
                 if (error) {
                     console.error('Error loading users:', error);
                     console.error('Error details:', {
@@ -3717,11 +3831,15 @@
                         hint: error.hint,
                         code: error.code
                     });
+                    const combinedErrorText = `${error.message || ''} ${error.details || ''} ${error.hint || ''}`;
+                    const normalizedErrorText = combinedErrorText.toLowerCase();
                     // Provide helpful error messages
-                    if (error.message.includes('function') && error.message.includes('does not exist')) {
-                        throw new Error('Database function not found. Please run the SQL script: create_get_users_function.sql');
-                    } else if (error.message.includes('Permission denied')) {
+                    if (isLegacyGetUsersSignatureError(error)) {
+                        throw new Error('Database function get_all_users_with_emails is missing. Please run sql/create_get_users_function.sql.');
+                    } else if (normalizedErrorText.includes('permission denied')) {
                         throw new Error('Permission denied. Only super users can view all users.');
+                    } else if (normalizedErrorText.includes('session invalid')) {
+                        throw new Error('Session invalid or expired. Please sign in again.');
                     } else {
                         throw error;
                     }
@@ -3771,6 +3889,10 @@
                 const usersRoleFilter = document.getElementById('users-role-filter');
                 const usersAccessFilter = document.getElementById('users-access-filter');
                 const usersStatusFilter = document.getElementById('users-status-filter');
+
+                if (!usersRoleFilter || !usersAccessFilter || !usersStatusFilter) {
+                    throw new Error('Users filters are not available in the panel. Please refresh and try again.');
+                }
 
                 const filterUsers = () => {
                     let filtered = allUsersData;
@@ -3822,7 +3944,8 @@
                     usersBody.innerHTML = '<tr><td colspan="6">Error loading users.</td></tr>';
                 }
                 if (usersStatus) {
-                    usersStatus.textContent = 'Failed to load users.';
+                    usersStatus.textContent = error?.message || 'Failed to load users.';
+                    usersStatus.classList.add('status--error');
                 }
             }
         };
@@ -4067,6 +4190,7 @@
             const userRole = await requireAdmin();
             if (!userRole) return; // Redirected to login or dashboard
             window.adminCurrentRole = userRole;
+            enforceUsersPanelAccess();
             window.dispatchEvent(new CustomEvent('admin-role-ready', { detail: { role: userRole } }));
             
             // Start activity-driven global heartbeat for current user
@@ -4122,15 +4246,14 @@
             // Show User Management panel only for super users
             if (userRole === 'super') {
                 // Wait for users panel to load before setting up
-                usersPanelLoaded.then(async () => {
+                loadUsersPanel().then(async (loaded) => {
+                    if (!loaded) {
+                        return;
+                    }
+                    enforceUsersPanelAccess();
                     const usersPanelBtn = document.getElementById('users-panel-btn');
-                    if (usersPanelBtn) {
-                        usersPanelBtn.classList.remove('hidden');
-                        updateAdminSwitcherLayout();
-                        // Restore users-panel if it was the last active panel
-                        if (localStorage.getItem('adminActivePanel') === 'users-panel') {
-                            usersPanelBtn.click();
-                        }
+                    if (usersPanelBtn && localStorage.getItem('adminActivePanel') === 'users-panel') {
+                        usersPanelBtn.click();
                     }
                     // Load users for the User Management panel
                     await loadUsers();
@@ -4149,7 +4272,7 @@
         // Note: loadAdminEmployeesForFilter() is called inside viewPanelLoaded.then() where it's defined
 
         // Preload travel authorities data in the background for faster first load
-        Promise.all([employeePanelLoaded, usersPanelLoaded, uploadPanelLoaded]).then(() => {
+        Promise.all([employeePanelLoaded, uploadPanelLoaded]).then(() => {
             if (typeof loadTravelAuthorities === "function") {
                 loadTravelAuthorities(true).catch(err => {
                     console.warn("Background preload of travel authorities failed:", err);
@@ -4158,7 +4281,7 @@
         });
 
         // Restore last active panel (wait for panels to load first)
-        Promise.all([viewPanelLoaded, employeePanelLoaded, usersPanelLoaded, uploadPanelLoaded]).then(() => {
+        Promise.all([viewPanelLoaded, employeePanelLoaded, uploadPanelLoaded]).then(() => {
             const savedPanel = localStorage.getItem("adminActivePanel");
             if (!savedPanel || savedPanel === "upload-panel") return;
             const targetBtn = document.querySelector(`.switch-btn[data-panel="${savedPanel}"]`);
