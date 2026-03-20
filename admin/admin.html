@@ -7,7 +7,7 @@
     <link rel="icon" type="image/png" href="../assets/CHED-Logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css?v=20260314-3">
-    <link rel="stylesheet" href="../header/header.css">
+    <link rel="stylesheet" href="../header/header.css?v=20260320-2">
     <link rel="stylesheet" href="../footer/footer.css">
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
@@ -179,7 +179,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html?v=20260313-7')
+        fetch('../header/header.html?v=20260320-1')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -625,6 +625,7 @@
             if (headerButtonsInitialized) return;
             
             const userMenuBtn = document.getElementById('user-menu-btn');
+            const securityDocsHeaderBtn = document.getElementById('header-security-doc-btn');
             const headerPopup = document.getElementById('header-popup-panel');
             const draftTaOption = document.getElementById('header-draft-ta-option');
             const settingsOption = document.getElementById('header-settings-option');
@@ -881,6 +882,28 @@
             }
             
             headerButtonsInitialized = true;
+
+            if (securityDocsHeaderBtn) {
+                securityDocsHeaderBtn.hidden = true;
+            }
+
+            const applySecurityDocsHeaderVisibilityByRole = (role) => {
+                if (!securityDocsHeaderBtn) return;
+                const isSuper = role === 'super';
+                securityDocsHeaderBtn.hidden = !isSuper;
+            };
+
+            applySecurityDocsHeaderVisibilityByRole(window.adminCurrentRole || '');
+            window.addEventListener('admin-role-ready', (event) => {
+                applySecurityDocsHeaderVisibilityByRole(event?.detail?.role || '');
+            });
+
+            if (securityDocsHeaderBtn) {
+                securityDocsHeaderBtn.addEventListener('click', () => {
+                    headerPopup.classList.remove('show');
+                    window.location.href = './security-documentation.html';
+                });
+            }
 
             const closeDraftTaModal = () => {
                 if (!draftTaModal) return;
@@ -4495,15 +4518,18 @@
         const settingsScanOrphansBtn = document.getElementById('settings-scan-orphans');
         const settingsDeleteOrphansBtn = document.getElementById('settings-delete-orphans');
         const settingsOrphanStatus = document.getElementById('settings-orphan-status');
+        const settingsModal = document.getElementById('settings-modal');
 
-        const applyOrphanToolsVisibilityByRole = (role) => {
-            if (!settingsOrphanToolsSection) return;
-            settingsOrphanToolsSection.style.display = role === 'super' ? '' : 'none';
+        const applySuperOnlySettingsVisibilityByRole = (role) => {
+            const isSuper = role === 'super';
+            if (settingsOrphanToolsSection) {
+                settingsOrphanToolsSection.style.display = isSuper ? '' : 'none';
+            }
         };
 
-        applyOrphanToolsVisibilityByRole(window.adminCurrentRole || '');
+        applySuperOnlySettingsVisibilityByRole(window.adminCurrentRole || '');
         window.addEventListener('admin-role-ready', (event) => {
-            applyOrphanToolsVisibilityByRole(event?.detail?.role || '');
+            applySuperOnlySettingsVisibilityByRole(event?.detail?.role || '');
         });
 
         // Load saved setting (default: true = visible)
@@ -4602,12 +4628,12 @@
         }
 
         document.getElementById('close-settings').addEventListener('click', () => {
-            document.getElementById('settings-modal').classList.remove('show');
+            settingsModal?.classList.remove('show');
         });
 
-        document.getElementById('settings-modal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('settings-modal')) {
-                document.getElementById('settings-modal').classList.remove('show');
+        settingsModal?.addEventListener('click', (e) => {
+            if (e.target === settingsModal) {
+                settingsModal.classList.remove('show');
             }
         });
     </script>

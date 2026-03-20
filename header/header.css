@@ -87,6 +87,63 @@
     align-items: center;
 }
 
+.header-doc-btn {
+    height: 38px;
+    border-radius: 8px;
+    border: 1px solid rgba(15, 26, 31, 0.25);
+    background: white;
+    color: rgba(15, 26, 31, 0.7);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    transition: all 250ms ease;
+    white-space: nowrap;
+}
+
+.header-doc-btn[hidden] {
+    display: none !important;
+}
+
+.header-doc-icon {
+    width: 20px;
+    height: 20px;
+    fill: rgba(15, 26, 31, 0.65);
+    flex-shrink: 0;
+    transition: fill 250ms ease;
+}
+
+.header-doc-btn:hover {
+    background: rgba(47, 111, 179, 0.08);
+    border-color: var(--sea);
+    color: rgba(15, 26, 31, 0.7);
+    box-shadow: none;
+    transform: none;
+}
+
+.header-doc-btn:hover .header-doc-icon {
+    fill: var(--sea);
+}
+
+.header-doc-btn:active {
+    background: rgba(47, 111, 179, 0.12);
+    box-shadow: none;
+    transform: none;
+}
+
+.header-doc-btn.is-active {
+    background: white;
+    border-color: rgba(15, 26, 31, 0.25);
+    color: rgba(15, 26, 31, 0.7);
+}
+
+.header-doc-btn.is-active .header-doc-icon {
+    fill: rgba(15, 26, 31, 0.65);
+}
+
 .header-icon-btn {
     width: 38px;
     height: 38px;
@@ -138,6 +195,8 @@
 .header-user-btn:hover {
     background: rgba(47, 111, 179, 0.08);
     border-color: var(--sea);
+    box-shadow: none;
+    transform: none;
 }
 
 .header-user-btn:hover .user-icon {
@@ -146,6 +205,8 @@
 
 .header-user-btn:active {
     background: rgba(47, 111, 179, 0.12);
+    box-shadow: none;
+    transform: none;
 }
 
 .header-icon-btn svg {
@@ -427,6 +488,18 @@ header {
     .header-icon-btn svg {
         width: 18px;
         height: 18px;
+    }
+
+    .header-doc-btn {
+        width: 38px;
+        min-width: 38px;
+        border-radius: 8px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .header-doc-label {
+        display: none;
     }
 
     .tagline {
