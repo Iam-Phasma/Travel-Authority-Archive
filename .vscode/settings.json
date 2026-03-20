@@ -1,3 +1,10 @@
 {
-    "livePreview.defaultPreviewPath": "/index.html"
+    "livePreview.defaultPreviewPath": "/index.html",
+    "chat.tools.terminal.autoApprove": {
+        "npx supabase": true,
+        "/^which node; which npm; node --version; npm --version$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
 }
