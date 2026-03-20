@@ -30,8 +30,12 @@
         padding: 14px 10px;
         position: sticky;
         top: 82px;
-        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, background-color 220ms ease;
         overflow: hidden;
+    }
+    .dash-sidebar.is-stuck {
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15), 0 10px 24px rgba(11, 28, 59, 0.12);
     }
     .dash-sidebar.collapsed {
         width: 56px;
@@ -522,7 +526,9 @@
         }
         .dash-sidebar {
             width: 100% !important;
-            position: static;
+            position: sticky;
+            top: 82px;
+            z-index: 25;
             padding: 10px 12px;
         }
         .dash-sidebar-top {
@@ -540,6 +546,12 @@
             opacity: 1;
             max-width: 120px;
             pointer-events: auto;
+        }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .dash-sidebar {
+            transition: none;
         }
     }
     </style>
@@ -3007,6 +3019,26 @@
         // Sidebar collapse toggle
         const dashSidebar = document.getElementById('dash-sidebar');
         const dashSidebarToggle = document.getElementById('dash-sidebar-toggle');
+        const updateDashboardSidebarStickyState = () => {
+            if (!dashSidebar) return;
+
+            const computed = window.getComputedStyle(dashSidebar);
+            if (computed.position !== 'sticky') {
+                dashSidebar.classList.remove('is-stuck');
+                return;
+            }
+
+            const stickyTop = parseFloat(computed.top) || 0;
+            const { top } = dashSidebar.getBoundingClientRect();
+            const isStuck = window.scrollY > 0 && top <= (stickyTop + 1);
+            dashSidebar.classList.toggle('is-stuck', isStuck);
+        };
+
+        window.addEventListener('scroll', updateDashboardSidebarStickyState, { passive: true });
+        window.addEventListener('resize', updateDashboardSidebarStickyState);
+        window.addEventListener('load', updateDashboardSidebarStickyState);
+        updateDashboardSidebarStickyState();
+
         if (dashSidebar && dashSidebarToggle) {
             dashSidebarToggle.addEventListener('click', () => {
                 dashSidebar.classList.toggle('collapsed');

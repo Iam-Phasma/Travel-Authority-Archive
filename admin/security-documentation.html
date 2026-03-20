@@ -83,8 +83,13 @@
             padding: 14px 10px;
             position: sticky;
             top: 82px;
-            transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, background-color 220ms ease;
             overflow: hidden;
+        }
+
+        .security-doc-sidebar.is-stuck {
+            background: rgba(255, 255, 255, 0.72);
+            box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15), 0 10px 24px rgba(11, 28, 59, 0.12);
         }
 
         .security-doc-sidebar.collapsed {
@@ -313,11 +318,13 @@
             }
 
             .security-doc-sidebar {
-                position: static;
+                position: sticky;
+                top: 82px;
+                z-index: 25;
                 width: 100%;
                 border-radius: 16px;
                 padding: 10px;
-                transition: none;
+                transition: box-shadow 220ms ease, background-color 220ms ease;
             }
 
             .security-doc-sidebar.collapsed {
@@ -375,6 +382,12 @@
 
             .security-doc-sidebar-nav {
                 grid-template-columns: 1fr;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .security-doc-sidebar {
+                transition: none;
             }
         }
     </style>
@@ -704,6 +717,26 @@
             const sections = navLinks
                 .map((link) => document.querySelector(link.getAttribute("href")))
                 .filter(Boolean);
+
+            const updateSecuritySidebarStickyState = () => {
+                if (!sidebar) return;
+
+                const computed = window.getComputedStyle(sidebar);
+                if (computed.position !== "sticky") {
+                    sidebar.classList.remove("is-stuck");
+                    return;
+                }
+
+                const stickyTop = parseFloat(computed.top) || 0;
+                const { top } = sidebar.getBoundingClientRect();
+                const isStuck = window.scrollY > 0 && top <= (stickyTop + 1);
+                sidebar.classList.toggle("is-stuck", isStuck);
+            };
+
+            window.addEventListener("scroll", updateSecuritySidebarStickyState, { passive: true });
+            window.addEventListener("resize", updateSecuritySidebarStickyState);
+            window.addEventListener("load", updateSecuritySidebarStickyState);
+            updateSecuritySidebarStickyState();
 
             if (sidebar && sidebarToggle) {
                 sidebarToggle.addEventListener("click", () => {

@@ -42,8 +42,13 @@
         background: rgba(255, 255, 255, 0.62);
         backdrop-filter: blur(12px);
         -webkit-backdrop-filter: blur(12px);
-        box-shadow: none;
+        box-shadow: 0 0 0 rgba(11, 28, 59, 0);
+        transition: box-shadow 220ms ease, background-color 220ms ease;
         overflow-x: auto;
+    }
+    .admin-panel-switcher.is-stuck {
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow: 0 10px 24px rgba(11, 28, 59, 0.12);
     }
     .admin-panel-switcher .switch-btn {
         display: inline-flex;
@@ -109,6 +114,19 @@
         margin-top: 0;
         margin-left: auto;
         margin-right: auto;
+        animation: none;
+        transform: none;
+    }
+    .admin-panels .panel.admin-panel-enter {
+        animation: fadeUp 280ms ease-out both;
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .admin-panels .panel.admin-panel-enter {
+            animation: none;
+        }
+        .admin-panel-switcher {
+            transition: none;
+        }
     }
     .admin-panels #upload-panel {
         width: min(720px, 100%);
@@ -1639,9 +1657,22 @@
             });
         };
 
+        const updateAdminSwitcherStickyState = () => {
+            if (!adminPanelSwitcher) return;
+
+            const stickyTop = parseFloat(window.getComputedStyle(adminPanelSwitcher).top) || 0;
+            const { top } = adminPanelSwitcher.getBoundingClientRect();
+            const isStuck = window.scrollY > 0 && top <= (stickyTop + 1);
+            adminPanelSwitcher.classList.toggle("is-stuck", isStuck);
+        };
+
         window.addEventListener("resize", updateAdminSwitcherLayout);
         window.addEventListener("load", updateAdminSwitcherLayout);
+        window.addEventListener("resize", updateAdminSwitcherStickyState);
+        window.addEventListener("load", updateAdminSwitcherStickyState);
+        window.addEventListener("scroll", updateAdminSwitcherStickyState, { passive: true });
         updateAdminSwitcherLayout();
+        updateAdminSwitcherStickyState();
 
         const isSuperUser = () => window.adminCurrentRole === 'super';
 
@@ -1664,6 +1695,21 @@
             }
 
             updateAdminSwitcherLayout();
+        };
+
+        const revealAdminPanel = (panelEl) => {
+            if (!panelEl) return;
+
+            panelEl.classList.remove("hidden");
+            panelEl.classList.remove("admin-panel-enter");
+
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                return;
+            }
+
+            // Force reflow so the enter animation reliably restarts on each switch.
+            void panelEl.offsetWidth;
+            panelEl.classList.add("admin-panel-enter");
         };
 
         const activateAdminPanel = (targetPanel) => {
@@ -1692,23 +1738,22 @@
             const employeesPanel = document.getElementById("employees-panel");
             const usersPanel = document.getElementById("users-panel");
 
-            // Show/hide panels
-            if (uploadPanel) uploadPanel.classList.add("hidden");
-            if (viewPanel) viewPanel.classList.add("hidden");
-            if (employeesPanel) employeesPanel.classList.add("hidden");
-            if (usersPanel) usersPanel.classList.add("hidden");
+            const allPanels = [uploadPanel, viewPanel, employeesPanel, usersPanel];
 
-            let panelToReveal = null;
+            // Show/hide panels
+            allPanels.forEach((panelEl) => {
+                if (!panelEl) return;
+                panelEl.classList.add("hidden");
+                panelEl.classList.remove("admin-panel-enter");
+            });
 
             if (targetPanel === "upload-panel") {
                 if (uploadPanel) {
-                    uploadPanel.classList.remove("hidden");
-                    panelToReveal = uploadPanel;
+                    revealAdminPanel(uploadPanel);
                 }
             } else if (targetPanel === "view-panel") {
                 if (viewPanel) {
-                    viewPanel.classList.remove("hidden");
-                    panelToReveal = viewPanel;
+                    revealAdminPanel(viewPanel);
                     // Call loadTravelAuthoritiesIfNeeded if it exists on window
                     if (window.loadTravelAuthoritiesIfNeeded) {
                         window.loadTravelAuthoritiesIfNeeded();
@@ -1716,8 +1761,7 @@
                 }
             } else if (targetPanel === "employees-panel") {
                 if (employeesPanel) {
-                    employeesPanel.classList.remove("hidden");
-                    panelToReveal = employeesPanel;
+                    revealAdminPanel(employeesPanel);
                     // Call renderEmployeeList if it exists on window
                     if (window.employeeRenderList) {
                         window.employeeRenderList();
@@ -1730,24 +1774,8 @@
                         return;
                     }
 
-                    currentUsersPanel.classList.remove("hidden");
+                    revealAdminPanel(currentUsersPanel);
                     loadUsers();
-
-                    if (
-                        typeof currentUsersPanel.animate === "function" &&
-                        !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-                    ) {
-                        currentUsersPanel.animate(
-                            [
-                                { opacity: 0, transform: "translateY(12px)" },
-                                { opacity: 1, transform: "translateY(0)" }
-                            ],
-                            {
-                                duration: 280,
-                                easing: "ease-out"
-                            }
-                        );
-                    }
                 };
 
                 if (usersPanel) {
@@ -1759,23 +1787,6 @@
                         }
                     });
                 }
-            }
-
-            if (
-                panelToReveal &&
-                typeof panelToReveal.animate === "function" &&
-                !window.matchMedia("(prefers-reduced-motion: reduce)").matches
-            ) {
-                panelToReveal.animate(
-                    [
-                        { opacity: 0, transform: "translateY(12px)" },
-                        { opacity: 1, transform: "translateY(0)" }
-                    ],
-                    {
-                        duration: 280,
-                        easing: "ease-out"
-                    }
-                );
             }
         };
 
