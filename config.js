@@ -18,7 +18,7 @@ export const supabaseConfig = {
     
     // Production URL for GitHub Pages
     // ALWAYS uses this URL for password reset emails (works from localhost or production)
-    productionUrl: "https://iam-phasma.github.io/Travel",
+    productionUrl: "https://iam-phasma.github.io/Travel-Authority-Archive",
     
     // Get the redirect URL for password reset
     getRedirectUrl: function() {
