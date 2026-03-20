@@ -190,9 +190,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Re-grant permissions
-GRANT EXECUTE ON FUNCTION check_login_lockout(TEXT) TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION record_failed_login(TEXT) TO anon, authenticated;
+-- Re-grant permissions (sensitive lockout functions are server-only)
+REVOKE ALL ON FUNCTION check_login_lockout(TEXT) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION record_failed_login(TEXT) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION check_login_lockout(TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION record_failed_login(TEXT) TO service_role;
 GRANT EXECUTE ON FUNCTION clear_failed_login() TO authenticated;
 
 -- Step 5: Clear all existing login attempts to start fresh

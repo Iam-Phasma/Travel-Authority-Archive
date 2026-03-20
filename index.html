@@ -142,6 +142,7 @@
         let loginCaptchaToken = null;
         const MIN_PASSWORD_LENGTH = 12;
         const MIN_PASSWORD_SCORE = 3;
+        const DEFAULT_LOGIN_RETRY_SECONDS = 60;
         const GENERIC_LOGIN_FAILURE_MESSAGE = "Invalid email or password.";
         const GENERIC_RESET_MESSAGE = "If the email is registered, a reset link will be sent.";
 
@@ -158,50 +159,43 @@
             confirmPasswordInput.type = type;
         });
 
-        // Database function to check if user is locked out
-        const checkLockoutStatus = async (email) => {
+        const parseRetrySeconds = (value, fallback = DEFAULT_LOGIN_RETRY_SECONDS) => {
+            const numeric = Number(value);
+            if (!Number.isFinite(numeric) || numeric <= 0) {
+                return fallback;
+            }
+            return Math.ceil(numeric);
+        };
+
+        // Route login through the Edge Function so lockout state is updated server-side.
+        const loginViaEdgeFunction = async ({ email, password, captchaToken }) => {
             try {
-                const { data, error } = await supabase.rpc('check_login_lockout', {
-                    user_email: email
+                const { data, error } = await supabase.functions.invoke('secure-login', {
+                    body: {
+                        email,
+                        password,
+                        captchaToken
+                    }
                 });
 
                 if (error) {
-                    console.error("Error checking lockout:", error);
-                    return { locked: false };
+                    console.error("Secure login function error:", error);
+                    return {
+                        authenticated: false,
+                        code: "service_unavailable"
+                    };
                 }
 
-                return data;
+                return data || {
+                    authenticated: false,
+                    code: "service_unavailable"
+                };
             } catch (err) {
-                console.error("Lockout check failed:", err);
-                return { locked: false };
-            }
-        };
-
-        // Database function to record failed login attempt
-        const recordFailedAttempt = async (email) => {
-            try {
-                const { data, error } = await supabase.rpc('record_failed_login', {
-                    user_email: email
-                });
-
-                if (error) {
-                    console.error("Error recording failed login:", error);
-                    return { locked: false };
-                }
-
-                return data;
-            } catch (err) {
-                console.error("Failed to record attempt:", err);
-                return { locked: false };
-            }
-        };
-
-        // Database function to clear login attempts on successful login
-        const clearLoginAttempts = async () => {
-            try {
-                await supabase.rpc('clear_failed_login');
-            } catch (err) {
-                console.error("Failed to clear attempts:", err);
+                console.error("Secure login function request failed:", err);
+                return {
+                    authenticated: false,
+                    code: "service_unavailable"
+                };
             }
         };
 
@@ -215,14 +209,12 @@
             }
         };
 
-        const startLockoutCountdown = async (email) => {
+        const startLockoutCountdown = (seconds, mode = "account") => {
             stopLockoutCountdown(); // Clear any existing countdown
+            let remaining = parseRetrySeconds(seconds);
 
-            const updateCountdown = async () => {
-                const lockoutStatus = await checkLockoutStatus(email);
-                
-                if (!lockoutStatus.locked) {
-                    // Lockout expired
+            const updateCountdown = () => {
+                if (remaining <= 0) {
                     stopLockoutCountdown();
                     loginStatus.textContent = "You can now try logging in again.";
                     loginStatus.classList.remove("status--error", "hidden");
@@ -233,15 +225,18 @@
                     return;
                 }
 
-                // Update timer display
-                const remaining = lockoutStatus.seconds_remaining || 0;
-                loginStatus.textContent = `Too many failed attempts. Try again in ${remaining} second${remaining !== 1 ? 's' : ''}.`;
+                if (mode === "network") {
+                    loginStatus.textContent = `Too many failed attempts from this network. Try again in ${remaining} second${remaining !== 1 ? 's' : ''}.`;
+                } else {
+                    loginStatus.textContent = `Too many failed attempts. Try again in ${remaining} second${remaining !== 1 ? 's' : ''}.`;
+                }
                 loginStatus.classList.remove("status--success", "hidden");
                 loginStatus.classList.add("status--error");
+                remaining--;
             };
 
             // Initial update
-            await updateCountdown();
+            updateCountdown();
             
             // Update every second
             lockoutCountdownInterval = setInterval(updateCountdown, 1000);
@@ -333,37 +328,67 @@
 
             const hcaptchaResponse = loginCaptchaToken;
 
-            // Check lockout status from database
-            const lockoutStatus = await checkLockoutStatus(email);
-            if (lockoutStatus.locked) {
-                // Start dynamic countdown
-                startLockoutCountdown(email);
-                return;
-            }
-
             loginStatus.textContent = "Signing in...";
             loginStatus.classList.remove("status--error", "status--success", "hidden");
 
             try {
-                const { data, error } = await supabase.auth.signInWithPassword({
+                const loginResult = await loginViaEdgeFunction({
                     email,
                     password,
-                    options: {
-                        captchaToken: hcaptchaResponse
-                    }
+                    captchaToken: hcaptchaResponse
                 });
 
-                if (error) {
-                    throw error;
+                if (!loginResult?.authenticated) {
+                    if (loginCaptchaWidgetId !== null) hcaptcha.reset(loginCaptchaWidgetId);
+                    loginCaptchaToken = null;
+                    loginBtn.textContent = "Verify";
+
+                    if (loginResult?.code === "locked") {
+                        startLockoutCountdown(loginResult?.seconds_remaining, "account");
+                        return;
+                    }
+
+                    if (loginResult?.code === "ip_limited") {
+                        startLockoutCountdown(loginResult?.seconds_remaining, "network");
+                        return;
+                    }
+
+                    if (loginResult?.code === "captcha_failed" || loginResult?.code === "captcha_required") {
+                        loginStatus.textContent = "CAPTCHA verification failed. Please try again.";
+                    } else {
+                        const attemptsRemaining = Number(loginResult?.attempts_remaining);
+                        if (Number.isFinite(attemptsRemaining) && attemptsRemaining <= 5 && attemptsRemaining >= 0) {
+                            loginStatus.textContent = `${GENERIC_LOGIN_FAILURE_MESSAGE}. ${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining.`;
+                        } else {
+                            loginStatus.textContent = GENERIC_LOGIN_FAILURE_MESSAGE;
+                        }
+                    }
+
+                    loginStatus.classList.remove("status--success", "hidden", "status--shake");
+                    loginStatus.classList.add("status--error");
+                    void loginStatus.offsetWidth;
+                    loginStatus.classList.add("status--shake");
+                    return;
                 }
 
-                const user = data?.user;
-                if (!user) {
+                const session = loginResult?.session;
+                if (!session?.access_token || !session?.refresh_token) {
+                    throw new Error("Unable to create user session.");
+                }
+
+                const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+                    access_token: session.access_token,
+                    refresh_token: session.refresh_token
+                });
+
+                if (sessionError) {
+                    throw sessionError;
+                }
+
+                const user = sessionData?.user || loginResult?.user;
+                if (!user?.id) {
                     throw new Error("Unable to load user session.");
                 }
-
-                // Clear failed attempts from database
-                await clearLoginAttempts();
 
                 // Reset hCaptcha after successful login
                 if (loginCaptchaWidgetId !== null) hcaptcha.reset(loginCaptchaWidgetId);
@@ -399,32 +424,17 @@
                     window.location.href = page;
                 }, 500);
             } catch (error) {
-                const errorMessage = GENERIC_LOGIN_FAILURE_MESSAGE;
+                console.error("Login failed:", error);
 
                 if (loginCaptchaWidgetId !== null) hcaptcha.reset(loginCaptchaWidgetId);
                 loginCaptchaToken = null;
                 loginBtn.textContent = "Verify";
 
-                // Record failed attempt in database
-                const attemptResult = await recordFailedAttempt(email);
-
-                if (attemptResult.locked) {
-                    // Start dynamic countdown
-                    startLockoutCountdown(email);
-                } else {
-                    const attemptsRemaining = attemptResult.attempts_remaining || 0;
-                    // Only show attempts remaining when 5 or fewer attempts left
-                    if (attemptsRemaining <= 5) {
-                        loginStatus.textContent = `${errorMessage}. ${attemptsRemaining} attempt${attemptsRemaining !== 1 ? 's' : ''} remaining.`;
-                    } else {
-                        loginStatus.textContent = errorMessage;
-                    }
-                    loginStatus.classList.remove("status--success", "hidden");
-                    loginStatus.classList.add("status--error");
-                    loginStatus.classList.remove("status--shake");
-                    void loginStatus.offsetWidth;
-                    loginStatus.classList.add("status--shake");
-                }
+                loginStatus.textContent = GENERIC_LOGIN_FAILURE_MESSAGE;
+                loginStatus.classList.remove("status--success", "hidden", "status--shake");
+                loginStatus.classList.add("status--error");
+                void loginStatus.offsetWidth;
+                loginStatus.classList.add("status--shake");
             }
         };
 
