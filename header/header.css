@@ -117,7 +117,7 @@
 }
 
 .header-doc-btn:hover {
-    background: rgba(47, 111, 179, 0.08);
+    background: var(--hover-sea-subtle, rgba(47, 111, 179, 0.1));
     border-color: var(--sea);
     color: rgba(15, 26, 31, 0.7);
     box-shadow: none;
@@ -193,7 +193,7 @@
 }
 
 .header-user-btn:hover {
-    background: rgba(47, 111, 179, 0.08);
+    background: var(--hover-sea-subtle, rgba(47, 111, 179, 0.1));
     border-color: var(--sea);
     box-shadow: none;
     transform: none;
@@ -217,7 +217,7 @@
 }
 
 .header-icon-btn:hover {
-    background: rgba(47, 111, 179, 0.08);
+    background: var(--hover-sea-subtle, rgba(47, 111, 179, 0.1));
     border-color: var(--sea);
 }
 
@@ -319,7 +319,7 @@
 }
 
 .header-popup-option:hover {
-    background: rgba(47, 111, 179, 0.08);
+    background: var(--hover-sea-subtle, rgba(47, 111, 179, 0.1));
     box-shadow: none;
 }
 

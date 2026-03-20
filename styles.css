@@ -11,6 +11,18 @@
     --clay: #7fb3e6;
     --glass: rgba(255, 255, 255, 0.62);
     --shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+    --hover-ink: #081430;
+    --hover-sea: #285f9a;
+    --hover-neutral-soft: rgba(15, 26, 31, 0.18);
+    --hover-sea-subtle: rgba(47, 111, 179, 0.1);
+    --hover-sea-soft: rgba(47, 111, 179, 0.22);
+    --hover-accent-soft: rgba(69, 122, 231, 0.1);
+    --hover-danger-soft: rgba(161, 37, 27, 0.24);
+    --hover-warning-soft: rgba(216, 180, 0, 0.38);
+    --hover-success-soft: rgba(76, 153, 76, 0.24);
+    --hover-warning-muted-soft: rgba(153, 102, 51, 0.24);
+    --hover-danger-solid: #8a1f17;
+    --hover-success-solid: #3d7a3d;
 }
 
 * {
@@ -115,8 +127,9 @@ body.login-page {
 }
 
 .logout-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(47, 111, 179, 0.3);
+    background: var(--hover-sea);
+    transform: none;
+    box-shadow: none;
 }
 
 .shell {
@@ -201,9 +214,9 @@ body.login-page {
 }
 
 .secondary-btn:hover {
-    background: rgba(15, 26, 31, 0.2);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(15, 26, 31, 0.15);
+    background: var(--hover-neutral-soft);
+    transform: none;
+    box-shadow: none;
 }
 
 .checkbox-label {
@@ -424,7 +437,7 @@ input::-moz-placeholder,
 }
 
 .autocomplete-add-btn:hover {
-    background: #275a91;
+    background: var(--hover-sea);
 }
 
 .autocomplete-add-btn:active {
@@ -462,12 +475,13 @@ button {
     font-weight: 700;
     background: var(--ink);
     color: var(--mist);
-    transition: transform 150ms ease, box-shadow 150ms ease;
+    transition: background 150ms ease, color 150ms ease;
 }
 
 button:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 8px 18px rgba(15, 26, 31, 0.25);
+    background: var(--hover-ink);
+    transform: none;
+    box-shadow: none;
 }
 
 /* Forgot Password Link */
@@ -551,7 +565,7 @@ button:hover {
 }
 
 .close-modal:hover {
-    background: rgba(47, 111, 179, 0.1);
+    background: var(--hover-sea-subtle);
     color: var(--ink);
     transform: none;
     box-shadow: none;
@@ -588,12 +602,12 @@ button:hover {
     border: none;
     font-weight: 600;
     cursor: pointer;
-    transition: background 150ms ease, transform 150ms ease;
+    transition: background 150ms ease;
 }
 
 .btn-primary:hover {
-    background: var(--ink);
-    transform: translateY(-1px);
+    background: var(--hover-ink);
+    transform: none;
 }
 
 .btn-primary:disabled {
@@ -610,12 +624,12 @@ button:hover {
     border: none;
     font-weight: 600;
     cursor: pointer;
-    transition: background 150ms ease, transform 150ms ease;
+    transition: background 150ms ease;
 }
 
 .btn-secondary:hover {
-    background: rgba(47, 111, 179, 0.2);
-    transform: translateY(-1px);
+    background: var(--hover-sea-soft);
+    transform: none;
 }
 
 .status {
@@ -781,6 +795,10 @@ button:hover {
     background: var(--sea);
     color: var(--mist);
     font-weight: 700;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: var(--hover-sea);
 }
 
 .pagination-btn:disabled {
@@ -1247,7 +1265,7 @@ button:hover {
 }
 
 .link-btn:hover {
-    background: rgba(47, 111, 179, 0.25);
+    background: var(--hover-sea-soft);
 }
 
 .panel-switcher {
@@ -1273,7 +1291,7 @@ button:hover {
 }
 
 .switch-btn:hover {
-    background: rgba(47, 111, 179, 0.1);
+    background: var(--hover-sea-subtle);
     transform: none;
     box-shadow: none;
 }
@@ -1296,7 +1314,7 @@ button:hover {
 }
 
 .delete-btn:hover {
-    background: rgba(161, 37, 27, 0.25);
+    background: var(--hover-danger-soft);
     transform: none;
     box-shadow: none;
 }
@@ -1325,7 +1343,7 @@ button:hover {
 }
 
 .view-btn:hover {
-    background: rgba(47, 111, 179, 0.25);
+    background: var(--hover-sea-soft);
     transform: none;
     box-shadow: none;
 }
@@ -1344,7 +1362,7 @@ button:hover {
 }
 
 .update-btn:hover {
-    background: rgba(255, 213, 0, 0.583);
+    background: var(--hover-warning-soft);
     transform: none;
     box-shadow: none;
 }
@@ -1540,7 +1558,7 @@ button:hover {
 }
 
 .settings-btn-primary:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 .settings-orphan-status {
@@ -1578,7 +1596,7 @@ button:hover {
 }
 
 .modal-btn.cancel:hover {
-    background: rgba(15, 26, 31, 0.2);
+    background: var(--hover-neutral-soft);
 }
 
 .modal-btn.confirm {
@@ -1587,7 +1605,7 @@ button:hover {
 }
 
 .modal-btn.confirm:hover {
-    background: #8a1f17;
+    background: var(--hover-danger-solid);
 }
 
 /* Export button in modal - green styling */
@@ -1597,7 +1615,7 @@ button:hover {
 }
 
 #confirm-export:hover {
-    background: #3d7a3d;
+    background: var(--hover-success-solid);
 }
 
 /* Update button in modal - dark blue styling */
@@ -1607,7 +1625,7 @@ button:hover {
 }
 
 #confirm-update:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 /* Employee edit save button - dark blue styling */
@@ -1617,7 +1635,7 @@ button:hover {
 }
 
 #confirm-edit-employee:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 /* Send Reset Link button - dark blue styling */
@@ -1627,7 +1645,7 @@ button:hover {
 }
 
 #send-reset-btn:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 /* Generic confirm button - dark blue styling for hide/unhide, access, and role change actions */
@@ -1637,7 +1655,7 @@ button:hover {
 }
 
 #confirm-confirm:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 @media (max-width: 720px) {
@@ -1835,9 +1853,9 @@ button:hover {
 }
 
 .filter-icon-btn:hover {
-    background: rgba(47, 111, 179, 0.25);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(47, 111, 179, 0.2);
+    background: var(--hover-sea-soft);
+    transform: none;
+    box-shadow: none;
 }
 
 .filter-icon-btn svg {
@@ -1866,7 +1884,7 @@ button:hover {
 }
 
 .filter-icon-btn.active:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 .filter-icon-btn .btn-label {
@@ -2021,9 +2039,9 @@ button:hover {
 }
 
 .apply-btn:hover {
-    background: #081430;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(11, 28, 59, 0.3);
+    background: var(--hover-ink);
+    transform: none;
+    box-shadow: none;
 }
 
 .clear-btn {
@@ -2032,9 +2050,9 @@ button:hover {
 }
 
 .clear-btn:hover {
-    background: rgba(15, 26, 31, 0.18);
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(15, 26, 31, 0.15);
+    background: var(--hover-neutral-soft);
+    transform: none;
+    box-shadow: none;
 }
 
 /* Multiselect Component Styles */
@@ -2183,7 +2201,7 @@ button:hover {
 }
 
 .multiselect-add-btn:hover {
-    background: #275a91;
+    background: var(--hover-sea);
 }
 
 .multiselect-add-btn:active {
@@ -2388,7 +2406,7 @@ button:hover {
 }
 
 .edit-employee-btn:hover {
-    background: rgba(255, 213, 0, 0.583);
+    background: var(--hover-warning-soft);
     transform: none;
     box-shadow: none;
 }
@@ -2409,7 +2427,7 @@ button:hover {
 }
 
 .delete-employee-btn:hover {
-    background: rgba(161, 37, 27, 0.25);
+    background: var(--hover-danger-soft);
     transform: none;
     box-shadow: none;
 }
@@ -2430,7 +2448,7 @@ button:hover {
 }
 
 .toggle-employee-btn:hover {
-    background: rgba(76, 153, 76, 0.25);
+    background: var(--hover-success-soft);
     transform: none;
     box-shadow: none;
 }
@@ -2446,7 +2464,7 @@ button:hover {
 }
 
 .employee-inactive .toggle-employee-btn:hover {
-    background: rgba(153, 102, 51, 0.25);
+    background: var(--hover-warning-muted-soft);
 }
 
 .loading-text {
@@ -2978,7 +2996,7 @@ button:hover {
 }
 
 #auto-logout-stay-btn:hover {
-    background: #081430;
+    background: var(--hover-ink);
 }
 
 /* Responsive adjustments */

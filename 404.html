@@ -78,13 +78,14 @@
             font-weight: 700;
             cursor: pointer;
             text-decoration: none;
-            transition: transform 150ms ease, box-shadow 150ms ease;
+            transition: background 150ms ease, color 150ms ease;
         }
 
         .not-found-home-btn:hover,
         .not-found-home-btn:focus {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 18px rgba(15, 26, 31, 0.25);
+            background: var(--hover-ink, #081430);
+            transform: none;
+            box-shadow: none;
             outline: none;
         }
 
