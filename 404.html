@@ -25,35 +25,101 @@
     <link rel="stylesheet" href="footer/footer.css?v=20260321-3">
 
     <style>
+        body.login-page {
+            background-color: #ffffff !important;
+        }
+
+        body.login-page::before {
+            background-image: none !important;
+            opacity: 0 !important;
+        }
+
         main {
             width: 100%;
             display: flex;
             flex: 1 0 auto;
+            background: #ffffff;
         }
 
         /* ── 404 section ── */
         .not-found-section {
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
+            gap: 0;
             flex: 1;
+            width: 100%;
+            margin: 0;
+            padding: 0 18px 0;
             text-align: center;
-            padding: 24px 18px 28px;
-            gap: 16px;
+            background: #ffffff;
+            overflow: hidden;
         }
 
-        .not-found-illustration {
-            width: 200px;
+        .not-found-section::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+            background: none;
+            pointer-events: none;
+        }
+
+        .not-found-section::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: clamp(90px, 17vh, 150px);
+            z-index: 0;
+            background: none;
+            pointer-events: none;
+        }
+
+        .not-found-facade {
+            position: relative;
+            width: min(900px, 74%);
+            margin-top: 0;
+            pointer-events: none;
+            opacity: 1;
+            filter: grayscale(0.15) contrast(1.02);
+        }
+
+        .not-found-facade img {
+            display: block;
+            width: 100%;
             height: auto;
+            object-fit: contain;
+            object-position: bottom center;
+        }
+
+        .not-found-content {
+            position: relative;
+            z-index: 2;
+            display: grid;
+            gap: 12px;
+            justify-items: center;
+            margin-top: auto;
+            margin-bottom: auto;
         }
 
         .not-found-code {
-            font-size: 4.3rem;
+            position: relative;
+            z-index: 1;
+            font-size: clamp(4.8rem, 16vw, 11rem);
             font-weight: 900;
-            color: var(--sea);
+            letter-spacing: 0.04em;
             line-height: 1;
-            letter-spacing: -3px;
+            color: rgba(11, 28, 59, 0.9);
+            text-shadow:
+                0 8px 24px rgba(12, 30, 61, 0.14);
+        }
+
+        .not-found-content {
+            text-align: center;
         }
 
         .not-found-title {
@@ -101,6 +167,36 @@
             fill: var(--mist);
             flex-shrink: 0;
         }
+
+        @media (min-width: 1024px) {
+            .not-found-facade {
+                width: min(720px, 58%);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .not-found-section {
+                gap: 0;
+                padding: 0 14px 0;
+            }
+
+            .not-found-code {
+                font-size: clamp(4rem, 24vw, 7rem);
+            }
+
+            .not-found-facade {
+                width: 100%;
+                 opacity: 1;
+            }
+
+            .not-found-title {
+                font-size: 1.32rem;
+            }
+
+            .not-found-desc {
+                font-size: 0.88rem;
+            }
+        }
     </style>
 </head>
 <body class="login-page">
@@ -118,48 +214,25 @@
     <!-- ── 404 Content ── -->
     <main>
         <section class="not-found-section">
+            <div class="not-found-content">
+                <div class="not-found-code" aria-hidden="true">404</div>
+                <h2 class="not-found-title">Page Not Found</h2>
+                <p class="not-found-desc">
+                    The page you are looking for was moved, removed, renamed,
+                    or might have never existed.
+                </p>
 
-            <!-- Illustration: document with magnifying glass -->
-            <svg class="not-found-illustration" viewBox="0 0 220 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">
-                <!-- Document shadow -->
-                <ellipse cx="95" cy="188" rx="62" ry="8" fill="rgba(47,111,179,0.10)"/>
-                <!-- Document body -->
-                <rect x="28" y="18" width="120" height="158" rx="10" ry="10" fill="#e8f1fc" stroke="#c2d8f5" stroke-width="2"/>
-                <!-- Folded corner -->
-                <path d="M116 18 L148 50 L116 50 Z" fill="#c2d8f5"/>
-                <path d="M116 18 L148 50 H116 Z" fill="#d6e8fb" stroke="#c2d8f5" stroke-width="1.5"/>
-                <!-- Lines on document -->
-                <rect x="44" y="62" width="72" height="7" rx="3" fill="#b9d0ef"/>
-                <rect x="44" y="78" width="88" height="7" rx="3" fill="#b9d0ef"/>
-                <rect x="44" y="94" width="64" height="7" rx="3" fill="#b9d0ef"/>
-                <rect x="44" y="110" width="80" height="7" rx="3" fill="#b9d0ef"/>
-                <rect x="44" y="126" width="52" height="7" rx="3" fill="#b9d0ef"/>
-                <!-- Question mark on document -->
-                <text x="88" y="158" font-family="Inter, sans-serif" font-size="34" font-weight="900" fill="#2f6fe4" text-anchor="middle" opacity="0.32">?</text>
+                <a href="index.html" class="not-found-home-btn">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
+                    </svg>
+                    Return
+                </a>
+            </div>
 
-                <!-- Magnifying glass handle -->
-                <line x1="155" y1="152" x2="195" y2="186" stroke="#2f6fe4" stroke-width="9" stroke-linecap="round"/>
-                <!-- Magnifying glass lens ring -->
-                <circle cx="141" cy="138" r="32" fill="none" stroke="#2f6fe4" stroke-width="10"/>
-                <!-- Lens glass glare -->
-                <circle cx="141" cy="138" r="22" fill="rgba(207,228,255,0.55)"/>
-                <!-- Glare highlight -->
-                <path d="M128 122 Q132 118 138 120" stroke="rgba(255,255,255,0.85)" stroke-width="3" fill="none" stroke-linecap="round"/>
-            </svg>
-
-            <div class="not-found-code" aria-hidden="true">404</div>
-            <h2 class="not-found-title">Page Not Found</h2>
-            <p class="not-found-desc">
-                The page you are looking for was moved, removed, renamed,
-                or might have never existed.
-            </p>
-
-            <a href="index.html" class="not-found-home-btn">
-                <svg viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-                </svg>
-                Return
-            </a>
+            <div class="not-found-facade" aria-hidden="true">
+                <img src="assets/Facade-sketch.webp" alt="">
+            </div>
         </section>
     </main>
 
