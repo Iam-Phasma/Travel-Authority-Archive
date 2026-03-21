@@ -141,13 +141,14 @@
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 12px 28px;
-            background: var(--ink);
+            padding: 12px 24px;
+            background: var(--sea);
             color: var(--mist);
             border: none;
-            border-radius: 999px;
+            border-radius: var(--radius-md);
             font-size: 0.95rem;
             font-weight: 700;
+            font-family: inherit;
             cursor: pointer;
             text-decoration: none;
             transition: background 150ms ease, color 150ms ease;
@@ -155,10 +156,7 @@
 
         .not-found-home-btn:hover,
         .not-found-home-btn:focus {
-            background: var(--hover-ink, #081430);
-            transform: none;
-            box-shadow: none;
-            outline: none;
+            background: var(--hover-sea);
         }
 
         .not-found-home-btn svg {
