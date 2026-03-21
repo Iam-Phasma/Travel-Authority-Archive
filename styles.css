@@ -3217,6 +3217,10 @@ button:hover {
         gap: 12px;
     }
 
+    .employee-list-heading {
+        flex: 0 0 auto;
+    }
+
     .employees-panel,
     .employee-list-container,
     .employee-list {
