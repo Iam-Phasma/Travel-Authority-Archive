@@ -494,7 +494,7 @@ body.header-modal-open {
 
 .login-header-copy h1 {
     margin: 0;
-    font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+    font-size: clamp(2.1rem, 1.8vw, 1.35rem);
     line-height: 1.15;
     letter-spacing: -0.02em;
     color: var(--ink);
@@ -513,7 +513,7 @@ body.header-modal-open {
    RESPONSIVE STYLES
    ============================================ */
 
-@media (max-width: 720px) {
+@media (max-width: 420px) {
     #header-draft-ta-modal {
         padding: 16px;
     }
