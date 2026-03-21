@@ -156,6 +156,33 @@
         const DEFAULT_LOGIN_RETRY_SECONDS = 60;
         const GENERIC_LOGIN_FAILURE_MESSAGE = "Invalid email or password.";
         const GENERIC_RESET_MESSAGE = "If the email is registered, a reset link will be sent.";
+        const HCAPTCHA_BASE_WIDTH = 303;
+        const HCAPTCHA_BASE_HEIGHT = 78;
+
+        const applyHCaptchaScale = (containerId) => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            const availableWidth = container.clientWidth || container.getBoundingClientRect().width;
+            if (!availableWidth) return;
+
+            const scale = Math.min(1, availableWidth / HCAPTCHA_BASE_WIDTH);
+            container.style.setProperty('--hcaptcha-scale', String(scale));
+            container.style.setProperty('--hcaptcha-height', `${Math.ceil(HCAPTCHA_BASE_HEIGHT * scale)}px`);
+        };
+
+        const syncAllHCaptchaScales = () => {
+            applyHCaptchaScale('login-hcaptcha');
+            applyHCaptchaScale('hcaptcha-container');
+        };
+
+        const setHCaptchaVisibility = (containerId, isVisible) => {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+            container.classList.toggle('hcaptcha-active', Boolean(isVisible));
+        };
+
+        window.addEventListener('resize', syncAllHCaptchaScales);
 
         if (togglePasswordBtn) {
             togglePasswordBtn.addEventListener("click", () => {
@@ -322,6 +349,7 @@
                 }
                 if (loginCaptchaWidgetId === null) {
                     // First click — just render the widget, no message
+                    setHCaptchaVisibility('login-hcaptcha', true);
                     loginCaptchaWidgetId = hcaptcha.render('login-hcaptcha', {
                         sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
                         callback: (token) => {
@@ -329,8 +357,12 @@
                             loginBtn.textContent = 'Login';
                             loginStatus.textContent = 'Please click Login to sign in.';
                             loginStatus.classList.remove('status--error', 'hidden');
+                            setHCaptchaVisibility('login-hcaptcha', true);
+                            syncAllHCaptchaScales();
                         }
                     });
+                    requestAnimationFrame(syncAllHCaptchaScales);
+                    setTimeout(syncAllHCaptchaScales, 120);
                     return;
                 }
                 // Captcha already rendered but not yet solved
@@ -805,14 +837,19 @@
                     resetStatus.classList.remove('hidden', 'status--neutral', 'status--success');
                     resetStatus.classList.add('status--error');
                 } else if (resetCaptchaWidgetId === null) {
+                    setHCaptchaVisibility('hcaptcha-container', true);
                     resetCaptchaWidgetId = hcaptcha.render('hcaptcha-container', {
                         sitekey: 'fcc42bc6-e25c-48f2-85ea-497021987410',
                         callback: (token) => {
                             resetCaptchaToken = token;
                             resetStatus.textContent = '';
                             resetStatus.classList.add('hidden');
+                            setHCaptchaVisibility('hcaptcha-container', true);
+                            syncAllHCaptchaScales();
                         }
                     });
+                    requestAnimationFrame(syncAllHCaptchaScales);
+                    setTimeout(syncAllHCaptchaScales, 120);
                 }
 
             });
@@ -845,6 +882,7 @@
                 hcaptcha.remove(resetCaptchaWidgetId);
                 resetCaptchaWidgetId = null;
             }
+            setHCaptchaVisibility('hcaptcha-container', false);
         };
 
         cancelResetBtn.addEventListener('click', closeResetPasswordModal);
