@@ -6,9 +6,9 @@
     <title>CTAA - Dashboard</title>
     <link rel="icon" type="image/png" href="../assets/CHED-Logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
-    <link rel="stylesheet" href="../styles.css">
-    <link rel="stylesheet" href="../header/header.css?v=20260320-2">
-    <link rel="stylesheet" href="../footer/footer.css">
+    <link rel="stylesheet" href="../styles.css?v=20260321-3">
+    <link rel="stylesheet" href="../header/header.css?v=20260321-3">
+    <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <style>
     /* === Dashboard Sidebar Layout === */
     .dashboard-wrapper {
@@ -22,20 +22,20 @@
     .dash-sidebar {
         flex-shrink: 0;
         width: 200px;
-        background: rgba(255, 255, 255, 0.62);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+        background: #ffffff;
+        border: 1px solid rgba(11, 28, 59, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(11, 28, 59, 0.05);
         padding: 14px 10px;
         position: sticky;
         top: 82px;
-        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, background-color 220ms ease;
+        transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, background-color 220ms ease, border-color 220ms ease;
         overflow: hidden;
     }
     .dash-sidebar.is-stuck {
-        background: rgba(255, 255, 255, 0.72);
-        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15), 0 10px 24px rgba(11, 28, 59, 0.12);
+        background: #ffffff;
+        border-color: rgba(11, 28, 59, 0.12);
+        box-shadow: 0 6px 16px rgba(11, 28, 59, 0.08);
     }
     .dash-sidebar.collapsed {
         width: 56px;
@@ -52,7 +52,7 @@
         justify-content: center;
         width: 32px;
         height: 32px;
-        border-radius: 9px;
+        border-radius: 10px;
         border: none;
         background: transparent;
         cursor: pointer;
@@ -61,8 +61,8 @@
         padding: 0;
     }
     .dash-sidebar-toggle:hover {
-        background: var(--hover-accent-soft, rgba(69, 122, 231, 0.1));
-        color: #457AE7;
+        background: var(--hover-sea-subtle);
+        color: var(--sea);
         box-shadow: none;
     }
     .dash-sidebar-toggle svg {
@@ -84,13 +84,13 @@
         align-items: center;
         gap: 10px;
         padding: 10px 9px;
-        border-radius: 12px;
+        border-radius: 10px;
         border: none;
         background: transparent;
         cursor: pointer;
         color: rgba(11, 28, 59, 0.6);
         font-size: 0.875rem;
-        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-family: "Inter", system-ui, sans-serif;
         font-weight: 500;
         white-space: nowrap;
         width: 100%;
@@ -98,13 +98,13 @@
         transition: background 0.18s, color 0.18s;
     }
     .dash-sidebar-tab:hover {
-        background: var(--hover-accent-soft, rgba(69, 122, 231, 0.1));
-        color: #457AE7;
+        background: var(--hover-sea-subtle);
+        color: var(--sea);
         box-shadow: none;
     }
     .dash-sidebar-tab.active {
-        background: rgba(69, 122, 231, 0.13);
-        color: #457AE7;
+        background: var(--sea);
+        color: #ffffff;
         font-weight: 600;
     }
     .dash-sidebar-tab svg {
@@ -164,11 +164,10 @@
         gap: 20px;
     }
     .insight-card {
-        background: rgba(255, 255, 255, 0.62);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+        background: #ffffff;
+        border: 1px solid rgba(11, 28, 59, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(11, 28, 59, 0.05);
         padding: 24px;
         min-width: 0;
     }
@@ -227,10 +226,10 @@
     }
     .insight-year-select {
         font-size: 0.9rem;
-        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-family: "Inter", system-ui, sans-serif;
         color: rgba(11, 28, 59, 0.7);
-        background: rgba(69, 122, 231, 0.07);
-        border: 1px solid rgba(69, 122, 231, 0.2);
+        background: rgba(47, 111, 228, 0.08);
+        border: 1px solid rgba(47, 111, 228, 0.22);
         border-radius: 8px;
         padding: 4px 8px;
         cursor: pointer;
@@ -238,7 +237,7 @@
         flex-shrink: 0;
     }
     .insight-year-select:focus {
-        border-color: rgba(69, 122, 231, 0.5);
+        border-color: rgba(47, 111, 228, 0.45);
         outline: none;
     }
     .insight-chart-placeholder {
@@ -270,8 +269,8 @@
     }
     .os-list-wrap {
         position: relative;
-        border: 1px solid rgba(69, 122, 231, 0.15);
-        border-radius: 12px;
+        border: 1px solid rgba(11, 28, 59, 0.12);
+        border-radius: 10px;
         overflow-x: hidden;
         overflow-y: auto;
         background: rgba(69, 122, 231, 0.02);
@@ -313,7 +312,7 @@
         border-bottom: none;
     }
     .os-official-row:hover {
-        background: rgba(69, 122, 231, 0.07);
+        background: var(--hover-sea-subtle);
     }
     .os-official-name {
         font-size: 0.9rem;
@@ -329,8 +328,8 @@
     .os-official-count {
         font-size: 0.9rem;
         font-weight: 700;
-        color: #457AE7;
-        background: rgba(69, 122, 231, 0.1);
+        color: var(--sea);
+        background: rgba(0, 52, 113, 0.08);
         border-radius: 20px;
         padding: 2px 9px;
         flex-shrink: 0;
@@ -338,16 +337,16 @@
     }
     .dest-switcher {
         display: flex;
-        background: rgba(69, 122, 231, 0.08);
+        background: rgba(47, 111, 228, 0.08);
         border-radius: 8px;
         padding: 2px;
         gap: 1px;
     }
     .dest-switch-btn {
         font-size: 0.9rem;
-        font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+        font-family: "Inter", system-ui, sans-serif;
         font-weight: 500;
-        color: rgba(11, 28, 59, 0.55);
+        color: rgba(11, 28, 59, 0.6);
         background: transparent;
         border: none;
         border-radius: 6px;
@@ -362,13 +361,13 @@
     .dest-switch-btn:focus,
     .dest-switch-btn:active {
         background: rgba(255, 255, 255, 0.5);
-        color: #457AE7;
+        color: var(--sea);
         transform: none;
         box-shadow: none;
     }
     .dest-switch-btn.active {
         background: #fff;
-        color: #457AE7;
+        color: var(--sea);
         font-weight: 600;
         box-shadow: none;
     }
@@ -410,7 +409,7 @@
         transition: background 0.15s;
         max-width: 100%;
     }
-    .dest-legend-item:hover { background: rgba(69,122,231,0.07); }
+    .dest-legend-item:hover { background: var(--hover-sea-subtle); }
     .dest-legend-dot {
         width: 8px;
         height: 8px;
@@ -441,7 +440,7 @@
     }
     .dest-legend-pct {
         font-size: 0.9rem;
-        color: #457AE7;
+        color: var(--sea);
         min-width: 38px;
         text-align: right;
     }
@@ -561,7 +560,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html?v=20260320-1')
+        fetch('../header/header.html?v=20260321-1')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -988,7 +987,7 @@
 
             const userMenuBtn = document.getElementById('user-menu-btn');
             const headerPopup = document.getElementById('header-popup-panel');
-            const securityDocBtn = document.getElementById('header-security-doc-btn');
+            const securityDocOption = document.getElementById('header-security-doc-option');
             const draftTaOption = document.getElementById('header-draft-ta-option');
             const settingsOption = document.getElementById('header-settings-option');
             const logoutOption = document.getElementById('header-logout-option');
@@ -1022,8 +1021,12 @@
 
             headerButtonsInitialized = true;
 
-            if (securityDocBtn) {
-                securityDocBtn.hidden = true;
+            if (securityDocOption) {
+                securityDocOption.hidden = true;
+                securityDocOption.addEventListener('click', () => {
+                    headerPopup.classList.remove('show');
+                    window.location.href = '../admin/security-documentation.html';
+                });
             }
 
             const capitalizeWords = (str) => {
@@ -1335,7 +1338,7 @@
                         try {
                             const { data: profile, error } = await supabase
                                 .from('profiles')
-                                .select('FName, LName')
+                                .select('FName, LName, role')
                                 .eq('id', session.user.id)
                                 .maybeSingle();
                             
@@ -1345,8 +1348,14 @@
                                     profile.LName,
                                     session.user.email.split('@')[0]
                                 );
+                                if (securityDocOption) {
+                                    securityDocOption.hidden = profile.role !== 'super';
+                                }
                             } else if (userNameElement) {
                                 setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
+                                if (securityDocOption) {
+                                    securityDocOption.hidden = true;
+                                }
                             }
                         } catch (err) {
                             console.error('Error fetching user name:', err);
@@ -2575,8 +2584,8 @@
                     datasets: [{
                         label: 'TAs Filed',
                         data: displayCounts,
-                        backgroundColor: '#457AE7',
-                        borderColor: '#457AE7',
+                        backgroundColor: '#2f6fe4',
+                        borderColor: '#2f6fe4',
                         borderWidth: 0,
                         borderRadius: 6,
                         borderSkipped: false,
@@ -2795,12 +2804,12 @@
                         const cy = (top + bottom) / 2;
                         const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
                         ctx.save();
-                        ctx.font = 'bold 22px Arial, sans-serif';
+                        ctx.font = '700 22px Inter, sans-serif';
                         ctx.fillStyle = '#0b1c3b';
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
                         ctx.fillText(total, cx, cy - 9);
-                        ctx.font = '10px Arial, sans-serif';
+                        ctx.font = '500 10px Inter, sans-serif';
                         ctx.fillStyle = 'rgba(11,28,59,0.4)';
                         ctx.fillText('travels', cx, cy + 10);
                         ctx.restore();
@@ -3095,7 +3104,7 @@
 
     <div id="footer-container"></div>
     <script>
-        fetch('../footer/footer.html')
+        fetch('../footer/footer.html?v=20260321-1')
             .then(response => response.text())
             .then(data => {
                 const footerHTML = data.replace(/FOOTER_ASSETS_PATH/g, '../assets');

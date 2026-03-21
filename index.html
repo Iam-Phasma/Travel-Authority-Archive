@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA</title>
     <link rel="icon" type="image/png" href="assets/CHED-Logo.png">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="header/header.css?v=20260320-2">
-    <link rel="stylesheet" href="footer/footer.css">
+    <link rel="stylesheet" href="styles.css?v=20260321-3">
+    <link rel="stylesheet" href="header/header.css?v=20260321-3">
+    <link rel="stylesheet" href="footer/footer.css?v=20260321-3">
     <!-- hCaptcha Script -->
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
     <script src="https://cdn.jsdelivr.net/npm/zxcvbn@4.4.2/dist/zxcvbn.js" integrity="sha384-LXuP8lknSGBOLVn4fwVOl+rWR+zOEtZx6CF9ZLaN6gKBgLByU4D79VWWjV4/gefq" crossorigin="anonymous"></script>
@@ -17,10 +17,16 @@
         <div id="header-container"></div>
 
         <section class="panel" id="login-panel">
-            <h2>Login</h2>
+            <div class="login-panel-intro">
+                <div class="login-panel-brand" aria-hidden="true">
+                    <img src="assets/CHED-Logo.png" alt="CHED logo" class="login-panel-brand-logo">
+                    <img src="assets/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas logo" class="login-panel-brand-logo login-panel-brand-logo--secondary">
+                </div>
+                <p class="login-panel-subtitle">Use your CHEDRO IV credentials to continue.</p>
+            </div>
             <div class="fields">
                 <div>
-                    <label for="email">Email <span class="required">*</span></label>
+                    <label for="email">Email address <span class="required">*</span></label>
                     <div class="input-wrap">
                         <span class="icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" role="img" focusable="false">
@@ -31,28 +37,32 @@
                     </div>
                 </div>
                 <div>
-                    <label for="password">Password <span class="required">*</span></label>
-                    <div class="input-wrap">
+                    <div class="login-field-head">
+                        <label for="password">Password <span class="required">*</span></label>
+                        <a href="#" id="forgot-password-link" class="forgot-password-link">Forgot password?</a>
+                    </div>
+                    <div class="input-wrap input-wrap--password">
                         <span class="icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24" role="img" focusable="false">
                                 <path d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7-2a2 2 0 0 1 4 0v2h-4V7Z" />
                             </svg>
                         </span>
                         <input id="password" type="password" autocomplete="current-password" placeholder="password">
+                        <button id="toggle-password-btn" class="password-visibility-btn" type="button" aria-label="Show password" aria-pressed="false">
+                            <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                                <path d="M12 5c5.23 0 9.27 4.11 10 7-.73 2.89-4.77 7-10 7S2.73 14.89 2 12c.73-2.89 4.77-7 10-7Zm0 2c-3.8 0-6.87 2.69-7.84 5 .97 2.31 4.04 5 7.84 5s6.87-2.69 7.84-5c-.97-2.31-4.04-5-7.84-5Zm0 2.25A2.75 2.75 0 1 1 9.25 12 2.76 2.76 0 0 1 12 9.25Zm0 2A.75.75 0 1 0 12.75 12 .75.75 0 0 0 12 11.25Z" />
+                            </svg>
+                        </button>
                     </div>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="show-password">
-                        <span>Show password</span>
-                    </label>
-                    <a href="#" id="forgot-password-link" class="forgot-password-link">Forgot Password?</a>
+                <div class="login-utility-row">
+                    <p class="login-utility-note">Need help signing in? Use the password reset option to request a new access link.</p>
                 </div>
                 <!-- hCaptcha widget for login -->
                 <div id="login-hcaptcha"></div>
             </div>
             <div class="login-actions">
-                <button id="login-btn" type="button">Verify</button>
+                <button id="login-btn" type="button">Sign in</button>
                 <span class="status status--neutral hidden" id="login-status">Enter your credentials.</span>
             </div>
         </section>
@@ -135,6 +145,7 @@
         const loginStatus = document.getElementById("login-status");
         const emailInput = document.getElementById("email");
         const passwordInput = document.getElementById("password");
+        const togglePasswordBtn = document.getElementById("toggle-password-btn");
         const loginBtn = document.getElementById("login-btn");
         const loginPanel = document.getElementById("login-panel");
         const newPasswordPanel = document.getElementById("new-password-panel");
@@ -146,9 +157,14 @@
         const GENERIC_LOGIN_FAILURE_MESSAGE = "Invalid email or password.";
         const GENERIC_RESET_MESSAGE = "If the email is registered, a reset link will be sent.";
 
-        document.getElementById("show-password").addEventListener("change", (e) => {
-            passwordInput.type = e.target.checked ? "text" : "password";
-        });
+        if (togglePasswordBtn) {
+            togglePasswordBtn.addEventListener("click", () => {
+                const isVisible = passwordInput.type === "text";
+                passwordInput.type = isVisible ? "password" : "text";
+                togglePasswordBtn.setAttribute("aria-pressed", isVisible ? "false" : "true");
+                togglePasswordBtn.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+            });
+        }
 
         // Show/hide new password
         document.getElementById("show-new-password").addEventListener("change", (e) => {
@@ -971,7 +987,7 @@
 
     <div id="header-container"></div>
     <script>
-        fetch('header/login-header.html')
+        fetch('header/login-header.html?v=20260321-2')
             .then(response => response.text())
             .then(data => {
                 document.getElementById('header-container').innerHTML = data;
@@ -981,7 +997,7 @@
 
     <div id="footer-container"></div>
     <script>
-        fetch('footer/footer.html')
+        fetch('footer/footer.html?v=20260321-1')
             .then(response => response.text())
             .then(data => {
                 const footerHTML = data.replace(/FOOTER_ASSETS_PATH/g, 'assets');

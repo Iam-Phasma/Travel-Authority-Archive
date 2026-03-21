@@ -1,36 +1,47 @@
 <section class="panel wide-panel employees-panel hidden" id="employees-panel">
     <h2>Manage Officials</h2>
-    <div class="fields">
-        <div>
-            <label for="employee-name">Official Name <span class="required">*</span></label>
-            <div class="autocomplete-wrapper">
-                <input id="employee-name" type="text" placeholder="Enter First name, Initial, Surname" maxlength="30" pattern="[a-zA-ZÀ-ÿ\s\-'.,]+" title="Only letters, spaces, hyphens, apostrophes, periods, and commas allowed" required autocomplete="off">
-                <div id="employee-autocomplete-list" class="autocomplete-dropdown hidden" style="display: none;"></div>
+    <div class="employees-layout">
+        <div class="employee-form-card">
+            <div class="employee-card-heading">
+                <h3>Add Official</h3>
+                <p>Keep the directory current by adding each official with a consistent full name and position.</p>
+            </div>
+            <div class="fields employee-form-fields">
+                <div>
+                    <label for="employee-name">Official Name <span class="required">*</span></label>
+                    <div class="autocomplete-wrapper">
+                        <input id="employee-name" type="text" placeholder="Enter First name, Initial, Surname" maxlength="30" pattern="[a-zA-ZÀ-ÿ\s\-'.,]+" title="Only letters, spaces, hyphens, apostrophes, periods, and commas allowed" required autocomplete="off">
+                        <div id="employee-autocomplete-list" class="autocomplete-dropdown hidden" style="display: none;"></div>
+                    </div>
+                </div>
+                <div>
+                    <label for="employee-position">Position <span class="required">*</span></label>
+                    <input id="employee-position" type="text" placeholder="Enter position" required autocomplete="off" list="employee-position-suggestions">
+                    <datalist id="employee-position-suggestions"></datalist>
+                </div>
+            </div>
+            <div class="employee-form-actions">
+                <button id="add-employee-btn" type="button">Add Official</button>
+                <span class="status" id="employee-status">Add officials to the list.</span>
             </div>
         </div>
-        <div>
-            <label for="employee-position">Position <span class="required">*</span></label>
-            <input id="employee-position" type="text" placeholder="Enter position" required autocomplete="off" list="employee-position-suggestions">
-            <datalist id="employee-position-suggestions"></datalist>
-        </div>
-    </div>
-    <div class="row">
-        <button id="add-employee-btn" type="button">Add Official</button>
-        <span class="status" id="employee-status">Add officials to the list.</span>
-    </div>
-    
-    <div class="employee-list-container">
-        <div class="employee-list-header">
-            <h3>Official List</h3>
-            <div class="employee-search-wrapper">
-                <input type="text" id="employee-search" class="employee-search-input" placeholder="Search Officials..." autocomplete="off">
+
+        <div class="employee-list-container employee-directory-card">
+            <div class="employee-list-header">
+                <div class="employee-card-heading employee-list-heading">
+                    <h3>Official Directory</h3>
+                    <p>Search, review, hide, update, or remove officials from the active directory.</p>
+                </div>
+                <div class="employee-search-wrapper">
+                    <input type="text" id="employee-search" class="employee-search-input" placeholder="Search Officials..." autocomplete="off">
+                </div>
             </div>
-        </div>
-        <div class="employee-list" id="employee-list">
-            <p class="loading-text">Loading officials...</p>
-        </div>
-        <div class="employee-summary" id="employee-summary">
-            Total: 0 | Active: 0 | Inactive: 0
+            <div class="employee-summary" id="employee-summary">
+                Total: 0 | Active: 0 | Inactive: 0
+            </div>
+            <div class="employee-list" id="employee-list">
+                <p class="loading-text">Loading officials...</p>
+            </div>
         </div>
     </div>
 </section>

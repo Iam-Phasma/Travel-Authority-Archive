@@ -6,9 +6,9 @@
     <title>CTAA - Admin</title>
     <link rel="icon" type="image/png" href="../assets/CHED-Logo.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
-    <link rel="stylesheet" href="../styles.css?v=20260314-3">
-    <link rel="stylesheet" href="../header/header.css?v=20260320-2">
-    <link rel="stylesheet" href="../footer/footer.css">
+    <link rel="stylesheet" href="../styles.css?v=20260321-3">
+    <link rel="stylesheet" href="../header/header.css?v=20260321-3">
+    <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
@@ -30,54 +30,56 @@
     .admin-panel-switcher {
         display: flex;
         align-items: center;
-        gap: 3px;
+        gap: 8px;
         position: sticky;
-        top: 72px;
+        top: 64px;
         z-index: 30;
         width: fit-content;
         max-width: 100%;
         margin: 0 auto 22px;
-        padding: 10px;
-        border-radius: 20px;
-        background: rgba(255, 255, 255, 0.62);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        box-shadow: 0 0 0 rgba(11, 28, 59, 0);
-        transition: box-shadow 220ms ease, background-color 220ms ease;
+        padding: 8px;
+        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid rgba(11, 28, 59, 0.1);
+        box-shadow: 0 4px 12px rgba(11, 28, 59, 0.05);
+        transition: box-shadow 220ms ease, background-color 220ms ease, border-color 220ms ease;
         overflow-x: auto;
     }
     .admin-panel-switcher.is-stuck {
-        background: rgba(255, 255, 255, 0.72);
-        box-shadow: 0 10px 24px rgba(11, 28, 59, 0.12);
+        background: #ffffff;
+        border-color: rgba(11, 28, 59, 0.12);
+        box-shadow: 0 6px 16px rgba(11, 28, 59, 0.08);
     }
     .admin-panel-switcher .switch-btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
-        width: auto;
-        height: 36px;
-        min-width: 132px;
+        width: 160px;
+        height: 44px;
+        min-width: 160px;
         gap: 8px;
-        border: none;
-        border-radius: 12px;
+        border: 1px solid rgba(47, 111, 228, 0.2);
+        border-radius: 10px;
         background: transparent;
-        color: rgba(11, 28, 59, 0.6);
-        padding: 8px 14px;
+        color: rgba(11, 28, 59, 0.72);
+        padding: 0 14px;
         white-space: nowrap;
-        transition: background 0.18s, color 0.18s;
+        transition: background 0.18s, color 0.18s, border-color 0.18s;
     }
     .admin-panel-switcher .switch-btn.hidden,
     .admin-panel-switcher .switch-btn[hidden] {
         display: none !important;
     }
     .admin-panel-switcher .switch-btn:hover {
-        background: var(--hover-accent-soft, rgba(69, 122, 231, 0.1));
-        color: #457AE7;
+        background: var(--hover-sea-subtle);
+        color: var(--sea);
+        border-color: rgba(47, 111, 228, 0.28);
         box-shadow: none;
     }
     .admin-panel-switcher .switch-btn.active {
-        background: rgba(69, 122, 231, 0.13);
-        color: #457AE7;
+        background: var(--sea);
+        color: #ffffff;
+        border-color: var(--sea);
         font-weight: 600;
     }
     .admin-panel-switcher .switch-btn svg {
@@ -95,8 +97,8 @@
         stroke-linejoin: round;
     }
     .admin-panel-switcher .switch-btn svg.icon-officials {
-        width: 23px;
-        height: 23px;
+        width: 25px;
+        height: 25px;
     }
     .admin-panel-switcher .switch-btn-label {
         display: inline;
@@ -197,7 +199,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html?v=20260320-1')
+        fetch('../header/header.html?v=20260321-1')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -643,7 +645,7 @@
             if (headerButtonsInitialized) return;
             
             const userMenuBtn = document.getElementById('user-menu-btn');
-            const securityDocsHeaderBtn = document.getElementById('header-security-doc-btn');
+            const securityDocsOption = document.getElementById('header-security-doc-option');
             const headerPopup = document.getElementById('header-popup-panel');
             const draftTaOption = document.getElementById('header-draft-ta-option');
             const settingsOption = document.getElementById('header-settings-option');
@@ -901,14 +903,14 @@
             
             headerButtonsInitialized = true;
 
-            if (securityDocsHeaderBtn) {
-                securityDocsHeaderBtn.hidden = true;
+            if (securityDocsOption) {
+                securityDocsOption.hidden = true;
             }
 
             const applySecurityDocsHeaderVisibilityByRole = (role) => {
-                if (!securityDocsHeaderBtn) return;
+                if (!securityDocsOption) return;
                 const isSuper = role === 'super';
-                securityDocsHeaderBtn.hidden = !isSuper;
+                securityDocsOption.hidden = !isSuper;
             };
 
             applySecurityDocsHeaderVisibilityByRole(window.adminCurrentRole || '');
@@ -916,8 +918,8 @@
                 applySecurityDocsHeaderVisibilityByRole(event?.detail?.role || '');
             });
 
-            if (securityDocsHeaderBtn) {
-                securityDocsHeaderBtn.addEventListener('click', () => {
+            if (securityDocsOption) {
+                securityDocsOption.addEventListener('click', () => {
                     headerPopup.classList.remove('show');
                     window.location.href = './security-documentation.html';
                 });
@@ -2865,13 +2867,21 @@
         });
 
         // Export to Excel functionality
-        const exportModal = document.getElementById("export-modal");
+        const exportPanel = document.getElementById("admin-export-panel");
         const exportBtn = document.getElementById("admin-export-btn");
         const cancelExportBtn = document.getElementById("cancel-export");
         const confirmExportBtn = document.getElementById("confirm-export");
         const exportAllYearsCheckbox = document.getElementById("export-all-years");
         const exportYearsList = document.getElementById("export-years-list");
         const exportStatus = document.getElementById("export-status");
+
+        const resetExportPanel = () => {
+            exportStatus.classList.add("hidden");
+            exportStatus.classList.remove("status--error");
+            exportAllYearsCheckbox.checked = false;
+            const yearCheckboxes = document.querySelectorAll(".export-year-checkbox");
+            yearCheckboxes.forEach(cb => cb.checked = false);
+        };
 
         let availableYearsForExport = [];
 
@@ -2909,16 +2919,15 @@
 
         exportBtn.addEventListener("click", async () => {
             await populateExportYears();
-            exportModal.classList.add("show");
-            exportStatus.classList.add("hidden");
-            exportStatus.classList.remove("status--error");
+            adminFilterPanel.classList.remove("show");
+            adminSortPanel.classList.remove("show");
+            resetExportPanel();
+            exportPanel.classList.add("show");
         });
 
         cancelExportBtn.addEventListener("click", () => {
-            exportModal.classList.remove("show");
-            exportAllYearsCheckbox.checked = false;
-            const yearCheckboxes = document.querySelectorAll(".export-year-checkbox");
-            yearCheckboxes.forEach(cb => cb.checked = false);
+            exportPanel.classList.remove("show");
+            resetExportPanel();
         });
 
         exportAllYearsCheckbox.addEventListener("change", (e) => {
@@ -3009,18 +3018,23 @@
 
                 exportStatus.textContent = `Successfully exported ${filteredData.length} records!`;
                 
-                // Close modal after 2 seconds
+                // Close panel after 2 seconds
                 setTimeout(() => {
-                    exportModal.classList.remove("show");
-                    exportAllYearsCheckbox.checked = false;
-                    const yearCheckboxes = document.querySelectorAll(".export-year-checkbox");
-                    yearCheckboxes.forEach(cb => cb.checked = false);
+                    exportPanel.classList.remove("show");
+                    resetExportPanel();
                 }, 2000);
 
             } catch (error) {
                 console.error("Export error:", error);
                 exportStatus.textContent = `Export failed: ${error.message || "Unknown error"}`;
                 exportStatus.classList.add("status--error");
+            }
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!exportPanel.contains(e.target) && !exportBtn.contains(e.target) && exportPanel.classList.contains("show")) {
+                exportPanel.classList.remove("show");
+                resetExportPanel();
             }
         });
 
@@ -4651,7 +4665,7 @@
 
     <div id="footer-container"></div>
     <script>
-        fetch('../footer/footer.html')
+        fetch('../footer/footer.html?v=20260321-1')
             .then(response => response.text())
             .then(data => {
                 const footerHTML = data.replace(/FOOTER_ASSETS_PATH/g, '../assets');

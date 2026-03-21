@@ -5,9 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Security Documentation</title>
     <link rel="icon" type="image/png" href="../assets/CHED-Logo.png">
-    <link rel="stylesheet" href="../styles.css?v=20260314-3">
-    <link rel="stylesheet" href="../header/header.css?v=20260320-2">
-    <link rel="stylesheet" href="../footer/footer.css">
+    <link rel="stylesheet" href="../styles.css?v=20260321-3">
+    <link rel="stylesheet" href="../header/header.css?v=20260321-3">
+    <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <style>
         html {
             scroll-behavior: smooth;
@@ -23,29 +23,13 @@
         }
 
         .security-doc-hero {
-            position: relative;
-            overflow: hidden;
-            isolation: isolate;
             width: 100%;
             text-align: left;
-            background: linear-gradient(155deg, rgba(255, 255, 255, 0.86) 0%, rgba(239, 247, 255, 0.84) 58%, rgba(227, 239, 253, 0.88) 100%);
-            border: 1px solid rgba(47, 111, 179, 0.2);
-            border-radius: 18px;
+            background: #ffffff;
+            border: 1px solid rgba(11, 28, 59, 0.1);
+            border-radius: 12px;
             padding: 20px 22px;
-            box-shadow: 0 14px 30px rgba(11, 28, 59, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-        }
-
-        .security-doc-hero::before {
-            content: "";
-            position: absolute;
-            right: -80px;
-            top: -85px;
-            width: 280px;
-            height: 280px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(47, 111, 179, 0.2) 0%, rgba(47, 111, 179, 0) 70%);
-            pointer-events: none;
-            z-index: -1;
+            box-shadow: none;
         }
 
         .security-doc-hero h2 {
@@ -75,21 +59,21 @@
         .security-doc-sidebar {
             flex-shrink: 0;
             width: 220px;
-            background: rgba(255, 255, 255, 0.62);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15);
+            background: rgba(255, 255, 255, 0.94);
+            border: 1px solid rgba(0, 52, 113, 0.08);
+            border-radius: 18px;
+            box-shadow: none;
             padding: 14px 10px;
             position: sticky;
             top: 82px;
-            transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 220ms ease, background-color 220ms ease;
+            transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1), background-color 220ms ease, border-color 220ms ease;
             overflow: hidden;
         }
 
         .security-doc-sidebar.is-stuck {
-            background: rgba(255, 255, 255, 0.72);
-            box-shadow: 0 20px 60px rgba(12, 21, 24, 0.15), 0 10px 24px rgba(11, 28, 59, 0.12);
+            background: rgba(255, 255, 255, 0.98);
+            border-color: rgba(0, 52, 113, 0.12);
+            box-shadow: none;
         }
 
         .security-doc-sidebar.collapsed {
@@ -109,7 +93,7 @@
             justify-content: center;
             width: 32px;
             height: 32px;
-            border-radius: 9px;
+            border-radius: 10px;
             border: none;
             background: transparent;
             cursor: pointer;
@@ -119,8 +103,8 @@
         }
 
         .security-doc-sidebar-toggle:hover {
-            background: var(--hover-accent-soft, rgba(69, 122, 231, 0.1));
-            color: #457AE7;
+            background: var(--hover-sea-subtle);
+            color: var(--sea);
             box-shadow: none;
         }
 
@@ -155,7 +139,7 @@
             width: 100%;
             text-align: left;
             font-size: 0.875rem;
-            font-family: Arial, "Helvetica Neue", Helvetica, sans-serif;
+            font-family: "Inter", system-ui, sans-serif;
             color: rgba(11, 28, 59, 0.8);
             font-weight: 500;
             white-space: nowrap;
@@ -169,14 +153,14 @@
         }
 
         .security-doc-sidebar-link:hover {
-            background: var(--hover-accent-soft, rgba(69, 122, 231, 0.1));
-            color: #457AE7;
+            background: var(--hover-sea-subtle);
+            color: var(--sea);
             box-shadow: none;
         }
 
         .security-doc-sidebar-link.active {
-            background: rgba(69, 122, 231, 0.13);
-            color: #457AE7;
+            background: var(--sea);
+            color: #ffffff;
             font-weight: 600;
         }
 
@@ -210,11 +194,11 @@
         }
 
         .security-doc-section {
-            background: rgba(255, 255, 255, 0.72);
-            border: 1px solid rgba(15, 26, 31, 0.14);
-            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.96);
+            border: 1px solid rgba(0, 52, 113, 0.08);
+            border-radius: 18px;
             padding: 18px;
-            box-shadow: 0 10px 22px rgba(11, 28, 59, 0.07);
+            box-shadow: none;
         }
 
         .security-doc-section h3 {
@@ -241,15 +225,15 @@
             display: inline-flex;
             align-items: center;
             gap: 7px;
-            border-radius: 999px;
+            border-radius: 10px;
             padding: 6px 11px;
             font-size: 0.78rem;
             font-weight: 700;
             letter-spacing: 0.02em;
-            border: 1px solid rgba(47, 111, 179, 0.24);
-            background: rgba(47, 111, 179, 0.08);
+            border: 1px solid rgba(47, 111, 228, 0.22);
+            background: rgba(47, 111, 228, 0.08);
             color: rgba(17, 57, 99, 0.9);
-            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            box-shadow: none;
         }
 
         .security-doc-badge::before {
@@ -257,8 +241,30 @@
             width: 7px;
             height: 7px;
             border-radius: 50%;
-            background: rgba(47, 111, 179, 0.78);
-            box-shadow: 0 0 0 3px rgba(47, 111, 179, 0.12);
+            background: rgba(47, 111, 228, 0.75);
+            box-shadow: none;
+        }
+
+        .security-doc-page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 38px;
+            padding: 0 14px;
+            border-radius: 10px;
+            border: 1px solid rgba(47, 111, 228, 0.2);
+            background: rgba(47, 111, 228, 0.08);
+            color: var(--sea);
+            text-decoration: none;
+            font-size: 0.82rem;
+            font-weight: 600;
+            transition: background 180ms ease, border-color 180ms ease;
+            margin-top: 12px;
+        }
+
+        .security-doc-page-btn:hover {
+            background: rgba(47, 111, 228, 0.12);
+            border-color: rgba(47, 111, 228, 0.3);
         }
 
         .security-feature-grid {
@@ -269,8 +275,8 @@
         }
 
         .security-feature-item {
-            background: rgba(245, 249, 255, 0.9);
-            border: 1px solid rgba(47, 111, 179, 0.18);
+            background: #f8fafd;
+            border: 1px solid rgba(11, 28, 59, 0.12);
             border-radius: 12px;
             padding: 11px 12px;
         }
@@ -293,7 +299,7 @@
         }
 
         .security-feature-item.user .feature-title-icon {
-            fill: #2f6fb3;
+            fill: var(--sea);
         }
 
         .security-feature-item.admin .feature-title-icon {
@@ -324,7 +330,7 @@
                 width: 100%;
                 border-radius: 16px;
                 padding: 10px;
-                transition: box-shadow 220ms ease, background-color 220ms ease;
+                transition: background-color 220ms ease;
             }
 
             .security-doc-sidebar.collapsed {
@@ -369,13 +375,6 @@
                 padding: 14px;
             }
 
-            .security-doc-hero::before {
-                width: 180px;
-                height: 180px;
-                top: -58px;
-                right: -64px;
-            }
-
             .security-doc-hero p {
                 font-size: 0.98rem;
             }
@@ -401,6 +400,7 @@
             <p>
                 This page summarizes active protections in plain language. It is intentionally written without implementation details so the team can understand safeguards without exposing technical internals.
             </p>
+            <a href="./admin.html" class="security-doc-page-btn">Back to Admin Panel</a>
             <div class="security-doc-badges" aria-label="Security scope badges">
                 <span class="security-doc-badge">Role-Based Controls</span>
                 <span class="security-doc-badge">Session Safety</span>
@@ -631,7 +631,7 @@
         };
 
         const loadHeader = async () => {
-            const response = await fetch("../header/header.html?v=20260320-1");
+            const response = await fetch("../header/header.html?v=20260321-1");
             const html = await response.text();
             document.getElementById("header-container").innerHTML = html.replace(/HEADER_ASSETS_PATH/g, "../assets");
 
@@ -649,7 +649,7 @@
             const draftTaOption = document.getElementById("header-draft-ta-option");
             const settingsOption = document.getElementById("header-settings-option");
             const logoutOption = document.getElementById("header-logout-option");
-            const securityDocBtn = document.getElementById("header-security-doc-btn");
+            const securityDocOption = document.getElementById("header-security-doc-option");
             const userEmailElement = document.getElementById("header-user-email");
 
             if (!userMenuBtn || !headerPopup) return;
@@ -663,21 +663,14 @@
             if (settingsOption) settingsOption.style.display = "none";
 
             const isSuperUser = profile?.role === "super";
-            if (securityDocBtn) {
-                securityDocBtn.hidden = !isSuperUser;
+            if (securityDocOption) {
+                securityDocOption.hidden = !isSuperUser;
                 if (isSuperUser) {
-                    securityDocBtn.classList.add("is-active");
-                    securityDocBtn.title = "Back to Admin Panel";
-                    securityDocBtn.setAttribute("aria-label", "Back to Admin Panel");
-                    const docBtnLabel = securityDocBtn.querySelector(".header-doc-label");
-                    const docBtnIconPath = securityDocBtn.querySelector(".header-doc-icon path");
-                    if (docBtnLabel) {
-                        docBtnLabel.textContent = "Back to Admin";
+                    const optionLabel = securityDocOption.querySelector("span");
+                    if (optionLabel) {
+                        optionLabel.textContent = "Back to Admin";
                     }
-                    if (docBtnIconPath) {
-                        docBtnIconPath.setAttribute("d", "M19 11H7.83l4.58-4.59L11 5l-7 7 7 7 1.41-1.41L7.83 13H19v-2z");
-                    }
-                    securityDocBtn.addEventListener("click", () => {
+                    securityDocOption.addEventListener("click", () => {
                         headerPopup.classList.remove("show");
                         window.location.href = "./admin.html";
                     });
@@ -778,7 +771,7 @@
         };
 
         const loadFooter = async () => {
-            const response = await fetch("../footer/footer.html");
+            const response = await fetch("../footer/footer.html?v=20260321-1");
             const html = await response.text();
             document.getElementById("footer-container").innerHTML = html.replace(/FOOTER_ASSETS_PATH/g, "../assets");
         };

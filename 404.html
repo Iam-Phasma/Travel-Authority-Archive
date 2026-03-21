@@ -20,11 +20,17 @@
         })();
     </script>
 
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="header/header.css?v=20260320-2">
-    <link rel="stylesheet" href="footer/footer.css">
+    <link rel="stylesheet" href="styles.css?v=20260321-3">
+    <link rel="stylesheet" href="header/header.css?v=20260321-3">
+    <link rel="stylesheet" href="footer/footer.css?v=20260321-3">
 
     <style>
+        main {
+            width: 100%;
+            display: flex;
+            flex: 1 0 auto;
+        }
+
         /* ── 404 section ── */
         .not-found-section {
             display: flex;
@@ -33,17 +39,17 @@
             justify-content: center;
             flex: 1;
             text-align: center;
-            padding: 40px 18px 60px;
-            gap: 24px;
+            padding: 24px 18px 28px;
+            gap: 16px;
         }
 
         .not-found-illustration {
-            width: 220px;
+            width: 200px;
             height: auto;
         }
 
         .not-found-code {
-            font-size: 5rem;
+            font-size: 4.3rem;
             font-weight: 900;
             color: var(--sea);
             line-height: 1;
@@ -51,17 +57,17 @@
         }
 
         .not-found-title {
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             font-weight: 700;
             color: var(--ink);
             margin: 0;
         }
 
         .not-found-desc {
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: rgba(11, 28, 59, 0.68);
             max-width: 420px;
-            line-height: 1.6;
+            line-height: 1.5;
             margin: 0;
         }
 
@@ -100,13 +106,13 @@
 <body class="login-page">
 
     <!-- ── Header ── -->
-    <header>
-        <div class="logo-row" aria-label="Government logos">
-            <img src="assets/CHED-Logo.png" alt="CHED logo">
-            <img src="assets/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas logo">
+    <header class="login-hero-header">
+        <div class="login-header-bar">
+            <p class="login-header-kicker">CHEDRO IV</p>
         </div>
-        <h1>CHEDRO IV TRAVEL AUTHORITY ARCHIVE</h1>
-        <p class="tagline">This portal stores scanned copies of travel authority documents filed by CHEDRO IV officials. Use the given email and password to view and download files.</p>
+        <div class="login-header-copy">
+            <h1>Travel Authority Archive</h1>
+        </div>
     </header>
 
     <!-- ── 404 Content ── -->
@@ -129,12 +135,12 @@
                 <rect x="44" y="110" width="80" height="7" rx="3" fill="#b9d0ef"/>
                 <rect x="44" y="126" width="52" height="7" rx="3" fill="#b9d0ef"/>
                 <!-- Question mark on document -->
-                <text x="88" y="158" font-family="Arial, sans-serif" font-size="34" font-weight="900" fill="#2f6fb3" text-anchor="middle" opacity="0.32">?</text>
+                <text x="88" y="158" font-family="Inter, sans-serif" font-size="34" font-weight="900" fill="#2f6fe4" text-anchor="middle" opacity="0.32">?</text>
 
                 <!-- Magnifying glass handle -->
-                <line x1="155" y1="152" x2="195" y2="186" stroke="#2f6fb3" stroke-width="9" stroke-linecap="round"/>
+                <line x1="155" y1="152" x2="195" y2="186" stroke="#2f6fe4" stroke-width="9" stroke-linecap="round"/>
                 <!-- Magnifying glass lens ring -->
-                <circle cx="141" cy="138" r="32" fill="none" stroke="#2f6fb3" stroke-width="10"/>
+                <circle cx="141" cy="138" r="32" fill="none" stroke="#2f6fe4" stroke-width="10"/>
                 <!-- Lens glass glare -->
                 <circle cx="141" cy="138" r="22" fill="rgba(207,228,255,0.55)"/>
                 <!-- Glare highlight -->
@@ -160,15 +166,21 @@
     <!-- ── Footer ── -->
     <footer class="gov-footer">
         <div class="footer-content">
-            <div class="footer-left">
-                <img src="assets/govph-seal.jpg" alt="Government of the Philippines seal" class="footer-seal">
-                <div class="footer-left-text">
-                    <h3>ABOUT CHED REGIONAL OFFICE IV</h3>
-                    <p>Learn more about the Commission on Higher Education <br> (CHED) Regional Office IV.</p><br>
-                    <div class="footer-links"><br>
-                        <a href="https://www.facebook.com/ched4" target="_blank" rel="noopener noreferrer">Facebook</a>
-                    </div>
+            <div class="footer-brand">
+                <div class="footer-brand-lockup" aria-hidden="true">
+                    <img src="assets/CHED-Logo.png" alt="CHED logo" class="footer-logo">
+                    <img src="assets/Bagong_Pilipinas_logo.png" alt="Bagong Pilipinas logo" class="footer-logo footer-logo--secondary">
                 </div>
+                <div class="footer-brand-copy">
+                    <h3>Travel Authority Archive</h3>
+                </div>
+            </div>
+            <div class="footer-links" aria-label="Official links">
+                <a href="https://ched.gov.ph/" target="_blank" rel="noopener noreferrer">CHED Website</a>
+                <a href="https://www.facebook.com/ched4" target="_blank" rel="noopener noreferrer">CHEDRO IV Facebook</a>
+            </div>
+            <div class="footer-note">
+                <p class="footer-copyright">© 2026 Commission on Higher Education.</p>
             </div>
         </div>
     </footer>
