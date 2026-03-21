@@ -451,6 +451,25 @@
                                     }
                                     window.location.href = '../index.html';
                                 }, 1000);
+                                return;
+                            }
+
+                            // Check if session_token changed — another device logged in
+                            if (payload.new && payload.new.session_token !== undefined) {
+                                const localToken = localStorage.getItem('admin_session_token');
+                                if (localToken && payload.new.session_token !== localToken) {
+                                    showToast("Logged out: Another device logged into this account.", "warning");
+                                    setTimeout(async () => {
+                                        try {
+                                            await markCurrentUserOffline();
+                                            clearAdminClientState();
+                                            await supabase.auth.signOut();
+                                        } catch (e) {
+                                            console.warn('Semi-graceful logout:', e);
+                                        }
+                                        window.location.href = '../index.html';
+                                    }, 1000);
+                                }
                             }
                         }
                     )
@@ -633,6 +652,31 @@
                 clearAdminClientState();
                 await supabase.auth.signOut();
                 window.location.href = "../index.html";
+                return;
+            }
+
+            // Verify session token against database (catches parallel logins missed by realtime)
+            const localToken = localStorage.getItem('admin_session_token');
+            if (localToken) {
+                const { data: tokenData } = await supabase
+                    .from("profiles")
+                    .select("session_token")
+                    .eq("id", sessionData.session.user.id)
+                    .maybeSingle();
+
+                if (tokenData && tokenData.session_token && tokenData.session_token !== localToken) {
+                    console.warn("Session token mismatch detected in periodic check. Logging out.");
+                    showToast("Logged out: Another device logged into this account.", "warning");
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    try {
+                        await markCurrentUserOffline();
+                        clearAdminClientState();
+                        await supabase.auth.signOut();
+                    } catch (e) {
+                        console.warn('Semi-graceful logout:', e);
+                    }
+                    window.location.href = "../index.html";
+                }
             }
         };
 
