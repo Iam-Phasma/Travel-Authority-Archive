@@ -1460,7 +1460,7 @@ button:hover {
     }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 280px) {
     .login-panel-brand-logo {
         height: 42px;
     }
