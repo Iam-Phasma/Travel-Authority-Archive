@@ -909,8 +909,8 @@
 
             const applySecurityDocsHeaderVisibilityByRole = (role) => {
                 if (!securityDocsOption) return;
-                const isSuper = role === 'super';
-                securityDocsOption.hidden = !isSuper;
+                const canAccessDocs = role === 'admin' || role === 'super';
+                securityDocsOption.hidden = !canAccessDocs;
             };
 
             applySecurityDocsHeaderVisibilityByRole(window.adminCurrentRole || '');

@@ -245,28 +245,6 @@
             box-shadow: none;
         }
 
-        .security-doc-page-btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 38px;
-            padding: 0 14px;
-            border-radius: 10px;
-            border: 1px solid rgba(47, 111, 228, 0.2);
-            background: rgba(47, 111, 228, 0.08);
-            color: var(--sea);
-            text-decoration: none;
-            font-size: 0.82rem;
-            font-weight: 600;
-            transition: background 180ms ease, border-color 180ms ease;
-            margin-top: 12px;
-        }
-
-        .security-doc-page-btn:hover {
-            background: rgba(47, 111, 228, 0.12);
-            border-color: rgba(47, 111, 228, 0.3);
-        }
-
         .security-feature-grid {
             display: grid;
             gap: 10px;
@@ -400,7 +378,6 @@
             <p>
                 This page summarizes active protections in plain language. It is intentionally written without implementation details so the team can understand safeguards without exposing technical internals.
             </p>
-            <a href="./admin.html" class="security-doc-page-btn">Back to Admin Panel</a>
             <div class="security-doc-badges" aria-label="Security scope badges">
                 <span class="security-doc-badge">Role-Based Controls</span>
                 <span class="security-doc-badge">Session Safety</span>
@@ -581,7 +558,7 @@
             window.addEventListener("resize", renderName);
         };
 
-        const requireSuperAdmin = async () => {
+        const requireSecurityDocsAccess = async () => {
             const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
             if (sessionError || !sessionData?.session) {
                 window.location.href = "../index.html";
@@ -606,8 +583,10 @@
                 return null;
             }
 
-            if (profile.role !== "super") {
-                window.location.href = "./admin.html";
+            const canAccessDocs = profile.role === "admin" || profile.role === "super";
+            if (!canAccessDocs) {
+                const fallbackPath = profile.role === "user" ? "../dashboard/dashboard.html" : "./admin.html";
+                window.location.href = fallbackPath;
                 return null;
             }
 
@@ -662,10 +641,10 @@
             if (draftTaOption) draftTaOption.style.display = "none";
             if (settingsOption) settingsOption.style.display = "none";
 
-            const isSuperUser = profile?.role === "super";
+            const canAccessDocs = profile?.role === "admin" || profile?.role === "super";
             if (securityDocOption) {
-                securityDocOption.hidden = !isSuperUser;
-                if (isSuperUser) {
+                securityDocOption.hidden = !canAccessDocs;
+                if (canAccessDocs) {
                     const optionLabel = securityDocOption.querySelector("span");
                     if (optionLabel) {
                         optionLabel.textContent = "Back to Admin";
@@ -777,7 +756,7 @@
         };
 
         const init = async () => {
-            const authContext = await requireSuperAdmin();
+            const authContext = await requireSecurityDocsAccess();
             if (!authContext) return;
 
             initAutoLogout(supabase, {

@@ -328,6 +328,10 @@
     width: 100%;
 }
 
+.header-popup-option[hidden] {
+    display: none !important;
+}
+
 .header-popup-option svg {
     width: 20px;
     height: 20px;

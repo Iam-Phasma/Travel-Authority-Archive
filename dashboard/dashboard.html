@@ -1349,7 +1349,7 @@
                                     session.user.email.split('@')[0]
                                 );
                                 if (securityDocOption) {
-                                    securityDocOption.hidden = profile.role !== 'super';
+                                    securityDocOption.hidden = !(profile.role === 'admin' || profile.role === 'super');
                                 }
                             } else if (userNameElement) {
                                 setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
