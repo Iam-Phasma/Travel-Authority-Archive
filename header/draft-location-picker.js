@@ -24,15 +24,68 @@
         });
     };
 
-    const buildDestinationFromAddress = (address) => {
+    const normalizePart = (value) => String(value || '').trim().toLowerCase();
+
+    const deriveProvinceFromDisplayName = (displayName, context) => {
+        const parts = String(displayName || '')
+            .split(',')
+            .map((part) => part.trim())
+            .filter(Boolean);
+
+        if (!parts.length) return '';
+
+        const contextKeys = new Set([
+            normalizePart(context.street),
+            normalizePart(context.barangay),
+            normalizePart(context.city),
+            normalizePart(context.region)
+        ].filter(Boolean));
+
+        const isSkippable = (candidate) => {
+            const normalized = normalizePart(candidate);
+            if (!normalized) return true;
+            if (contextKeys.has(normalized)) return true;
+            if (normalized === 'philippines' || normalized === 'pilipinas') return true;
+            if (/^[0-9\-]+$/.test(normalized)) return true;
+            return false;
+        };
+
+        const cityIndex = parts.findIndex((part) => normalizePart(part) === normalizePart(context.city));
+        if (cityIndex > -1) {
+            for (let i = cityIndex + 1; i < parts.length; i += 1) {
+                if (!isSkippable(parts[i])) {
+                    return parts[i];
+                }
+            }
+        }
+
+        const regionIndex = parts.findIndex((part) => normalizePart(part) === normalizePart(context.region));
+        if (regionIndex > 0) {
+            const candidate = parts[regionIndex - 1];
+            if (!isSkippable(candidate)) {
+                return candidate;
+            }
+        }
+
+        return '';
+    };
+
+    const buildDestinationFromAddress = (address, displayName) => {
+        const streetName = address.road || address.pedestrian || address.footway || address.street || address.residential || '';
+        const houseNumber = address.house_number || '';
+        const street = [houseNumber, streetName].filter(Boolean).join(' ').trim();
         const barangay = address.barangay || address.suburb || address.village || address.neighbourhood || address.hamlet || address.quarter || '';
-        const city = address.city || address.town || address.municipality || address.county || address.province || '';
-        const region = address.region || address.state || address.state_district || address.province || '';
-        const destinationParts = uniqueParts([barangay, city, region]);
+        const city = address.city || address.municipality || address.town || '';
+        const provinceBase = address.province || address.county || address.state_district || '';
+        const region = address.region || address.state || '';
+        const province = provinceBase || deriveProvinceFromDisplayName(displayName, { street, barangay, city, region });
+        const destinationParts = uniqueParts([street, barangay, city, province, region]);
 
         return {
+            street,
             barangay,
             city,
+            province,
             region,
             destinationText: destinationParts.join(', ')
         };
@@ -151,7 +204,7 @@
 
             searchResults.innerHTML = results.map((result, index) => {
                 const address = result.address || {};
-                const location = buildDestinationFromAddress(address);
+                const location = buildDestinationFromAddress(address, result.display_name || '');
                 const title = location.destinationText || result.display_name || 'Unnamed location';
                 const subtitle = result.display_name || title;
                 return `
@@ -245,7 +298,7 @@
                     return;
                 }
 
-                const location = buildDestinationFromAddress(result.address || {});
+                const location = buildDestinationFromAddress(result.address || {}, result.display_name || '');
                 if (!location.destinationText) {
                     throw new Error('That pin did not return a barangay, city, and region. Try another point.');
                 }
