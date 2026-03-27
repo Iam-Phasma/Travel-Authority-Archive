@@ -85,6 +85,10 @@
                     </span>
                     <input id="header-draft-ta-destination" type="text" placeholder="Enter destination" maxlength="1000" autocomplete="off">
                 </div>
+                <div class="header-draft-location-actions">
+                    <button id="header-draft-ta-open-map" class="header-draft-location-link" type="button">Open Map</button>
+                    <p class="header-draft-location-hint">Search a place or drop a pin to fill destination details.</p>
+                </div>
             </div>
             <div>
                 <label for="header-draft-ta-officials-search">Officials <span class="required">*</span></label>
@@ -166,6 +170,36 @@
                 <button id="header-draft-ta-create" class="modal-btn confirm" type="button" style="background: #081430;">Create TA</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div id="header-draft-location-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="header-draft-location-title" aria-describedby="header-draft-location-description">
+    <div class="modal-content header-draft-location-modal-content">
+        <div class="header-draft-location-heading">
+            <div>
+                <h3 id="header-draft-location-title">Pick Destination on Map</h3>
+                <p id="header-draft-location-description">Tap anywhere on the map to drop a pin. The picker uses OpenStreetMap tiles and Nominatim reverse geocoding to resolve barangay, city, and region.</p>
+            </div>
+        </div>
+        <div class="header-draft-location-toolbar">
+            <span id="header-draft-location-status" class="header-draft-location-status">Choose a point on the map or search for a place.</span>
+        </div>
+        <div class="header-draft-location-search">
+            <div class="header-draft-location-search-input-wrap">
+                <input id="header-draft-location-search-input" class="header-draft-location-search-input" type="search" placeholder="Search barangay, city, municipality, or landmark" autocomplete="off">
+                <button id="header-draft-location-search-button" class="header-draft-location-search-button" type="button">Search</button>
+            </div>
+            <div id="header-draft-location-search-results" class="header-draft-location-search-results" hidden></div>
+        </div>
+        <div id="header-draft-location-map" class="header-draft-location-map" aria-label="Destination map picker"></div>
+        <div class="header-draft-location-preview-card">
+            <span class="header-draft-location-preview-label">Selected destination</span>
+            <p id="header-draft-location-preview" class="header-draft-location-preview">No location selected yet.</p>
+        </div>
+        <div class="modal-actions">
+            <button id="header-draft-location-cancel" class="modal-btn cancel" type="button">Cancel</button>
+            <button id="header-draft-location-apply" class="modal-btn confirm" type="button" disabled>Use This Destination</button>
+        </div>
     </div>
 </div>
 
