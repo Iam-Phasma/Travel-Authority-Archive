@@ -420,6 +420,19 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     const taNumberInput = document.getElementById("ta-number");
     const purposeInput = document.getElementById("purpose");
     const destinationInput = document.getElementById("destination");
+
+    // Auto-resize textareas as content grows (capped at 170px)
+    const autoResizeTextarea = (el) => {
+        if (!el || el.tagName !== 'TEXTAREA') return;
+        el.style.height = 'auto';
+        const minH = parseFloat(getComputedStyle(el).minHeight) || 0;
+        const newH = Math.min(Math.max(el.scrollHeight, minH), 170);
+        el.style.height = newH + 'px';
+        el.style.overflowY = el.scrollHeight > 170 ? 'auto' : 'hidden';
+    };
+    [purposeInput, destinationInput].forEach(el => {
+        if (el) el.addEventListener('input', () => autoResizeTextarea(el));
+    });
     const travelDateInput = document.getElementById("travel-date");
     const travelUntilInput = document.getElementById("travel-until");
     const scanFileInput = document.getElementById("scan-file");
@@ -810,6 +823,10 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                         taNumberInput.value = "";
                         purposeInput.value = "";
                         destinationInput.value = "";
+                        autoResizeTextarea(purposeInput);
+                        autoResizeTextarea(destinationInput);
+                        const hint1 = document.getElementById('ocr-group-hint');
+                        if (hint1) hint1.textContent = 'Scan the uploaded TA to auto-fill both fields.';
                         travelDateInput.value = "";
                         travelUntilInput.value = "";
                         scanFileInput.value = "";
@@ -846,6 +863,10 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             taNumberInput.value = "";
             purposeInput.value = "";
             destinationInput.value = "";
+            autoResizeTextarea(purposeInput);
+            autoResizeTextarea(destinationInput);
+            const hint2 = document.getElementById('ocr-group-hint');
+            if (hint2) hint2.textContent = 'Scan the uploaded TA to auto-fill both fields.';
             travelDateInput.value = "";
             travelUntilInput.value = "";
             scanFileInput.value = "";
@@ -875,6 +896,10 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         taNumberInput.value = "";
         purposeInput.value = "";
         destinationInput.value = "";
+        autoResizeTextarea(purposeInput);
+        autoResizeTextarea(destinationInput);
+        const hint3 = document.getElementById('ocr-group-hint');
+        if (hint3) hint3.textContent = 'Scan the uploaded TA to auto-fill both fields.';
         travelDateInput.value = "";
         travelUntilInput.value = "";
         scanFileInput.value = "";
@@ -885,6 +910,68 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         uploadStatus.textContent = "Fields cleared.";
         uploadStatus.classList.remove("status--error");
     });
+
+    // Open OCR modal button — use late-bound call so it works regardless of init order
+    const openOCRBtn = document.getElementById("open-ocr-btn");
+    if (openOCRBtn) {
+        openOCRBtn.addEventListener("click", () => {
+            if (typeof window.openOCRModal === "function") {
+                window.openOCRModal();
+            } else {
+                console.warn('[OCR] openOCRModal not ready yet');
+            }
+        });
+    }
+
+    // Single OCR button — scans the document and fills both Purpose and Destination at once
+    const ocrFillBothBtn = document.getElementById('ocr-fill-both-btn');
+    if (ocrFillBothBtn) {
+        const runFillBoth = async (file) => {
+            if (typeof window.autoFillFieldOCR !== 'function') return;
+            const originalHTML = ocrFillBothBtn.innerHTML;
+            ocrFillBothBtn.disabled = true;
+            ocrFillBothBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" style="animation:ocr-spin .7s linear infinite"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg> Scanning\u2026';
+
+            const results = await Promise.allSettled([
+                window.autoFillFieldOCR('purpose', file),
+                window.autoFillFieldOCR('destination', file)
+            ]);
+
+            let filled = 0;
+            ['purpose', 'destination'].forEach((field, i) => {
+                const r = results[i];
+                if (r.status === 'fulfilled' && r.value) {
+                    const el = document.getElementById(field);
+                    if (el) {
+                        el.value = r.value;
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        filled++;
+                    }
+                } else {
+                    console.warn(`[OCR] ${field}: ${r.reason?.message || 'failed'}`);
+                }
+            });
+
+            ocrFillBothBtn.innerHTML = filled === 2 ? '\u2713 Both filled!' : filled === 1 ? '\u2713 1 of 2 filled' : '\u2717 Not found — try another file?';            if (filled > 0) {
+                const hint = document.getElementById('ocr-group-hint');
+                if (hint) hint.textContent = 'Please review and correct any misscanned text before submitting.';
+            }            setTimeout(() => { ocrFillBothBtn.innerHTML = originalHTML; ocrFillBothBtn.disabled = false; }, 2500);
+        };
+
+        ocrFillBothBtn.addEventListener('click', () => {
+            const scanFileInput = document.getElementById('scan-file');
+            const file = scanFileInput && scanFileInput.files && scanFileInput.files[0];
+            if (file) {
+                runFillBoth(file);
+            } else {
+                const tmp = document.createElement('input');
+                tmp.type = 'file';
+                tmp.accept = 'application/pdf,.pdf,image/jpeg,image/jpg,image/png';
+                tmp.addEventListener('change', () => { if (tmp.files && tmp.files[0]) runFillBoth(tmp.files[0]); });
+                tmp.click();
+            }
+        });
+    }
 
     console.log("Upload panel initialized");
 };

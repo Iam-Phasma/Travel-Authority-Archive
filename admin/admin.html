@@ -280,6 +280,8 @@
 
     <div id="employees-modals-container"></div>
 
+    <div id="ocr-modal-container"></div>
+
     <div id="confirm-modal" class="modal">
         <div class="modal-content">
             <h3 id="confirm-modal-title">Confirm Action</h3>
@@ -299,6 +301,7 @@
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
+    <script src="upload/ocr.js"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
     <script type="module">
         // Import Supabase
@@ -356,6 +359,20 @@
             })
             .catch(error => {
                 console.error('Error loading upload panel:', error);
+                return false;
+            });
+
+        // Load OCR modal
+        const ocrModalLoaded = fetch('upload/ocr-modal.html')
+            .then(r => r.text())
+            .then(modalHTML => {
+                document.getElementById('ocr-modal-container').innerHTML = modalHTML;
+                // Init after HTML is injected so getElementById calls inside succeed
+                if (window.initOCRModal) window.initOCRModal();
+                return true;
+            })
+            .catch(error => {
+                console.error('Error loading OCR modal:', error);
                 return false;
             });
 

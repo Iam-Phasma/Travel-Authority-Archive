@@ -1,0 +1,91 @@
+<div id="ocr-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="ocr-modal-title">
+    <div class="modal-content ocr-modal-content">
+
+        <!-- Header -->
+        <div class="ocr-modal-head">
+            <div>
+                <h3 id="ocr-modal-title">Extract Text with OCR</h3>
+                <p>Upload a photo or scanned document to extract text.</p>
+            </div>
+            <button id="ocr-modal-close" class="close-modal" type="button" aria-label="Close">&times;</button>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="ocr-tabs">
+            <button class="ocr-tab-btn active" data-tab="upload-image" type="button">Upload Image</button>
+            <button class="ocr-tab-btn" data-tab="use-recent" type="button">Use Recent Upload</button>
+        </div>
+
+        <!-- Upload Image Tab -->
+        <div id="ocr-tab-upload-image" class="ocr-tab-content active">
+            <div class="ocr-upload-controls">
+                <button id="ocr-choose-file-btn" type="button" class="ocr-choose-file-btn">
+                    <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" width="18" height="18">
+                        <path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" />
+                    </svg>
+                    Choose File
+                </button>
+                <input id="ocr-file-input" type="file" accept="image/*,.pdf" hidden>
+            </div>
+            <div class="ocr-drop-zone" id="ocr-drop-zone">
+                <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" class="ocr-drop-icon">
+                    <path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z" />
+                </svg>
+                <p>Drag &amp; drop an image or PDF here</p>
+                <p class="ocr-drop-hint">PNG, JPG, PDF &mdash; max 10 MB</p>
+                <input id="ocr-file-input-drag" type="file" accept="image/*,.pdf" hidden>
+            </div>
+        </div>
+
+        <!-- Use Recent Upload Tab -->
+        <div id="ocr-tab-use-recent" class="ocr-tab-content">
+            <div id="ocr-recent-files" class="ocr-file-list">
+                <p class="ocr-empty-state">No recent files available. Upload an image first.</p>
+            </div>
+        </div>
+
+        <!-- Crop / Region Select View -->
+        <div id="ocr-crop-view" class="ocr-crop-view" hidden>
+            <p class="ocr-crop-hint">Drag on the image to select the area you want to scan</p>
+            <div class="ocr-canvas-wrapper">
+                <canvas id="ocr-preview-canvas"></canvas>
+            </div>
+            <div class="modal-actions">
+                <button id="ocr-crop-back-btn" type="button" class="modal-btn cancel">Choose Different File</button>
+                <button id="ocr-scan-region-btn" type="button" class="modal-btn confirm" disabled>Scan Selected Area</button>
+            </div>
+        </div>
+
+        <!-- OCR Processing -->
+        <div id="ocr-progress" class="ocr-progress" hidden>
+            <div class="ocr-spinner"></div>
+            <p id="ocr-progress-text">Analyzing image…</p>
+            <div class="ocr-progress-bar"><div id="ocr-progress-fill" class="ocr-progress-fill"></div></div>
+        </div>
+
+        <!-- OCR Results -->
+        <div id="ocr-results" class="ocr-results" hidden>
+            <div class="ocr-results-meta">
+                <span id="ocr-char-count"></span>
+                <span id="ocr-confidence"></span>
+            </div>
+            <textarea id="ocr-text-output" class="ocr-text-output" readonly></textarea>
+            <div class="modal-actions">
+                <button id="ocr-scan-again-btn" type="button" class="modal-btn cancel">Scan Another Region</button>
+                <button id="ocr-copy-all-btn" type="button" class="modal-btn confirm">Copy Text</button>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="ocr-error" class="ocr-error" hidden>
+            <p id="ocr-error-message"></p>
+            <button id="ocr-error-retry-btn" type="button" class="modal-btn cancel">Try Again</button>
+        </div>
+
+        <!-- Default footer (upload / progress states) -->
+        <div id="ocr-default-footer" class="modal-actions">
+            <button id="ocr-modal-cancel" type="button" class="modal-btn cancel">Close</button>
+        </div>
+
+    </div>
+</div>
