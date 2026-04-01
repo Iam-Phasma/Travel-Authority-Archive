@@ -2446,6 +2446,9 @@
 
         const init = async () => {
             await requireUser();
+
+            // Set up realtime subscription now that the session is confirmed
+            setupRealtimeSubscription();
             
             // Load saved filters and sort from localStorage
             loadFiltersFromStorage();
@@ -2992,9 +2995,6 @@
                 )
                 .subscribe((status) => {});
         };
-
-        // Initialize realtime subscription
-        setupRealtimeSubscription();
 
         // Prevent browser back/forward navigation
         // This prevents users from accidentally navigating back to login or other pages
