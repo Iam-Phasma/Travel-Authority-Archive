@@ -1,0 +1,171 @@
+/* === Admin Top Switcher Layout === */
+.admin-main {
+    width: 100%;
+    max-width: min(1550px, calc(100vw - 36px));
+    margin: 0 auto 50px;
+}
+.admin-panel-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: sticky;
+    top: 64px;
+    z-index: 30;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 auto 22px;
+    padding: 8px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid rgba(11, 28, 59, 0.1);
+    box-shadow: 0 4px 12px rgba(11, 28, 59, 0.05);
+    transition: box-shadow 220ms ease, background-color 220ms ease, border-color 220ms ease;
+    overflow-x: auto;
+}
+.admin-panel-switcher.is-stuck {
+    background: #ffffff;
+    border-color: rgba(11, 28, 59, 0.12);
+    box-shadow: 0 6px 16px rgba(11, 28, 59, 0.08);
+}
+.admin-panel-switcher .switch-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 160px;
+    height: 44px;
+    min-width: 160px;
+    gap: 8px;
+    border: 1px solid rgba(47, 111, 228, 0.2);
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(11, 28, 59, 0.72);
+    padding: 0 14px;
+    white-space: nowrap;
+    transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+.admin-panel-switcher .switch-btn.hidden,
+.admin-panel-switcher .switch-btn[hidden] {
+    display: none !important;
+}
+.admin-panel-switcher .switch-btn:hover {
+    background: var(--hover-sea-subtle);
+    color: var(--sea);
+    border-color: rgba(47, 111, 228, 0.28);
+    box-shadow: none;
+}
+.admin-panel-switcher .switch-btn.active {
+    background: var(--sea);
+    color: #ffffff;
+    border-color: var(--sea);
+    font-weight: 600;
+}
+.admin-panel-switcher .switch-btn svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+.admin-panel-switcher .switch-btn svg.icon-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+.admin-panel-switcher .switch-btn svg.icon-officials {
+    width: 25px;
+    height: 25px;
+}
+.admin-panel-switcher .switch-btn-label {
+    display: inline;
+    line-height: 1;
+}
+.admin-panels {
+    width: 100%;
+    min-width: 0;
+}
+.admin-panels > div {
+    width: 100%;
+    min-width: 0;
+}
+.admin-panels .panel {
+    margin-top: 0;
+    margin-left: auto;
+    margin-right: auto;
+    animation: none;
+    transform: none;
+}
+.admin-panels .panel.admin-panel-enter {
+    animation: fadeUp 280ms ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-panels .panel.admin-panel-enter {
+        animation: none;
+    }
+    .admin-panel-switcher {
+        transition: none;
+    }
+}
+.admin-panels #upload-panel {
+    width: min(720px, 100%);
+}
+.admin-panels #view-panel {
+    width: 100%;
+    max-width: 100%;
+}
+.admin-panels #employees-panel {
+    width: min(800px, 100%);
+    max-width: 100%;
+}
+.admin-panels #users-panel {
+    width: min(980px, 100%);
+    max-width: 100%;
+}
+@media (max-width: 768px) {
+    .admin-main {
+        max-width: calc(100vw - 16px);
+        margin-bottom: 36px;
+    }
+    .admin-panel-switcher {
+        width: 100%;
+        gap: 4px;
+        padding: 8px;
+        margin: 0 0 16px;
+        justify-content: flex-start;
+    }
+    .admin-panel-switcher .switch-btn {
+        width: auto;
+        height: 36px;
+        min-width: 0;
+        flex: 1 1 0;
+        padding: 7px 8px;
+        gap: 6px;
+    }
+    .admin-panel-switcher .switch-btn svg {
+        display: block;
+        width: 18px;
+        height: 18px;
+    }
+    .admin-panel-switcher .switch-btn-label {
+        display: inline;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
+    }
+    .admin-panels {
+        overflow-x: auto;
+    }
+    .admin-panel-switcher.compact-icons .switch-btn {
+        width: 34px;
+        height: 34px;
+        min-width: 34px;
+        flex: 0 0 34px;
+        padding: 7px;
+        gap: 0;
+    }
+    .admin-panel-switcher.compact-icons .switch-btn-label {
+        display: none;
+    }
+}
