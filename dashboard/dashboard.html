@@ -987,7 +987,6 @@
 
             const userMenuBtn = document.getElementById('user-menu-btn');
             const headerPopup = document.getElementById('header-popup-panel');
-            const securityDocOption = document.getElementById('header-security-doc-option');
             const draftTaOption = document.getElementById('header-draft-ta-option');
             const settingsOption = document.getElementById('header-settings-option');
             const logoutOption = document.getElementById('header-logout-option');
@@ -1020,14 +1019,6 @@
             }
 
             headerButtonsInitialized = true;
-
-            if (securityDocOption) {
-                securityDocOption.hidden = true;
-                securityDocOption.addEventListener('click', () => {
-                    headerPopup.classList.remove('show');
-                    window.location.href = '../admin/security-documentation.html';
-                });
-            }
 
             const capitalizeWords = (str) => {
                 if (!str) return '';
@@ -1348,14 +1339,8 @@
                                     profile.LName,
                                     session.user.email.split('@')[0]
                                 );
-                                if (securityDocOption) {
-                                    securityDocOption.hidden = !(profile.role === 'admin' || profile.role === 'super');
-                                }
                             } else if (userNameElement) {
                                 setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
-                                if (securityDocOption) {
-                                    securityDocOption.hidden = true;
-                                }
                             }
                         } catch (err) {
                             console.error('Error fetching user name:', err);

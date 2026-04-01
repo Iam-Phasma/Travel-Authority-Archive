@@ -707,7 +707,6 @@
             if (headerButtonsInitialized) return;
             
             const userMenuBtn = document.getElementById('user-menu-btn');
-            const securityDocsOption = document.getElementById('header-security-doc-option');
             const headerPopup = document.getElementById('header-popup-panel');
             const draftTaOption = document.getElementById('header-draft-ta-option');
             const settingsOption = document.getElementById('header-settings-option');
@@ -964,28 +963,6 @@
             }
             
             headerButtonsInitialized = true;
-
-            if (securityDocsOption) {
-                securityDocsOption.hidden = true;
-            }
-
-            const applySecurityDocsHeaderVisibilityByRole = (role) => {
-                if (!securityDocsOption) return;
-                const canAccessDocs = role === 'admin' || role === 'super';
-                securityDocsOption.hidden = !canAccessDocs;
-            };
-
-            applySecurityDocsHeaderVisibilityByRole(window.adminCurrentRole || '');
-            window.addEventListener('admin-role-ready', (event) => {
-                applySecurityDocsHeaderVisibilityByRole(event?.detail?.role || '');
-            });
-
-            if (securityDocsOption) {
-                securityDocsOption.addEventListener('click', () => {
-                    headerPopup.classList.remove('show');
-                    window.location.href = './security-documentation.html';
-                });
-            }
 
             const closeDraftTaModal = () => {
                 if (!draftTaModal) return;
