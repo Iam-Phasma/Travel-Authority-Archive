@@ -444,6 +444,31 @@
         min-width: 38px;
         text-align: right;
     }
+    .dest-chart-source {
+        position: relative;
+    }
+    .dest-data-badge {
+        position: absolute;
+        right: 6px;
+        bottom: 4px;
+        font-size: 9px;
+        font-weight: 500;
+        letter-spacing: 0.04em;
+        text-decoration: none;
+        padding: 0;
+        opacity: 0.45;
+        transition: opacity 0.15s;
+    }
+    .dest-data-badge:hover {
+        opacity: 0.8;
+        text-decoration: underline;
+    }
+    .dest-data-badge--api {
+        color: #2563eb;
+    }
+    .dest-data-badge--local {
+        color: #64748b;
+    }
     @media (max-width: 950px) {
         .insights-grid {
             flex-direction: column;
@@ -751,13 +776,14 @@
                                         <button class="dest-switch-btn" data-view="calabarzon">By Province</button>
                                     </div>
                                 </div>
-                                <div class="insight-graph-scroll">
+                                <div class="insight-graph-scroll dest-chart-source">
                                     <div class="dest-chart-wrap">
                                         <div class="dest-chart-canvas-wrap">
                                             <canvas id="dest-chart"></canvas>
                                         </div>
                                         <div id="dest-legend" class="dest-legend"></div>
                                     </div>
+                                    <a id="dest-data-badge" class="dest-data-badge" target="_blank" rel="noopener noreferrer" hidden></a>
                                 </div>
                             </div>
                         </div>
@@ -2726,8 +2752,9 @@
                 calabarzon: 'Groups CALABARZON trips by province based on each destination entry.'
             };
 
-            // Ordered entries: more specific keywords before broader ones to avoid false matches
-            const REGION_ENTRIES = [
+            // Fallback entries used when PSGC API is unavailable.
+            // Ordered: more specific keywords before broader ones to avoid false matches.
+            const FALLBACK_REGION_ENTRIES = [
                 ['NCR',         ['metro manila', 'national capital', 'quezon city', 'makati', 'pasig', 'taguig', 'marikina', 'caloocan', 'las piñas', 'las pinas', 'malabon', 'mandaluyong', 'muntinlupa', 'navotas', 'parañaque', 'paranaque', 'pasay', 'pateros', 'valenzuela', 'manila']],
                 ['CAR',         ['cordillera', 'baguio', 'benguet', 'ifugao', 'kalinga', 'apayao', 'abra', 'mountain province', 'tabuk']],
                 ['Region I',    ['ilocos norte', 'ilocos sur', 'la union', 'pangasinan', 'vigan', 'laoag', 'dagupan', 'urdaneta']],
@@ -2747,13 +2774,100 @@
                 ['BARMM',       ['cotabato city', 'maguindanao', 'lanao del sur', 'basilan', 'sulu', 'tawi-tawi', 'marawi', 'bangsamoro']],
             ];
 
-            const CALABARZON_ENTRIES = [
+            const FALLBACK_CALABARZON_ENTRIES = [
                 ['Cavite',   ['cavite', 'bacoor', 'dasmariñas', 'dasmarinas', 'imus', 'tagaytay', 'general trias', 'trece martires', 'tanza', 'silang']],
                 ['Laguna',   ['laguna', 'calamba', 'santa rosa', 'biñan', 'binan', 'los baños', 'los banos', 'san pedro', 'cabuyao', 'pagsanjan', 'san pablo']],
                 ['Batangas', ['batangas', 'lipa', 'tanauan', 'nasugbu', 'lemery', 'bauan']],
                 ['Rizal',    ['antipolo', 'cainta', 'taytay', 'angono', 'binangonan', 'pililla', 'cardona']],
                 ['Quezon',   ['lucena', 'tayabas', 'quezon province', 'sariaya', 'tiaong', 'gumaca', 'infanta']],
             ];
+
+            // PSGC API: fetches official province and city/municipality names per region.
+            // Results are merged with fallback keywords so existing matches are never lost.
+            // Responses are cached in sessionStorage (refreshed daily).
+            const PSGC_BASE = 'https://psgc.rootscratch.com';
+            // v3: dropped broken /province?id= city-fetch for CALABARZON drill-down
+            const PSGC_CACHE_KEY = 'psgc_geo_v3';
+            const PSGC_CACHE_DATE_KEY = 'psgc_geo_date_v3';
+
+            const psgcFetch = (url) => {
+                const ctrl = new AbortController();
+                const tid = setTimeout(() => ctrl.abort(), 8000);
+                return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
+            };
+
+            const psgcDeriveLabel = (name) => {
+                const u = name.toUpperCase();
+                if (u.includes('NATIONAL CAPITAL')) return 'NCR';
+                if (u.includes('CORDILLERA')) return 'CAR';
+                if (u.includes('BANGSAMORO') || u.includes('BARMM')) return 'BARMM';
+                if (u.includes('CALABARZON')) return 'CALABARZON';
+                if (u.includes('MIMAROPA')) return 'MIMAROPA';
+                if (u.includes('NEGROS ISLAND')) return 'NIR';
+                const m = name.match(/Region\s+([\w\-]+)/i);
+                if (m) return `Region ${m[1].toUpperCase()}`;
+                return name;
+            };
+
+            const loadPsgcEntries = async () => {
+                try {
+                    const today = new Date().toISOString().slice(0, 10);
+                    if (sessionStorage.getItem(PSGC_CACHE_DATE_KEY) === today) {
+                        const cached = sessionStorage.getItem(PSGC_CACHE_KEY);
+                        if (cached) return JSON.parse(cached);
+                    }
+                } catch (_) {}
+
+                // Fetch all regions and all provinces in parallel — 2 calls.
+                // Avoids /region?id= which returns the region record itself, not its provinces.
+                const [regRes, provRes] = await Promise.all([
+                    psgcFetch(`${PSGC_BASE}/region`),
+                    psgcFetch(`${PSGC_BASE}/province`)
+                ]);
+                if (!regRes.ok || !provRes.ok) throw new Error('PSGC fetch failed');
+                const regions = await regRes.json();
+                const allProvinces = await provRes.json();
+
+                // PSGC IDs are hierarchical: the first 2 digits identify the region.
+                // Province IDs share the same 2-digit prefix as their parent region.
+                const regionPrefixMap = new Map(); // e.g. "04" → "CALABARZON"
+                regions.forEach(r => {
+                    regionPrefixMap.set(r.psgc_id.substring(0, 2), psgcDeriveLabel(r.name));
+                });
+
+                // Group province names under their region label
+                const regionProvincesMap = new Map();
+                allProvinces.forEach(p => {
+                    const label = regionPrefixMap.get(p.psgc_id.substring(0, 2));
+                    if (!label) return;
+                    if (!regionProvincesMap.has(label)) regionProvincesMap.set(label, []);
+                    regionProvincesMap.get(label).push(p.name.toLowerCase().trim());
+                });
+
+                // Merge province names into fallback region entries
+                const regionEntries = FALLBACK_REGION_ENTRIES.map(([label, fbKws]) => {
+                    const apiKws = regionProvincesMap.get(label) || [];
+                    return [label, [...new Set([...apiKws, ...fbKws])]];
+                });
+                for (const [label, kws] of regionProvincesMap) {
+                    if (!regionEntries.find(([l]) => l === label) && kws.length) {
+                        regionEntries.push([label, kws]);
+                    }
+                }
+
+                // CALABARZON drill-down: the PSGC API's /municipal-city endpoint is
+                // currently non-functional (returns empty), so city/municipality-level
+                // enrichment is not possible. Use the static fallback keywords which
+                // already cover the main cities and municipalities per province.
+                const calabarzonEntries = FALLBACK_CALABARZON_ENTRIES;
+
+                const result = { regionEntries, calabarzonEntries };
+                try {
+                    sessionStorage.setItem(PSGC_CACHE_KEY, JSON.stringify(result));
+                    sessionStorage.setItem(PSGC_CACHE_DATE_KEY, new Date().toISOString().slice(0, 10));
+                } catch (_) {}
+                return result;
+            };
 
             const classifyDest = (dest, entries) => {
                 if (!dest) return 'Others';
@@ -2775,12 +2889,33 @@
             const CALABARZON_PALETTE = ['#2563eb','#0891b2','#059669','#d97706','#dc2626'];
 
             try {
-                const { data: tas, error } = await supabase
-                    .from('travel_authorities')
-                    .select('destination')
-                    .eq('is_demo', false);
+                // Fetch travel authorities and PSGC geographic data in parallel
+                const [{ data: tas, error: taError }, psgcEntries] = await Promise.all([
+                    supabase.from('travel_authorities').select('destination').eq('is_demo', false),
+                    loadPsgcEntries().catch(err => {
+                        console.warn('PSGC API unavailable, using local classification data:', err);
+                        return null;
+                    })
+                ]);
 
-                if (error) throw error;
+                if (taError) throw taError;
+
+                const REGION_ENTRIES = psgcEntries ? psgcEntries.regionEntries : FALLBACK_REGION_ENTRIES;
+                const CALABARZON_ENTRIES = psgcEntries ? psgcEntries.calabarzonEntries : FALLBACK_CALABARZON_ENTRIES;
+
+                const dataBadge = document.getElementById('dest-data-badge');
+                const usedPsgc = !!psgcEntries;
+                const updateBadge = (view) => {
+                    if (!dataBadge) return;
+                    if (view !== 'region' || !usedPsgc) {
+                        dataBadge.hidden = true;
+                        return;
+                    }
+                    dataBadge.textContent = 'PSGC API';
+                    dataBadge.className = 'dest-data-badge dest-data-badge--api';
+                    dataBadge.href = 'https://psgc.rootscratch.com/';
+                    dataBadge.hidden = false;
+                };
 
                 let destChart = null;
 
@@ -2846,6 +2981,7 @@
                     if (subtitle) {
                         subtitle.textContent = DESTINATION_SUBTITLES[view] || DESTINATION_SUBTITLES.region;
                     }
+                    updateBadge(view);
 
                     const entries = view === 'region' ? REGION_ENTRIES : CALABARZON_ENTRIES;
                     const palette = view === 'region' ? REGION_PALETTE : CALABARZON_PALETTE;
