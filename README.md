@@ -2,6 +2,8 @@
 
 A static web application for managing and viewing travel authority records, backed by Supabase.
 
+Open: https://iam-phasma.github.io/Travel-Authority-Archive/
+
 The project includes:
 
 - Public login and password reset flow with hCaptcha.
