@@ -349,7 +349,7 @@ body.dashboard-page::before {
     background: #ffffff;
     border: 1px solid rgba(11, 28, 59, 0.1);
     border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(11, 28, 59, 0.05);
+    box-shadow: none;
     padding: 24px;
     min-width: 0;
 }
