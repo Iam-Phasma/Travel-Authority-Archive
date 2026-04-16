@@ -1166,13 +1166,13 @@ button:hover {
 
 /* Center alignment */
 .data-table th:nth-child(2),
-.data-table th:nth-child(7) {
+.data-table th:nth-child(8) {
   text-align: center;
 }
 
-.data-table td:nth-child(5),
 .data-table td:nth-child(6),
-.data-table td:nth-child(7) {
+.data-table td:nth-child(7),
+.data-table td:nth-child(8) {
   text-align: center;
 }
 
@@ -1809,6 +1809,10 @@ button:hover {
 }
 .detail-divider--spaced {
   margin: 18px 0;
+}
+
+.data-table td:nth-child(8) .file-link {
+  display: inline-block;
 }
 
 .file-link {

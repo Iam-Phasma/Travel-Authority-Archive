@@ -106,9 +106,10 @@
                         </div>
                         <div class="filter-field">
                             <label for="filter-employee">Official</label>
-                            <select id="filter-employee" class="filter-select">
-                                <option value="">All Officials</option>
-                            </select>
+                            <div class="autocomplete-wrapper">
+                                <input type="text" id="filter-employee" class="filter-employee-input" placeholder="Search official..." autocomplete="off">
+                                <div id="filter-employee-autocomplete" class="autocomplete-dropdown" style="display:none;"></div>
+                            </div>
                         </div>
                         <div class="filter-field">
                             <label for="filter-year">Year</label>

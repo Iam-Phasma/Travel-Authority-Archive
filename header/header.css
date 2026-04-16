@@ -16,14 +16,14 @@
 }
 
 .sticky-header-content {
-    width: min(1120px, calc(100vw - 32px));
+    width: 100%;
     min-height: 64px;
-    margin: 0 auto;
-    padding: 8px 0;
+    padding: 8px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 20px;
+    box-sizing: border-box;
 }
 
 .sticky-header-left {
@@ -834,9 +834,9 @@ body.header-modal-open {
     }
 
     .sticky-header-content {
-        width: min(1120px, calc(100vw - 24px));
+        width: 100%;
         min-height: 60px;
-        padding: 8px 0;
+        padding: 8px 16px;
     }
 
     .sticky-header-left {

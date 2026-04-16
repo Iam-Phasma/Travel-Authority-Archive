@@ -1341,15 +1341,7 @@ const updateViewFileSize = async (fileUrl) => {
     sizeEl.textContent = size ? formatFileSize(size) : 'File size: Unavailable';
 };
 
-const formatFileLabel = (value) => {
-    const base = String(value || "Download");
-    const extMatch = base.match(/\.([a-z0-9]{1,5})$/i);
-    const ext = extMatch ? `.${extMatch[1]}` : "";
-    const nameWithoutExt = extMatch ? base.slice(0, -ext.length) : base;
-    const compact = nameWithoutExt.replace(/[^a-z0-9-]/gi, "");
-    if (compact.length <= 12) return compact + ext || "File";
-    return `${compact.slice(0, 12)}...${ext}`;
-};
+const formatFileLabel = (_value) => "Download";
 
 const isValidTaNumber = (value) => /^\d{4}-\d{2}-\d{4}$/.test(value);
 window.isValidTaNumber = isValidTaNumber; // Expose for upload.js
@@ -2423,7 +2415,7 @@ const adminFilterPanel = document.getElementById("admin-filter-panel");
 const adminApplyFilterBtn = document.getElementById("admin-apply-filter-btn");
 const adminClearFilterBtn = document.getElementById("admin-clear-filter-btn");
 const adminFilterTaNumberInput = document.getElementById("admin-filter-ta-number");
-const adminFilterEmployeeSelect = document.getElementById("admin-filter-employee");
+const adminFilterEmployeeInput = document.getElementById("admin-filter-employee");
 const adminFilterYearSelect = document.getElementById("admin-filter-year");
 const adminFilterTravelDateInput = document.getElementById("admin-filter-travel-date");
 const adminFilterMatchAllCheckbox = document.getElementById("admin-filter-match-all");
@@ -2439,13 +2431,6 @@ const loadAdminEmployeesForFilter = async () => {
 
         if (error) throw error;
         adminEmployeesListForFilter = data ? data : [];
-        
-        // Populate filter dropdown
-        adminFilterEmployeeSelect.innerHTML = '<option value="">All Officials</option>' +
-            adminEmployeesListForFilter.map(emp => {
-                const inactiveLabel = emp.is_active === false ? ' (Inactive)' : '';
-                return `<option value="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</option>`;
-            }).join('');
     } catch (error) {
         console.error("Failed to load employees for admin filter:", error);
         adminEmployeesListForFilter = [];
@@ -2454,6 +2439,92 @@ const loadAdminEmployeesForFilter = async () => {
 
 // Expose globally for realtime subscription in employees.js
 window.adminLoadEmployeesForFilter = loadAdminEmployeesForFilter;
+
+// Admin filter official autocomplete
+const adminFilterEmployeeDropdown = document.getElementById("admin-filter-employee-autocomplete");
+
+const setAdminFilterEmpDropdownVisible = (visible) => {
+    if (adminFilterEmployeeDropdown) adminFilterEmployeeDropdown.style.display = visible ? 'block' : 'none';
+};
+
+const showAdminFilterEmpSuggestions = (inputValue) => {
+    if (!adminFilterEmployeeDropdown) return;
+    const trimmed = inputValue.toLowerCase().trim();
+    if (!trimmed) { setAdminFilterEmpDropdownVisible(false); return; }
+
+    const matches = adminEmployeesListForFilter
+        .filter(emp => emp.name.toLowerCase().includes(trimmed))
+        .slice(0, 10);
+
+    if (matches.length === 0) {
+        adminFilterEmployeeDropdown.innerHTML = '<div class="autocomplete-no-options">No officials found</div>';
+        setAdminFilterEmpDropdownVisible(true);
+        return;
+    }
+
+    adminFilterEmployeeDropdown.innerHTML = matches.map((emp, i) => {
+        const badge = emp.is_active === false ? ' <span class="inactive-badge">Inactive</span>' : '';
+        return `<div class="autocomplete-item" data-value="${escapeHtml(emp.name)}" data-index="${i}">${escapeHtml(emp.name)}${badge}</div>`;
+    }).join('');
+    setAdminFilterEmpDropdownVisible(true);
+
+    adminFilterEmployeeDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            adminFilterEmployeeInput.value = item.getAttribute('data-value');
+            setAdminFilterEmpDropdownVisible(false);
+        });
+        item.addEventListener('mouseenter', () => {
+            adminFilterEmployeeDropdown.querySelectorAll('.autocomplete-item').forEach(i => i.classList.remove('highlighted'));
+            item.classList.add('highlighted');
+        });
+    });
+};
+
+if (adminFilterEmployeeInput) {
+    adminFilterEmployeeInput.addEventListener('input', () => showAdminFilterEmpSuggestions(adminFilterEmployeeInput.value));
+    adminFilterEmployeeInput.addEventListener('focus', () => {
+        if (adminFilterEmployeeInput.value.length > 0) showAdminFilterEmpSuggestions(adminFilterEmployeeInput.value);
+    });
+    adminFilterEmployeeInput.addEventListener('keydown', (e) => {
+        const items = adminFilterEmployeeDropdown ? adminFilterEmployeeDropdown.querySelectorAll('.autocomplete-item') : [];
+        if (!items.length) return;
+        const highlighted = adminFilterEmployeeDropdown.querySelector('.autocomplete-item.highlighted');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!highlighted) { items[0].classList.add('highlighted'); }
+            else {
+                const next = Array.from(items).indexOf(highlighted) + 1;
+                if (next < items.length) { highlighted.classList.remove('highlighted'); items[next].classList.add('highlighted'); }
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (highlighted) {
+                const prev = Array.from(items).indexOf(highlighted) - 1;
+                highlighted.classList.remove('highlighted');
+                if (prev >= 0) items[prev].classList.add('highlighted');
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlighted) {
+                adminFilterEmployeeInput.value = highlighted.getAttribute('data-value');
+                setAdminFilterEmpDropdownVisible(false);
+            }
+        } else if (e.key === 'Escape') {
+            setAdminFilterEmpDropdownVisible(false);
+        }
+    });
+}
+
+document.addEventListener('click', (e) => {
+    if (
+        adminFilterEmployeeDropdown &&
+        !adminFilterEmployeeDropdown.contains(e.target) &&
+        e.target !== adminFilterEmployeeInput
+    ) {
+        setAdminFilterEmpDropdownVisible(false);
+    }
+});
 
 // Populate year filter from available data
 const populateAdminYearFilter = async () => {
@@ -2524,11 +2595,12 @@ window.flatpickr(adminFilterTravelDateInput, {
 
 adminFilterToggleBtn.addEventListener("click", () => {
     adminFilterPanel.classList.toggle("show");
+    if (!adminFilterPanel.classList.contains("show")) setAdminFilterEmpDropdownVisible(false);
 });
 
 adminApplyFilterBtn.addEventListener("click", () => {
     adminActiveFilters.taNumber = adminFilterTaNumberInput.value.trim();
-    adminActiveFilters.employee = adminFilterEmployeeSelect.value;
+    adminActiveFilters.employee = adminFilterEmployeeInput.value.trim();
     adminActiveFilters.year = adminFilterYearSelect.value;
     adminActiveFilters.travelDate = adminFilterTravelDateInput.value;
     adminActiveFilters.matchAll = adminFilterMatchAllCheckbox.checked;
@@ -2537,6 +2609,7 @@ adminApplyFilterBtn.addEventListener("click", () => {
     renderViewRows(viewRows);
     updateViewFooter();
     adminFilterPanel.classList.remove("show");
+    setAdminFilterEmpDropdownVisible(false);
 });
 
 adminClearFilterBtn.addEventListener("click", () => {
@@ -2546,7 +2619,8 @@ adminClearFilterBtn.addEventListener("click", () => {
     adminActiveFilters.travelDate = "";
     adminActiveFilters.matchAll = true;
     adminFilterTaNumberInput.value = "";
-    adminFilterEmployeeSelect.value = "";
+    adminFilterEmployeeInput.value = "";
+    setAdminFilterEmpDropdownVisible(false);
     adminFilterYearSelect.value = "";
     adminFilterTravelDateInput.value = "";
     adminFilterMatchAllCheckbox.checked = true;
@@ -3168,7 +3242,7 @@ const restoreAdminTableState = () => {
     loadAdminSortFromStorage();
 
     if (adminFilterTaNumberInput) adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";
-    if (adminFilterEmployeeSelect) adminFilterEmployeeSelect.value = adminActiveFilters.employee || "";
+    if (adminFilterEmployeeInput) adminFilterEmployeeInput.value = adminActiveFilters.employee || "";
     if (adminFilterYearSelect) adminFilterYearSelect.value = adminActiveFilters.year || "";
     if (adminFilterTravelDateInput) adminFilterTravelDateInput.value = adminActiveFilters.travelDate || "";
     if (adminFilterMatchAllCheckbox) adminFilterMatchAllCheckbox.checked = adminActiveFilters.matchAll !== undefined ? adminActiveFilters.matchAll : true;

@@ -1050,15 +1050,7 @@ const fetchFileSizeBytes = async (url) => {
     return null;
 };
 
-const formatFileLabel = (value) => {
-    const base = String(value || "Download");
-    const extMatch = base.match(/\.([a-z0-9]{1,5})$/i);
-    const ext = extMatch ? `.${extMatch[1]}` : "";
-    const nameWithoutExt = extMatch ? base.slice(0, -ext.length) : base;
-    const compact = nameWithoutExt.replace(/[^a-z0-9-]/gi, "");
-    if (compact.length <= 12) return compact + ext || "File";
-    return `${compact.slice(0, 12)}...${ext}`;
-};
+const formatFileLabel = (_value) => "Download";
 
 const isGzipFileLink = (fileUrl, fileName = "") => {
     const fromUrl = /\.gz(?:$|[?#])/i.test(String(fileUrl || ""));
@@ -1383,7 +1375,7 @@ const filterPanel = document.getElementById("filter-panel");
 const applyFilterBtn = document.getElementById("apply-filter-btn");
 const clearFilterBtn = document.getElementById("clear-filter-btn");
 const filterTaNumberInput = document.getElementById("filter-ta-number");
-const filterEmployeeSelect = document.getElementById("filter-employee");
+const filterEmployeeInput = document.getElementById("filter-employee");
 const filterYearSelect = document.getElementById("filter-year");
 const filterTravelDateInput = document.getElementById("filter-travel-date");
 const filterMatchAllCheckbox = document.getElementById("filter-match-all");
@@ -1409,13 +1401,6 @@ const loadEmployeesForFilter = async () => {
 
         if (error) throw error;
         employeesListForFilter = data ? data : [];
-        
-        // Populate filter dropdown
-        filterEmployeeSelect.innerHTML = '<option value="">All Officials</option>' +
-            employeesListForFilter.map(emp => {
-                const inactiveLabel = emp.is_active === false ? ' (Inactive)' : '';
-                return `<option value="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</option>`;
-            }).join('');
     } catch (error) {
         console.error("Failed to load employees for filter:", error);
         employeesListForFilter = [];
@@ -1450,6 +1435,92 @@ const setupDashboardEmployeeRealtimeSubscription = () => {
 
 // Initialize employee realtime subscription
 setupDashboardEmployeeRealtimeSubscription();
+
+// Filter official autocomplete
+const filterEmployeeDropdown = document.getElementById("filter-employee-autocomplete");
+
+const setFilterEmpDropdownVisible = (visible) => {
+    if (filterEmployeeDropdown) filterEmployeeDropdown.style.display = visible ? 'block' : 'none';
+};
+
+const showFilterEmpSuggestions = (inputValue) => {
+    if (!filterEmployeeDropdown) return;
+    const trimmed = inputValue.toLowerCase().trim();
+    if (!trimmed) { setFilterEmpDropdownVisible(false); return; }
+
+    const matches = employeesListForFilter
+        .filter(emp => emp.name.toLowerCase().includes(trimmed))
+        .slice(0, 10);
+
+    if (matches.length === 0) {
+        filterEmployeeDropdown.innerHTML = '<div class="autocomplete-no-options">No officials found</div>';
+        setFilterEmpDropdownVisible(true);
+        return;
+    }
+
+    filterEmployeeDropdown.innerHTML = matches.map((emp, i) => {
+        const badge = emp.is_active === false ? ' <span class="inactive-badge">Inactive</span>' : '';
+        return `<div class="autocomplete-item" data-value="${escapeHtml(emp.name)}" data-index="${i}">${escapeHtml(emp.name)}${badge}</div>`;
+    }).join('');
+    setFilterEmpDropdownVisible(true);
+
+    filterEmployeeDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            filterEmployeeInput.value = item.getAttribute('data-value');
+            setFilterEmpDropdownVisible(false);
+        });
+        item.addEventListener('mouseenter', () => {
+            filterEmployeeDropdown.querySelectorAll('.autocomplete-item').forEach(i => i.classList.remove('highlighted'));
+            item.classList.add('highlighted');
+        });
+    });
+};
+
+if (filterEmployeeInput) {
+    filterEmployeeInput.addEventListener('input', () => showFilterEmpSuggestions(filterEmployeeInput.value));
+    filterEmployeeInput.addEventListener('focus', () => {
+        if (filterEmployeeInput.value.length > 0) showFilterEmpSuggestions(filterEmployeeInput.value);
+    });
+    filterEmployeeInput.addEventListener('keydown', (e) => {
+        const items = filterEmployeeDropdown ? filterEmployeeDropdown.querySelectorAll('.autocomplete-item') : [];
+        if (!items.length) return;
+        const highlighted = filterEmployeeDropdown.querySelector('.autocomplete-item.highlighted');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (!highlighted) { items[0].classList.add('highlighted'); }
+            else {
+                const next = Array.from(items).indexOf(highlighted) + 1;
+                if (next < items.length) { highlighted.classList.remove('highlighted'); items[next].classList.add('highlighted'); }
+            }
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (highlighted) {
+                const prev = Array.from(items).indexOf(highlighted) - 1;
+                highlighted.classList.remove('highlighted');
+                if (prev >= 0) items[prev].classList.add('highlighted');
+            }
+        } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlighted) {
+                filterEmployeeInput.value = highlighted.getAttribute('data-value');
+                setFilterEmpDropdownVisible(false);
+            }
+        } else if (e.key === 'Escape') {
+            setFilterEmpDropdownVisible(false);
+        }
+    });
+}
+
+document.addEventListener('click', (e) => {
+    if (
+        filterEmployeeDropdown &&
+        !filterEmployeeDropdown.contains(e.target) &&
+        e.target !== filterEmployeeInput
+    ) {
+        setFilterEmpDropdownVisible(false);
+    }
+});
 
 // Populate year filter from available data
 const populateYearFilter = async () => {
@@ -1520,11 +1591,12 @@ window.flatpickr(filterTravelDateInput, {
 
 filterToggleBtn.addEventListener("click", () => {
     filterPanel.classList.toggle("show");
+    if (!filterPanel.classList.contains("show")) setFilterEmpDropdownVisible(false);
 });
 
 applyFilterBtn.addEventListener("click", () => {
     activeFilters.taNumber = filterTaNumberInput.value.trim();
-    activeFilters.employee = filterEmployeeSelect.value;
+    activeFilters.employee = filterEmployeeInput.value.trim();
     activeFilters.year = filterYearSelect.value;
     activeFilters.travelDate = filterTravelDateInput.value;
     activeFilters.matchAll = filterMatchAllCheckbox.checked;
@@ -1542,7 +1614,8 @@ clearFilterBtn.addEventListener("click", () => {
     activeFilters.travelDate = "";
     activeFilters.matchAll = true;
     filterTaNumberInput.value = "";
-    filterEmployeeSelect.value = "";
+    filterEmployeeInput.value = "";
+    setFilterEmpDropdownVisible(false);
     filterYearSelect.value = "";
     filterTravelDateInput.value = "";
     filterMatchAllCheckbox.checked = true;
@@ -1607,7 +1680,7 @@ const init = async () => {
     
     // Restore UI state from loaded filters/sort
     if (filterTaNumberInput) filterTaNumberInput.value = activeFilters.taNumber || "";
-    if (filterEmployeeSelect) filterEmployeeSelect.value = activeFilters.employee || "";
+    if (filterEmployeeInput) filterEmployeeInput.value = activeFilters.employee || "";
     if (filterYearSelect) filterYearSelect.value = activeFilters.year || "";
     if (filterTravelDateInput) filterTravelDateInput.value = activeFilters.travelDate || "";
     if (filterMatchAllCheckbox) filterMatchAllCheckbox.checked = activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;
@@ -2317,18 +2390,25 @@ if (dashSidebar && dashSidebarToggle) {
 }
 
 // Sidebar tab switching
+const switchDashTab = (target) => {
+    document.querySelectorAll('.dash-sidebar-tab').forEach(t => {
+        const isTarget = t.getAttribute('data-tab') === target;
+        t.classList.toggle('active', isTarget);
+        t.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+    });
+    document.querySelectorAll('.dash-tab-pane').forEach(p => p.classList.remove('active'));
+    const pane = document.getElementById(`tab-${target}`);
+    if (pane) pane.classList.add('active');
+    if (target === 'insights') scheduleInsightsLayoutSync();
+    localStorage.setItem('dashActiveTab', target);
+};
+
 document.querySelectorAll('.dash-sidebar-tab').forEach(tab => {
     tab.addEventListener('click', () => {
-        const target = tab.getAttribute('data-tab');
-        document.querySelectorAll('.dash-sidebar-tab').forEach(t => {
-            t.classList.remove('active');
-            t.setAttribute('aria-selected', 'false');
-        });
-        document.querySelectorAll('.dash-tab-pane').forEach(p => p.classList.remove('active'));
-        tab.classList.add('active');
-        tab.setAttribute('aria-selected', 'true');
-        const pane = document.getElementById(`tab-${target}`);
-        if (pane) pane.classList.add('active');
-        if (target === 'insights') scheduleInsightsLayoutSync();
+        switchDashTab(tab.getAttribute('data-tab'));
     });
 });
+
+// Restore last active tab on load
+const savedDashTab = localStorage.getItem('dashActiveTab');
+if (savedDashTab) switchDashTab(savedDashTab);

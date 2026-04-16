@@ -9,8 +9,7 @@ window.initEmployeeManagement = (supabase) => {
     const renderEmployeesOptions = window.adminRenderEmployeesOptions || function() {};
     const renderUpdateEmployeesOptions = window.adminRenderUpdateEmployeesOptions || function() {};
     const getAdminEmployeesListForFilter = () => window.adminEmployeesListForFilter || [];
-    const setAdminEmployeesListForFilter = (list) => { window.adminEmployeesListForFilter = list; };
-    const getAdminFilterEmployeeSelect = () => document.getElementById('admin-filter-employee');
+    const setAdminEmployeesListForFilter = (list) => { window.adminEmployeesListForFilter = list; }
 
     const escapeHtml = (str) => {
         if (str === null || str === undefined) return '';
@@ -255,16 +254,8 @@ window.initEmployeeManagement = (supabase) => {
                 renderEmployeesOptions();
                 renderUpdateEmployeesOptions();
                 
-                // Update admin filter dropdown
-                const adminFilterEmployeeSelect = getAdminFilterEmployeeSelect();
+                // Update admin filter data for autocomplete
                 setAdminEmployeesListForFilter(allEmployeesData ? allEmployeesData : []);
-                if (adminFilterEmployeeSelect) {
-                        adminFilterEmployeeSelect.innerHTML = '<option value="">All Officials</option>' +
-                        getAdminEmployeesListForFilter().map(emp => {
-                            const inactiveLabel = emp.is_active === false ? ' (Inactive)' : '';
-                            return `<option value="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</option>`;
-                        }).join('');
-                }
             }
         } catch (error) {
             console.error("Failed to load employees:", error);

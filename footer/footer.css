@@ -14,10 +14,12 @@
 }
 
 .footer-content {
-    width: min(1120px, calc(100vw - 36px));
+    width: 100%;
+    padding: 0 24px;
+    box-sizing: border-box;
     margin: 0 auto;
     display: grid;
-    grid-template-columns: minmax(0, 1.6fr) auto auto;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     gap: 16px;
     align-items: center;
 }
