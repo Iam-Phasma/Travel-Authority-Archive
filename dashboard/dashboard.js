@@ -787,6 +787,7 @@ setInterval(validateSession, 30000);
 
 const taBody = document.getElementById("ta-body");
 const taStatus = document.getElementById("ta-status");
+const taLastUpdated = document.getElementById("ta-last-updated");
 const taMoreBtn = document.getElementById("ta-more");
 let taRows = [];
 let latestKnownTimestamp = null;
@@ -1334,6 +1335,14 @@ const loadTravelAuthorities = async (reset = false) => {
 
         taRows = data || [];
         latestKnownTimestamp = taRows[0]?.created_at || latestKnownTimestamp;
+        if (taLastUpdated && latestKnownTimestamp) {
+            const diff = Date.now() - new Date(latestKnownTimestamp).getTime();
+            const mins = Math.floor(diff / 60000);
+            const hrs = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            const rel = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : hrs < 24 ? `${hrs}h ago` : days === 1 ? 'yesterday' : `${days} days ago`;
+            taLastUpdated.textContent = `Last record added ${rel}`;
+        }
         renderRows(taRows);
         updateTaFooter();
         await populateYearFilter();
@@ -2362,29 +2371,20 @@ document.getElementById('settings-modal').addEventListener('click', (e) => {
 // Sidebar collapse toggle
 const dashSidebar = document.getElementById('dash-sidebar');
 const dashSidebarToggle = document.getElementById('dash-sidebar-toggle');
-const updateDashboardSidebarStickyState = () => {
-    if (!dashSidebar) return;
 
-    const computed = window.getComputedStyle(dashSidebar);
-    if (computed.position !== 'sticky') {
-        dashSidebar.classList.remove('is-stuck');
-        return;
-    }
-
-    const stickyTop = parseFloat(computed.top) || 0;
-    const { top } = dashSidebar.getBoundingClientRect();
-    const isStuck = window.scrollY > 0 && top <= (stickyTop + 1);
-    dashSidebar.classList.toggle('is-stuck', isStuck);
-};
-
-window.addEventListener('scroll', updateDashboardSidebarStickyState, { passive: true });
-window.addEventListener('resize', updateDashboardSidebarStickyState);
-window.addEventListener('load', updateDashboardSidebarStickyState);
-updateDashboardSidebarStickyState();
+// Restore saved collapse state
+const dashWrapper = document.getElementById('dashboard-wrapper');
+const savedSidebarCollapsed = localStorage.getItem('dashSidebarCollapsed') === 'true';
+if (dashSidebar && savedSidebarCollapsed) {
+    dashSidebar.classList.add('collapsed');
+    if (dashWrapper) dashWrapper.classList.add('sidebar-collapsed');
+}
 
 if (dashSidebar && dashSidebarToggle) {
     dashSidebarToggle.addEventListener('click', () => {
-        dashSidebar.classList.toggle('collapsed');
+        const isNowCollapsed = dashSidebar.classList.toggle('collapsed');
+        if (dashWrapper) dashWrapper.classList.toggle('sidebar-collapsed', isNowCollapsed);
+        localStorage.setItem('dashSidebarCollapsed', isNowCollapsed);
         scheduleInsightsLayoutSync();
     });
 }

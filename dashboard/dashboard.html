@@ -11,7 +11,7 @@
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <link rel="stylesheet" href="dashboard.css?v=20260401">
 </head>
-<body>
+<body class="dashboard-page">
     <div id="header-container"></div>
     <script>
         // Load header HTML
@@ -40,13 +40,10 @@
             .catch(error => console.error('Error loading header:', error));
     </script>
     <div class="page-content">
-        <div class="page-header-section">
-            <h2 class="page-title">Dashboard</h2>
-            <p class="page-description">You are logged in as a regular user. You have access to view and download documents.<br>For filed but unrecorded Travel Authorities, request an advance copy from the Office of the Director, subject to availability.</p>
-        </div>
-        <div class="dashboard-wrapper">
-            <aside class="dash-sidebar collapsed" id="dash-sidebar">
-                <div class="dash-sidebar-top">
+        <div class="dashboard-wrapper" id="dashboard-wrapper">
+            <aside class="dash-sidebar" id="dash-sidebar">
+                <div class="dash-sidebar-header">
+                    <span class="dash-sidebar-brand">Menu</span>
                     <button class="dash-sidebar-toggle" id="dash-sidebar-toggle" aria-label="Toggle sidebar">
                         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
                     </button>
@@ -66,7 +63,11 @@
                 <div class="dash-tab-pane" id="tab-files">
         <section class="panel wide-panel" id="ta-panel">
             <div class="panel-head">
-                <h2>Records</h2>
+                <div style="display:flex;flex-direction:column;gap:1px;">
+                    <h2 style="font-size:1.5rem;margin:0;line-height:1.2;">Records</h2>
+                    <span id="ta-last-updated" class="status" style="font-size:0.8rem;"></span>
+                    <span class="status" id="ta-status" style="font-size:0.8rem;">Fetching travel authorities.</span>
+                </div>
                 <div class="panel-head-actions">
                     <button id="refresh-table-btn" class="filter-icon-btn" type="button" aria-label="Refresh table" title="Refresh">
                         <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
@@ -175,7 +176,6 @@
                 </table>
             </div>
             <div class="table-footer">
-                <span class="status" id="ta-status">Fetching travel authorities.</span>
                 <button id="ta-more" class="pagination-btn" type="button">Load more</button>
             </div>
         </section>
@@ -296,6 +296,7 @@
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
 
+    <div id="footer-container"></div>
     </div>
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
@@ -321,7 +322,6 @@
         </div>
     </div>
 
-    <div id="footer-container"></div>
     <script>
         fetch('../footer/footer.html?v=20260321-1')
             .then(response => response.text())
