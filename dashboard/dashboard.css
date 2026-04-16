@@ -676,6 +676,17 @@ body.dashboard-page::before {
         display: none;
     }
 
+    /* Unlock body and page-content so the page can scroll naturally */
+    body.dashboard-page {
+        height: auto;
+        overflow: visible;
+    }
+
+    .dashboard-page .page-content {
+        height: auto;
+        overflow: visible;
+    }
+
     /* On mobile: sidebar becomes a bottom tab bar */
     .dashboard-wrapper {
         flex-direction: column;

@@ -13,6 +13,14 @@
     border-top: 1px solid rgba(11, 28, 59, 0.08);
 }
 
+@media (max-width: 768px) {
+    .gov-footer {
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+    }
+}
+
 .footer-content {
     width: 100%;
     padding: 0 24px;
@@ -81,7 +89,7 @@
 
 @media (max-width: 640px) {
     .gov-footer {
-        padding: 16px 0;
+        padding: 16px 0 80px; /* 80px clears the 58px bottom tab bar */
     }
 
     .footer-content {
