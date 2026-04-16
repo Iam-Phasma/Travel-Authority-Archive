@@ -678,20 +678,26 @@ body.dashboard-page::before {
 
     /* Unlock body and page-content so the page can scroll naturally */
     body.dashboard-page {
-        height: auto;
-        overflow: visible;
+        height: 100vh;
+        overflow: hidden;
     }
 
     .dashboard-page .page-content {
-        height: auto;
-        overflow: visible;
+        height: calc(100vh - 64px);
+        overflow: hidden;
+    }
+
+    /* Hide footer on mobile — bottom tab bar handles navigation */
+    .dashboard-page #footer-container {
+        display: none;
     }
 
     /* On mobile: sidebar becomes a bottom tab bar */
     .dashboard-wrapper {
         flex-direction: column;
         min-height: unset;
-        padding-bottom: 64px; /* space for bottom bar */
+        flex: 1;
+        min-height: 0;
     }
 
     .dash-sidebar {
@@ -781,42 +787,55 @@ body.dashboard-page::before {
     }
 
     .dash-content {
-        padding: 16px 14px;
+        padding: 0 14px 58px;
         width: 100%;
         margin-left: 0;
         overflow-y: auto;
         overflow-x: hidden;
-        height: auto;
-        flex: unset;
+        flex: 1;
+        min-height: 0;
         transition: none;
     }
 
-    /* Release flex-fill height constraints on mobile so tabs scroll naturally */
-    #tab-files.dash-tab-pane.active,
+    /* Files tab: restore flex-fill so table is the scroll container */
+    #tab-files.dash-tab-pane.active {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        overflow: hidden;
+    }
+
+    /* Insights tab: let it scroll inside dash-content */
     #tab-insights.dash-tab-pane.active {
         flex: unset;
         overflow: visible;
         height: auto;
         min-height: unset;
+        padding: 20px 0 74px; /* 74px clears the 58px bottom tab bar */
     }
 
     .dash-content #ta-panel {
-        flex: unset;
-        min-height: unset;
-        overflow: visible;
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
     }
 
     .dash-content #ta-panel .table-wrap.max-rows-10 {
-        flex: unset;
+        flex: 1;
+        min-height: 0;
         max-height: none;
         overflow-x: auto;
-        overflow-y: visible;
+        overflow-y: auto;
         scrollbar-width: thin;
     }
 
     .dash-content #ta-panel .table-wrap.max-rows-10::-webkit-scrollbar {
         display: revert;
         height: 4px;
+        width: 4px;
     }
 
     .dash-content,
