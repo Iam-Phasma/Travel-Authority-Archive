@@ -773,7 +773,39 @@ body.dashboard-page::before {
         padding: 16px 14px;
         width: 100%;
         margin-left: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        height: auto;
+        flex: unset;
         transition: none;
+    }
+
+    /* Release flex-fill height constraints on mobile so tabs scroll naturally */
+    #tab-files.dash-tab-pane.active,
+    #tab-insights.dash-tab-pane.active {
+        flex: unset;
+        overflow: visible;
+        height: auto;
+        min-height: unset;
+    }
+
+    .dash-content #ta-panel {
+        flex: unset;
+        min-height: unset;
+        overflow: visible;
+    }
+
+    .dash-content #ta-panel .table-wrap.max-rows-10 {
+        flex: unset;
+        max-height: none;
+        overflow-x: auto;
+        overflow-y: visible;
+        scrollbar-width: thin;
+    }
+
+    .dash-content #ta-panel .table-wrap.max-rows-10::-webkit-scrollbar {
+        display: revert;
+        height: 4px;
     }
 
     .dash-content,
