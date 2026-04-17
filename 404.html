@@ -6,23 +6,40 @@
     <title>404 – Page Not Found | CTAA</title>
     <link rel="icon" type="image/webp" href="assets/CHED-Logo.webp">
 
-    <!-- Dynamically resolve the correct base path so all relative asset
-         URLs work whether the 404 is triggered from a root or sub-directory path. -->
-    <base id="base-tag" href="/">
+    <!-- Resolve base path and inject stylesheets via script so the browser's
+         preload scanner never fetches them against the wrong initial base. -->
     <script>
         (function () {
-            var base = document.getElementById('base-tag');
-            if (location.host === 'iam-phasma.github.io') {
-                base.href = 'https://iam-phasma.github.io/Travel-Authority-Archive/';
+            var base;
+            if (location.protocol === 'file:') {
+                // file:// – resolve relative to 404.html's own directory
+                base = location.href.replace(/[^/]*$/, '');
+            } else if (location.host === 'iam-phasma.github.io') {
+                base = 'https://iam-phasma.github.io/Travel-Authority-Archive/';
+            } else if (location.pathname.indexOf('/Travel-Authority-Archive/') !== -1) {
+                base = location.origin + '/Travel-Authority-Archive/';
             } else {
-                base.href = location.origin + '/';
+                base = location.origin + location.pathname.replace(/[^/]*$/, '');
             }
+
+            // Inject stylesheets with the correct absolute path
+            ['styles.css?v=20260321-3',
+             'header/header.css?v=20260321-3',
+             'footer/footer.css?v=20260321-3'
+            ].forEach(function (href) {
+                var link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = base + href;
+                document.head.appendChild(link);
+            });
+
+            // Set <base> for all other in-page relative links (images, scripts, etc.)
+            var baseTag = document.createElement('base');
+            baseTag.id = 'base-tag';
+            baseTag.href = base;
+            document.head.insertBefore(baseTag, document.head.firstChild);
         })();
     </script>
-
-    <link rel="stylesheet" href="styles.css?v=20260321-3">
-    <link rel="stylesheet" href="header/header.css?v=20260321-3">
-    <link rel="stylesheet" href="footer/footer.css?v=20260321-3">
 
     <style>
         body.login-page {
@@ -104,6 +121,26 @@
             justify-items: center;
             margin-top: auto;
             margin-bottom: auto;
+        }
+
+        .not-found-brand {
+            display: grid;
+            justify-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .not-found-brand .login-header-kicker {
+            margin: 0;
+        }
+
+        .not-found-brand .not-found-app-title {
+            margin: 0;
+            font-size: clamp(1.9rem, 3.4vw, 3rem);
+            line-height: 1.08;
+            color: var(--ink);
+            font-weight: 800;
         }
 
         .not-found-code {
@@ -195,24 +232,63 @@
                 font-size: 0.88rem;
             }
         }
+
+        /* 404-only footer fixes: avoid viewport-width overflow and tabbar padding */
+        body.login-page {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            padding: 0;
+        }
+
+        body.login-page main {
+            flex: 1 0 auto;
+        }
+
+        body.login-page .gov-footer {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+            margin-top: auto;
+            background: #2f6fe4;
+            border-top-color: rgba(255, 255, 255, 0.18);
+        }
+
+        body.login-page .footer-content {
+            max-width: min(1200px, calc(100vw - 36px));
+            margin: 0 auto;
+        }
+
+        body.login-page .footer-links a {
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        body.login-page .footer-links a:hover {
+            color: #ffffff;
+        }
+
+        body.login-page .footer-copyright {
+            color: rgba(255, 255, 255, 0.75);
+        }
+
+        @media (max-width: 640px) {
+            body.login-page .gov-footer {
+                padding: 16px 0;
+            }
+        }
     </style>
 </head>
 <body class="login-page">
-
-    <!-- ── Header ── -->
-    <header class="login-hero-header">
-        <div class="login-header-bar">
-            <p class="login-header-kicker">CHEDRO IV</p>
-        </div>
-        <div class="login-header-copy">
-            <h1>Travel Authority Archive</h1>
-        </div>
-    </header>
 
     <!-- ── 404 Content ── -->
     <main>
         <section class="not-found-section">
             <div class="not-found-content">
+                <div class="not-found-brand">
+                    <p class="login-header-kicker">CHEDRO IV</p>
+                    <h1 class="not-found-app-title">Travel Authority Archive</h1>
+                </div>
                 <div class="not-found-code" aria-hidden="true">404</div>
                 <h2 class="not-found-title">Page Not Found</h2>
                 <p class="not-found-desc">
@@ -237,18 +313,15 @@
     <!-- ── Footer ── -->
     <footer class="gov-footer">
         <div class="footer-content">
-            <div class="footer-brand">
-                <div class="footer-brand-lockup" aria-hidden="true">
-                    <img src="assets/CHED-Logo.webp" alt="CHED logo" class="footer-logo">
-                    <img src="assets/Bagong_Pilipinas_logo.webp" alt="Bagong Pilipinas logo" class="footer-logo footer-logo--secondary">
-                </div>
-                <div class="footer-brand-copy">
-                    <h3>Travel Authority Archive</h3>
-                </div>
-            </div>
             <div class="footer-links" aria-label="Official links">
-                <a href="https://ched.gov.ph/" target="_blank" rel="noopener noreferrer">CHED Website</a>
-                <a href="https://www.facebook.com/ched4" target="_blank" rel="noopener noreferrer">CHEDRO IV Facebook</a>
+                <a href="https://ched.gov.ph/" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93Zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41C17.92 5.77 20 8.65 20 12c0 2.08-.81 3.98-2.1 5.39Z"/></svg>
+                    CHED Website
+                </a>
+                <a href="https://www.facebook.com/ched4" target="_blank" rel="noopener noreferrer">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.13 8.44 9.88v-6.99H7.9V12h2.54V9.8c0-2.51 1.49-3.89 3.78-3.89 1.09 0 2.23.19 2.23.19v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.77l-.44 2.89h-2.33v6.99C18.34 21.13 22 16.99 22 12Z"/></svg>
+                    CHEDRO IV Facebook
+                </a>
             </div>
             <div class="footer-note">
                 <p class="footer-copyright">© 2026 Commission on Higher Education.</p>

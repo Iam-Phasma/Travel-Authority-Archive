@@ -137,7 +137,8 @@ body.dashboard-page::before {
     align-items: center;
     gap: 10px;
     padding: 11px 16px;
-    border-radius: 0;
+    margin: 0 8px;
+    border-radius: 10px;
     border: none;
     background: transparent;
     cursor: pointer;
@@ -156,28 +157,15 @@ body.dashboard-page::before {
 }
 
 .admin-sidebar-nav .admin-sidebar-tab:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.08);
     color: #ffffff;
     box-shadow: none;
-    border-color: transparent;
 }
 
 .admin-sidebar-nav .admin-sidebar-tab.active {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.18);
     color: #ffffff;
     font-weight: 600;
-    border-color: transparent;
-}
-
-.admin-sidebar-nav .admin-sidebar-tab.active::before {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    border-radius: 0;
-    background: #ffffff;
 }
 
 .admin-sidebar-nav .admin-sidebar-tab svg {
@@ -214,10 +202,6 @@ body.dashboard-page::before {
     padding: 10px;
     justify-content: center;
     gap: 0;
-}
-
-.admin-sidebar.collapsed .admin-sidebar-tab.active::before {
-    display: none;
 }
 
 .admin-sidebar-nav .admin-sidebar-tab.hidden,
@@ -767,7 +751,9 @@ body.dashboard-page::before {
         align-items: center;
         gap: 3px;
         padding: 8px 4px 6px;
+        margin: 0;
         border-radius: 0;
+        border: none;
         font-size: 0.72rem;
         height: 100%;
         width: auto;
@@ -776,17 +762,13 @@ body.dashboard-page::before {
         text-align: center;
     }
 
-    .admin-sidebar-nav .admin-sidebar-tab.active::before {
-        display: none;
-    }
-
     .admin-sidebar-nav .admin-sidebar-tab.active {
-        background: transparent;
-        color: var(--sea, #2f6fba);
+        background: rgba(11, 28, 59, 0.08);
+        color: rgba(11, 28, 59, 0.92);
     }
 
     .admin-sidebar-nav .admin-sidebar-tab.active svg {
-        filter: drop-shadow(0 0 3px rgba(47, 111, 179, 0.35));
+        filter: none;
     }
 
     .admin-sidebar-nav .admin-sidebar-tab svg,

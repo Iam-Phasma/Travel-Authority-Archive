@@ -1588,6 +1588,8 @@ button:hover {
 
   .login-hero-header {
     margin-inline: auto;
+
+    margin-top: 50px; !important
   }
 }
 
