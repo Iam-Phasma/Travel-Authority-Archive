@@ -20,9 +20,9 @@
             console.warn('pdf.js failed to load');
         }
     </script>
-    <link rel="stylesheet" href="admin.css?v=20260401">
+    <link rel="stylesheet" href="admin.css?v=20260417">
 </head>
-<body>
+<body class="dashboard-page">
     <div id="header-container"></div>
     <script>
         // Load header HTML
@@ -63,44 +63,52 @@
             .catch(error => console.error('Error loading header:', error));
     </script>
     <div class="page-content">
-        <div class="page-header-section">
-            <h2 class="page-title">Admin Panel</h2>
-            <p class="page-description">Manage travel authority records, officials, and system settings.</p>
-        </div>
-        <div class="admin-main">
-            <div class="panel-switcher admin-panel-switcher" role="tablist" aria-label="Admin sections">
-                <button class="switch-btn active" data-panel="upload-panel" aria-selected="true" role="tab" aria-label="Upload Files">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5h3.5V16h4V7.5H17.5L12 2z"/></svg>
-                    <span class="switch-btn-label">Upload</span>
-                </button>
-                <button class="switch-btn" data-panel="view-panel" aria-selected="false" role="tab" aria-label="Manage Files">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
-                    <span class="switch-btn-label">Files</span>
-                </button>
-                <button class="switch-btn" data-panel="employees-panel" aria-selected="false" role="tab" aria-label="Manage Officials">
-                    <svg class="icon-line icon-officials" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                        <circle cx="12" cy="10" r="4"></circle>
-                        <path d="M10 14.5v4l2-1.2 2 1.2v-4"></path>
-                    </svg>
-                    <span class="switch-btn-label">Officials</span>
-                </button>
-                <button class="switch-btn hidden" hidden id="users-panel-btn" data-panel="users-panel" aria-selected="false" role="tab" aria-label="Manage Users">
-                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-                    <span class="switch-btn-label">Users</span>
-                </button>
-            </div>
+        <div class="admin-wrapper" id="admin-wrapper">
+            <aside class="admin-sidebar" id="admin-sidebar">
+                <div class="admin-sidebar-header">
+                    <span class="admin-sidebar-brand">Admin</span>
+                    <button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle sidebar">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+                    </button>
+                </div>
+                <nav class="admin-sidebar-nav" aria-label="Admin sections">
+                    <button class="switch-btn admin-sidebar-tab active" data-panel="upload-panel" aria-selected="true">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 20h14v-2H5v2zm7-18-5.5 5.5h3.5V16h4V7.5H17.5L12 2z"/></svg>
+                        <span class="admin-sidebar-label">Upload</span>
+                    </button>
+                    <button class="switch-btn admin-sidebar-tab" data-panel="view-panel" aria-selected="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/></svg>
+                        <span class="admin-sidebar-label">Files</span>
+                    </button>
+                    <button class="switch-btn admin-sidebar-tab" data-panel="employees-panel" aria-selected="false">
+                        <svg class="icon-line icon-officials" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                            <circle cx="12" cy="10" r="4"></circle>
+                            <path d="M10 14.5v4l2-1.2 2 1.2v-4"></path>
+                        </svg>
+                        <span class="admin-sidebar-label">Officials</span>
+                    </button>
+                    <button class="switch-btn admin-sidebar-tab hidden" hidden id="users-panel-btn" data-panel="users-panel" aria-selected="false">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        <span class="admin-sidebar-label">Users</span>
+                    </button>
+                </nav>
+            </aside>
+            <div class="admin-content" id="admin-content">
+                <div class="admin-main">
+                    <div class="admin-panels">
+                        <div id="upload-panel-container"></div>
 
-            <div class="admin-panels">
-                <div id="upload-panel-container"></div>
+                        <div id="view-panel-container"></div>
 
-                <div id="view-panel-container"></div>
+                        <div id="employees-panel-container"></div>
 
-                <div id="employees-panel-container"></div>
+                        <div id="users-panel-container"></div>
+                    </div><!-- end .admin-panels -->
+                </div><!-- end .admin-main -->
+            </div><!-- end .admin-content -->
+        </div><!-- end .admin-wrapper -->
 
-                <div id="users-panel-container"></div>
-            </div>
-        </div>
-
+        <div id="footer-container-inner"></div>
     </div>
     <!-- End of page-content -->
 
@@ -159,13 +167,12 @@
 
     <script src="admin-settings.js?v=20260401"></script>
 
-    <div id="footer-container"></div>
     <script>
         fetch('../footer/footer.html?v=20260321-1')
             .then(response => response.text())
             .then(data => {
                 const footerHTML = data.replace(/FOOTER_ASSETS_PATH/g, '../assets');
-                document.getElementById('footer-container').innerHTML = footerHTML;
+                document.getElementById('footer-container-inner').innerHTML = footerHTML;
             })
             .catch(error => console.error('Error loading footer:', error));
     </script>

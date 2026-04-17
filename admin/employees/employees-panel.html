@@ -1,5 +1,9 @@
 <section class="panel wide-panel employees-panel hidden" id="employees-panel">
-    <h2>Manage Officials</h2>
+    <div class="employees-panel-head" style="flex-shrink:0;display:flex;flex-direction:column;gap:1px;margin-bottom:14px;">
+        <h2 style="font-size:1.5rem;margin:0;line-height:1.2;">Manage Officials</h2>
+        <span class="status" style="font-size:0.8rem;">Add, update, hide, or remove officials from the active directory.</span>
+    </div>
+    <div class="employees-body">
     <div class="employees-layout">
         <div class="employee-form-card">
             <div class="employee-card-heading">
@@ -31,17 +35,25 @@
                 <div class="employee-card-heading employee-list-heading">
                     <h3>Official Directory</h3>
                     <p>Search, review, hide, update, or remove officials from the active directory.</p>
+                    <div class="employee-summary" id="employee-summary">
+                        Total: 0 | Active: 0 | Inactive: 0
+                    </div>
                 </div>
-                <div class="employee-search-wrapper">
-                    <input type="text" id="employee-search" class="employee-search-input" placeholder="Search Officials..." autocomplete="off">
+                <div class="employee-list-controls">
+                    <div class="employee-position-filter-wrap filter-field">
+                        <select id="employee-position-filter" class="filter-select employee-position-filter" aria-label="Filter by position">
+                            <option value="">All Positions</option>
+                        </select>
+                    </div>
+                    <div class="employee-search-wrapper">
+                        <input type="text" id="employee-search" class="employee-search-input" placeholder="Search Officials..." autocomplete="off">
+                    </div>
                 </div>
-            </div>
-            <div class="employee-summary" id="employee-summary">
-                Total: 0 | Active: 0 | Inactive: 0
             </div>
             <div class="employee-list" id="employee-list">
                 <p class="loading-text">Loading officials...</p>
             </div>
         </div>
+    </div>
     </div>
 </section>

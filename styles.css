@@ -1003,13 +1003,28 @@ button:hover {
   border-radius: 10px;
 }
 
+/* Thumb invisible by default, fades in on scroll */
 .table-wrap::-webkit-scrollbar-thumb {
-  background: rgba(47, 111, 179, 0.3);
+  background: transparent;
   border-radius: 10px;
+  transition: background 0.3s ease;
 }
 
-.table-wrap::-webkit-scrollbar-thumb:hover {
-  background: rgba(47, 111, 179, 0.5);
+.table-wrap.is-scrolling::-webkit-scrollbar-thumb {
+  background: rgba(47, 111, 179, 0.35);
+}
+
+.table-wrap.is-scrolling::-webkit-scrollbar-thumb:hover {
+  background: rgba(47, 111, 179, 0.55);
+}
+
+/* Firefox */
+.table-wrap {
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+}
+.table-wrap.is-scrolling {
+  scrollbar-color: rgba(47, 111, 179, 0.35) transparent;
 }
 
 /* Users table scrollable */

@@ -1357,6 +1357,18 @@ if (taMoreBtn) {
     taMoreBtn.style.display = 'none';
 }
 
+// Fade scrollbar in on scroll, fade out after idle
+(function () {
+    const wrap = document.querySelector('#ta-panel .table-wrap');
+    if (!wrap) return;
+    let fadeTimer;
+    wrap.addEventListener('scroll', () => {
+        wrap.classList.add('is-scrolling');
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(() => wrap.classList.remove('is-scrolling'), 1000);
+    }, { passive: true });
+})();
+
 closeViewBtn.addEventListener("click", () => {
     viewModal.classList.remove("show");
     document.body.style.overflow = '';

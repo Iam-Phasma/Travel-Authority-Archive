@@ -1,15 +1,271 @@
-/* === Admin Top Switcher Layout === */
+/* === Admin Page Shell (sidebar-ready layout) === */
+
+/* Lock body scroll — scrolling happens inside admin-content */
+body.dashboard-page {
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Remove background image */
+body.dashboard-page::before {
+    display: none;
+}
+
+/* page-content fills the viewport below the fixed header */
+.dashboard-page .page-content {
+    padding: 0;
+    margin-top: 64px;
+    height: calc(100vh - 64px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    align-items: stretch;
+    justify-content: flex-start;
+}
+
+/* Wrapper: row flex */
+.admin-wrapper {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+    flex: 1;
+    min-height: 0;
+}
+
+/* ── Admin Sidebar ── */
+.admin-sidebar {
+    width: 190px;
+    background: #001529;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0;
+    box-shadow: none;
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: 64px;
+    left: 0;
+    bottom: 0;
+    overflow: hidden;
+    transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 200;
+}
+
+.admin-sidebar.collapsed {
+    width: 64px;
+}
+
+.admin-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 14px 10px;
+    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.admin-sidebar-brand {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    overflow: hidden;
+    transition: opacity 0.18s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 120px;
+    opacity: 1;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-brand {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+
+.admin-sidebar-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.55);
+    transition: background 0.18s, color 0.18s;
+    padding: 0;
+    flex-shrink: 0;
+}
+
+.admin-sidebar-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.admin-sidebar-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: currentColor;
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-sidebar.collapsed .admin-sidebar-toggle svg {
+    transform: rotate(180deg);
+}
+
+.admin-sidebar.collapsed .admin-sidebar-header {
+    justify-content: center;
+    padding: 16px 0 10px;
+}
+
+.admin-sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 8px 0;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Sidebar tab buttons — override the old .switch-btn styles in this context */
+.admin-sidebar-nav .admin-sidebar-tab {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    border-radius: 0;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.875rem;
+    font-family: "Inter", system-ui, sans-serif;
+    font-weight: 500;
+    white-space: nowrap;
+    width: 100%;
+    min-width: unset;
+    height: unset;
+    text-align: left;
+    transition: background 0.18s, color 0.18s;
+    position: relative;
+    box-shadow: none;
+}
+
+.admin-sidebar-nav .admin-sidebar-tab:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #ffffff;
+    box-shadow: none;
+    border-color: transparent;
+}
+
+.admin-sidebar-nav .admin-sidebar-tab.active {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    font-weight: 600;
+    border-color: transparent;
+}
+
+.admin-sidebar-nav .admin-sidebar-tab.active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 0;
+    background: #ffffff;
+}
+
+.admin-sidebar-nav .admin-sidebar-tab svg {
+    width: 20px;
+    height: 20px;
+    fill: currentColor;
+    flex-shrink: 0;
+}
+
+.admin-sidebar-nav .admin-sidebar-tab svg.icon-line {
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    width: 22px;
+    height: 22px;
+}
+
+.admin-sidebar-label {
+    overflow: hidden;
+    transition: opacity 0.18s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 160px;
+    opacity: 1;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-label {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-tab {
+    padding: 10px;
+    justify-content: center;
+    gap: 0;
+}
+
+.admin-sidebar.collapsed .admin-sidebar-tab.active::before {
+    display: none;
+}
+
+.admin-sidebar-nav .admin-sidebar-tab.hidden,
+.admin-sidebar-nav .admin-sidebar-tab[hidden] {
+    display: none !important;
+}
+
+/* Content column — overflow:hidden so flex children control their own scroll */
+.admin-content {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 24px 24px 0;
+    box-sizing: border-box;
+    margin-left: 190px;
+    transition: margin-left 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-wrapper.sidebar-collapsed .admin-content {
+    margin-left: 64px;
+}
+
+/* Footer sits below admin-wrapper, spanning full width */
+.dashboard-page #footer-container-inner {
+    position: relative;
+    z-index: 201;
+}
+
+/* === Admin Panel Layout === */
 .admin-main {
     width: 100%;
     max-width: min(1550px, calc(100vw - 36px));
-    margin: 0 auto 50px;
+    margin: 0 auto;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
 .admin-panel-switcher {
     display: flex;
     align-items: center;
     gap: 8px;
     position: sticky;
-    top: 64px;
+    top: 0;
     z-index: 30;
     width: fit-content;
     max-width: 100%;
@@ -84,10 +340,16 @@
 .admin-panels {
     width: 100%;
     min-width: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 }
+/* display:contents removes container divs from the flex chain —
+   panels become direct flex children of admin-panels */
 .admin-panels > div {
-    width: 100%;
-    min-width: 0;
+    display: contents;
 }
 .admin-panels .panel {
     margin-top: 0;
@@ -110,62 +372,520 @@
 .admin-panels #upload-panel {
     width: min(720px, 100%);
 }
+/* Scrollable panels — natural scroll within their own container */
+.admin-panels #upload-panel:not(.hidden) {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-bottom: 24px;
+    scrollbar-width: none;
+}
+.admin-panels #upload-panel:not(.hidden)::-webkit-scrollbar {
+    display: none;
+}
+
+/* Employees panel: fixed header, scrollable body */
+.admin-panels #employees-panel:not(.hidden) {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 0;
+}
+.admin-panels #employees-panel .employees-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    overflow-y: auto;
+    padding-bottom: 24px;
+    scrollbar-width: none;
+}
+.admin-panels #employees-panel .employees-body::-webkit-scrollbar {
+    display: none;
+}
+
+/* Fill-height panels — table stretches to available space */
+.admin-panels #view-panel:not(.hidden),
+.admin-panels #users-panel:not(.hidden) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
 .admin-panels #view-panel {
     width: 100%;
     max-width: 100%;
 }
 .admin-panels #employees-panel {
-    width: min(800px, 100%);
+    width: 100%;
     max-width: 100%;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.admin-panels #employees-panel > h2,
+.admin-panels #users-panel > h2 {
+    font-size: 1.5rem;
+    margin: 0;
+    line-height: 1.2;
+}
+
+/* Bento side-by-side layout: form on left, directory on right */
+.admin-panels #employees-panel .employees-layout {
+    flex: 1;
+    min-height: 0;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    align-items: start;
+    gap: 18px;
+}
+
+.admin-panels #employees-panel .employee-directory-card {
+    align-self: stretch;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.admin-panels #employees-panel .employee-position-filter-wrap {
+    flex: 0 1 220px;
+    min-width: 180px;
+}
+
+.admin-panels #employees-panel .employee-position-filter {
+    width: 100%;
+}
+
+.admin-panels #employees-panel .employee-list-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex: 0 1 560px;
+    min-width: 280px;
+}
+
+.admin-panels #employees-panel .employee-list-controls .employee-position-filter-wrap {
+    flex: 0 1 220px;
+    min-width: 170px;
+}
+
+.admin-panels #employees-panel .employee-list-controls .employee-search-wrapper {
+    flex: 1 1 320px;
+    min-width: 220px;
+}
+
+.admin-panels #employees-panel .employee-list-controls .employee-search-input {
+    padding: 10px 12px;
+    min-height: 42px;
+    line-height: 1.2;
+}
+
+.admin-panels #employees-panel .employee-list-heading .employee-summary {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    text-align: left;
+    font-size: 0.8rem;
+    font-weight: 400;
+    line-height: 1.4;
+    color: rgba(11, 28, 59, 0.55);
+}
+
+.admin-panels #employees-panel .employee-list {
+    flex: 0 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: min(60vh, calc(100vh - 340px));
+    max-height: min(60vh, calc(100dvh - 340px));
+}
+
+/* Lock the form card height and make the directory fill */
+.admin-panels #employees-panel .employee-form-card {
+    align-self: start;
+    position: sticky;
+    top: 0;
+}
+
+@media (max-width: 960px) {
+    .admin-panels #employees-panel .employees-layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+    .admin-panels #employees-panel .employee-form-card {
+        position: static;
+    }
+    .admin-panels #employees-panel .employee-position-filter-wrap {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .admin-panels #employees-panel .employee-list-controls {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    .admin-panels #employees-panel .employee-list-controls .employee-position-filter-wrap,
+    .admin-panels #employees-panel .employee-list-controls .employee-search-wrapper {
+        flex: 0 0 auto;
+        width: 100%;
+        min-width: 0;
+    }
 }
 .admin-panels #users-panel {
-    width: min(980px, 100%);
+    width: 100%;
     max-width: 100%;
 }
-@media (max-width: 768px) {
-    .admin-main {
-        max-width: calc(100vw - 16px);
-        margin-bottom: 36px;
-    }
-    .admin-panel-switcher {
+
+/* Stretch the scrollable table inside fill-height panels */
+.admin-panels #view-panel .table-wrap.max-rows-10 {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    border-radius: 12px;
+}
+/* Hide all scrollbars on fill-height tables — scroll via trackpad/touch */
+.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar:vertical,
+.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar:horizontal,
+.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar:vertical,
+.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar:horizontal {
+    display: none;
+}
+.admin-panels #view-panel .table-wrap.max-rows-10,
+.admin-panels #users-panel .users-table-wrap {
+    scrollbar-width: none;
+}
+
+
+
+/* Header bg + sticky-first-col bg matching dashboard */
+.admin-panels #view-panel .data-table thead th {
+    background: #f0f4f8;
+}
+.admin-panels #view-panel .data-table th:first-child,
+.admin-panels #view-panel .data-table td:first-child {
+    background: #f0f4f8;
+}
+.admin-panels #view-panel .data-table tbody tr td:first-child {
+    background: #ffffff;
+}
+
+/* Match header tint for Officials and Manage Users tables */
+.admin-panels #employees-panel .employee-table-header {
+    background: #f0f4f8;
+}
+
+.admin-panels #users-panel .users-table thead th,
+.admin-panels #users-panel .users-table thead th:first-child {
+    background: #f0f4f8;
+}
+
+.admin-panels #view-panel .panel-head {
+    max-height: none;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: 0;
+}
+
+/* ── Admin view-panel table: balanced columns, no overflow ── */
+/* Col order: View | TA Number | Purpose | Destination | Officials | Travel Date | Travel End | File | Actions */
+@media (min-width: 769px) {
+    .admin-panels #view-panel .data-table {
+        table-layout: auto;
         width: 100%;
-        gap: 4px;
-        padding: 8px;
-        margin: 0 0 16px;
-        justify-content: flex-start;
+        min-width: 900px; /* allows h-scroll on small laptops rather than squishing */
     }
-    .admin-panel-switcher .switch-btn {
+
+    /* Reset base styles.css nth-child rules that assume an 8-col table */
+    .admin-panels #view-panel .data-table th:nth-child(n),
+    .admin-panels #view-panel .data-table td:nth-child(n) {
         width: auto;
-        height: 36px;
-        min-width: 0;
-        flex: 1 1 0;
-        padding: 7px 8px;
-        gap: 6px;
+        max-width: none;
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        text-align: left;
     }
-    .admin-panel-switcher .switch-btn svg {
-        display: block;
-        width: 18px;
-        height: 18px;
+
+    /* 1. View — icon only */
+    .admin-panels #view-panel .data-table th:nth-child(1),
+    .admin-panels #view-panel .data-table td:nth-child(1) {
+        width: 44px;
+        min-width: 44px;
+        white-space: nowrap;
+        text-align: center;
     }
-    .admin-panel-switcher .switch-btn-label {
-        display: inline;
+    /* 2. TA Number */
+    .admin-panels #view-panel .data-table th:nth-child(2),
+    .admin-panels #view-panel .data-table td:nth-child(2) {
+        min-width: 112px;
+        white-space: nowrap;
+        text-align: center;
+    }
+    /* 3. Purpose — flexible, takes remaining space */
+    .admin-panels #view-panel .data-table th:nth-child(3),
+    .admin-panels #view-panel .data-table td:nth-child(3) {
+        min-width: 160px;
+        max-width: 280px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
-        max-width: 100%;
     }
-    .admin-panels {
-        overflow-x: auto;
+    /* 4. Destination */
+    .admin-panels #view-panel .data-table th:nth-child(4),
+    .admin-panels #view-panel .data-table td:nth-child(4) {
+        min-width: 110px;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-    .admin-panel-switcher.compact-icons .switch-btn {
-        width: 34px;
-        height: 34px;
-        min-width: 34px;
-        flex: 0 0 34px;
-        padding: 7px;
-        gap: 0;
+    /* 5. Officials — compromise: compact + truncated */
+    .admin-panels #view-panel .data-table th:nth-child(5),
+    .admin-panels #view-panel .data-table td:nth-child(5) {
+        min-width: 110px;
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
-    .admin-panel-switcher.compact-icons .switch-btn-label {
+    /* 6. Travel Date */
+    .admin-panels #view-panel .data-table th:nth-child(6),
+    .admin-panels #view-panel .data-table td:nth-child(6) {
+        min-width: 96px;
+        white-space: nowrap;
+        text-align: center;
+    }
+    /* 7. Travel End */
+    .admin-panels #view-panel .data-table th:nth-child(7),
+    .admin-panels #view-panel .data-table td:nth-child(7) {
+        min-width: 96px;
+        white-space: nowrap;
+        text-align: center;
+    }
+    /* 8. File */
+    .admin-panels #view-panel .data-table th:nth-child(8),
+    .admin-panels #view-panel .data-table td:nth-child(8) {
+        min-width: 96px;
+        white-space: nowrap;
+        text-align: center;
+    }
+    /* 9. Actions */
+    .admin-panels #view-panel .data-table th:nth-child(9),
+    .admin-panels #view-panel .data-table td:nth-child(9) {
+        min-width: 110px;
+        white-space: nowrap;
+        text-align: center;
+    }
+}
+
+.admin-panels #users-panel .users-table-wrap {
+    flex: 0 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: min(62vh, calc(100vh - 300px));
+    max-height: min(62vh, calc(100dvh - 300px));
+}
+
+.admin-panels #users-panel .panel-head {
+    max-height: none;
+    align-items: center;
+    flex-shrink: 0;
+    padding-top: 0;
+}
+
+.admin-panels #users-panel #users-filter-panel {
+    flex-shrink: 0;
+}
+@media (max-width: 768px) {
+    /* Hide footer — bottom tab bar handles nav */
+    .dashboard-page #footer-container-inner {
         display: none;
     }
+
+    /* Sidebar becomes a fixed bottom tab bar */
+    .admin-wrapper {
+        flex-direction: column;
+        min-height: unset;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .admin-sidebar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        top: auto !important;
+        width: 100% !important;
+        height: 58px;
+        flex-direction: row;
+        border-right: none;
+        border-top: 1px solid rgba(11, 28, 59, 0.1);
+        border-radius: 0;
+        background: #ffffff;
+        z-index: 300;
+        overflow: visible;
+        box-shadow: 0 -2px 12px rgba(11, 28, 59, 0.08);
+        padding: 0;
+        transition: none;
+    }
+
+    .admin-sidebar-header {
+        display: none;
+    }
+
+    .admin-sidebar-nav {
+        flex-direction: row;
+        padding: 0;
+        gap: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+    }
+
+    .admin-sidebar-nav .admin-sidebar-tab {
+        flex: 1;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 3px;
+        padding: 8px 4px 6px;
+        border-radius: 0;
+        font-size: 0.72rem;
+        height: 100%;
+        width: auto;
+        min-width: unset;
+        color: rgba(11, 28, 59, 0.45);
+        text-align: center;
+    }
+
+    .admin-sidebar-nav .admin-sidebar-tab.active::before {
+        display: none;
+    }
+
+    .admin-sidebar-nav .admin-sidebar-tab.active {
+        background: transparent;
+        color: var(--sea, #2f6fba);
+    }
+
+    .admin-sidebar-nav .admin-sidebar-tab.active svg {
+        filter: drop-shadow(0 0 3px rgba(47, 111, 179, 0.35));
+    }
+
+    .admin-sidebar-nav .admin-sidebar-tab svg,
+    .admin-sidebar-nav .admin-sidebar-tab svg.icon-line {
+        width: 22px;
+        height: 22px;
+    }
+
+    .admin-sidebar-label {
+        opacity: 1 !important;
+        max-width: 80px !important;
+        font-size: 0.72rem;
+        pointer-events: auto !important;
+    }
+
+    /* Content fills above the tab bar */
+    .admin-content {
+        margin-left: 0 !important;
+        padding: 16px 14px 58px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        flex: 1;
+        min-height: 0;
+        transition: none;
+    }
+
+    /* view-panel/users-panel: restore scroll inside content on mobile */
+    #view-panel:not(.hidden),
+    #users-panel:not(.hidden) {
+        overflow-y: auto;
+    }
+
+    .admin-panels #view-panel .table-wrap.max-rows-10 {
+        flex: unset;
+        max-height: 100%;
+        overflow-x: auto;
+        overflow-y: auto;
+    }
+}
+
+/* ── Dashboard-style header & footer theme ───────────────────────────── */
+.dashboard-page .sticky-header {
+    background: #2f6fe4;
+    border-bottom-color: rgba(255, 255, 255, 0.15);
+}
+.dashboard-page .sticky-header-kicker {
+    color: rgba(255, 255, 255, 0.72);
+}
+.dashboard-page .sticky-header-title {
+    color: #ffffff;
+}
+.dashboard-page .header-date {
+    color: rgba(255, 255, 255, 0.72);
+}
+.dashboard-page .header-icon-btn {
+    color: rgba(255, 255, 255, 0.85);
+}
+.dashboard-page .header-icon-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+.dashboard-page .header-user-btn {
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    color: #ffffff;
+}
+.dashboard-page .header-user-btn .user-icon {
+    fill: #ffffff;
+}
+.dashboard-page .header-user-name {
+    color: #ffffff;
+}
+.dashboard-page .header-user-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: transparent;
+    box-shadow: none;
+}
+.dashboard-page .header-user-btn:hover .user-icon {
+    fill: #ffffff;
+}
+.dashboard-page .gov-footer {
+    background: #2f6fe4;
+    border-top-color: rgba(255, 255, 255, 0.15);
+    position: relative;
+    z-index: 201;
+}
+.dashboard-page .footer-brand-copy h3 {
+    color: #ffffff;
+}
+.dashboard-page .footer-brand-copy p,
+.dashboard-page .footer-brand-copy address {
+    color: rgba(255, 255, 255, 0.75);
+}
+.dashboard-page .footer-copyright {
+    color: rgba(255, 255, 255, 0.65);
+}
+.dashboard-page .footer-links a {
+    color: rgba(255, 255, 255, 0.85);
+}
+.dashboard-page .footer-links a:hover {
+    color: #ffffff;
 }

@@ -30,6 +30,7 @@ window.initEmployeeManagement = (supabase) => {
     const employeeListContainer = document.getElementById("employee-list");
     const employeeSummaryContainer = document.getElementById("employee-summary");
     const employeeSearchInput = document.getElementById("employee-search");
+    const employeePositionFilter = document.getElementById("employee-position-filter");
     let allEmployeesData = []; // Store all employees for filtering
     let allEmployeesCache = []; // Always holds the full unfiltered list
     const deleteEmployeeModal = document.getElementById("delete-employee-modal");
@@ -67,6 +68,58 @@ window.initEmployeeManagement = (supabase) => {
             .join('');
     };
 
+    const renderPositionFilterOptions = (employees = []) => {
+        if (!employeePositionFilter) return;
+
+        const seen = new Set();
+        const positions = [];
+
+        (employees || []).forEach(emp => {
+            const position = String(emp?.position || '').trim();
+            if (!position) return;
+            const key = position.toLowerCase();
+            if (seen.has(key)) return;
+            seen.add(key);
+            positions.push(position);
+        });
+
+        positions.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+        const currentValue = employeePositionFilter.value;
+
+        employeePositionFilter.innerHTML = [
+            '<option value="">All Positions</option>',
+            ...positions.map(position => `<option value="${escapeHtml(position)}">${escapeHtml(position)}</option>`)
+        ].join('');
+
+        if (currentValue && positions.some(position => position.toLowerCase() === currentValue.toLowerCase())) {
+            const matched = positions.find(position => position.toLowerCase() === currentValue.toLowerCase());
+            employeePositionFilter.value = matched || '';
+        } else {
+            employeePositionFilter.value = '';
+        }
+    };
+
+    const applyEmployeeFilters = () => {
+        const searchTerm = (employeeSearchInput?.value || '').toLowerCase().trim();
+        const positionFilterValue = (employeePositionFilter?.value || '').toLowerCase().trim();
+
+        let filtered = allEmployeesCache.slice();
+
+        if (searchTerm) {
+            filtered = filtered.filter(emp =>
+                String(emp?.name || '').toLowerCase().includes(searchTerm)
+            );
+        }
+
+        if (positionFilterValue) {
+            filtered = filtered.filter(emp =>
+                String(emp?.position || '').toLowerCase() === positionFilterValue
+            );
+        }
+
+        renderEmployeeList(filtered);
+    };
+
     const renderEmployeeList = async (filteredData = null) => {
         try {
             if (filteredData === null) {
@@ -92,16 +145,12 @@ window.initEmployeeManagement = (supabase) => {
                 
                 allEmployeesData = data || [];
                 allEmployeesCache = allEmployeesData.slice(); // keep a full copy
-                
-                // Clear search input when loading fresh data
-                if (employeeSearchInput) {
-                    employeeSearchInput.value = '';
-                }
             } else {
                 allEmployeesData = filteredData;
             }
 
             renderPositionSuggestions(allEmployeesCache);
+            renderPositionFilterOptions(allEmployeesCache);
 
             if (!allEmployeesData || allEmployeesData.length === 0) {
                 employeeListContainer.innerHTML = `
@@ -206,7 +255,7 @@ window.initEmployeeManagement = (supabase) => {
                         const statusText = newStatus ? 'unhidden' : 'hidden';
                         const toastType = newStatus ? 'success' : 'warning';
                         showToast(`Official "${employeeName}" ${statusText} successfully!`, toastType);
-                        await renderEmployeeList();
+                        await refreshEmployeeListPreservingFilters();
                         // Refresh the global employee list for dropdowns
                         if (window.adminLoadEmployees) {
                             await window.adminLoadEmployees();
@@ -275,21 +324,17 @@ window.initEmployeeManagement = (supabase) => {
 
     // Employee search functionality
     if (employeeSearchInput) {
-        employeeSearchInput.addEventListener('input', () => {
-            const searchTerm = employeeSearchInput.value.toLowerCase().trim();
-            
-            if (searchTerm === '') {
-                // Show all employees
-                renderEmployeeList(allEmployeesCache);
-            } else {
-                // Filter employees by name
-                const filtered = allEmployeesCache.filter(emp => 
-                    emp.name.toLowerCase().includes(searchTerm)
-                );
-                renderEmployeeList(filtered);
-            }
-        });
+        employeeSearchInput.addEventListener('input', applyEmployeeFilters);
     }
+
+    if (employeePositionFilter) {
+        employeePositionFilter.addEventListener('change', applyEmployeeFilters);
+    }
+
+    const refreshEmployeeListPreservingFilters = async () => {
+        await renderEmployeeList();
+        applyEmployeeFilters();
+    };
 
     // Autocomplete functionality for "Add Official" field
     const autocompleteList = document.getElementById('employee-autocomplete-list');
@@ -505,7 +550,7 @@ window.initEmployeeManagement = (supabase) => {
             employeeNameInput.value = "";
             employeePositionInput.value = "";
             setDropdownVisible(false);
-            await renderEmployeeList();
+            await refreshEmployeeListPreservingFilters();
             // Refresh the global employee list for dropdowns
             if (window.adminLoadEmployees) {
                 await window.adminLoadEmployees();
@@ -540,7 +585,7 @@ window.initEmployeeManagement = (supabase) => {
 
             deleteEmployeeModal.classList.remove("show");
             deleteEmployeeData = null;
-            await renderEmployeeList();
+            await refreshEmployeeListPreservingFilters();
             // Refresh the global employee list for dropdowns
             if (window.adminLoadEmployees) {
                 await window.adminLoadEmployees();
@@ -671,7 +716,7 @@ window.initEmployeeManagement = (supabase) => {
                 if (editEmployeeRecordsNote) editEmployeeRecordsNote.classList.add('hidden');
             }, 1000);
             
-            await renderEmployeeList();
+            await refreshEmployeeListPreservingFilters();
             // Refresh the global employee list for dropdowns
             if (window.adminLoadEmployees) {
                 await window.adminLoadEmployees();
@@ -711,7 +756,7 @@ window.initEmployeeManagement = (supabase) => {
     renderEmployeeList();
 
     // Expose renderEmployeeList to window for panel switching
-    window.employeeRenderList = renderEmployeeList;
+    window.employeeRenderList = refreshEmployeeListPreservingFilters;
 
     // Realtime subscription for employee_list changes
     let employeeRealtimeChannel = null;
@@ -733,7 +778,7 @@ window.initEmployeeManagement = (supabase) => {
                 },
                 (payload) => {
                     // Refresh the employee table
-                    renderEmployeeList();
+                    refreshEmployeeListPreservingFilters();
                     
                     // Refresh upload multi-select dropdowns
                     if (window.adminLoadEmployees) {

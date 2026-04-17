@@ -1,6 +1,10 @@
 <section class="panel wide-panel hidden" id="view-panel">
     <div class="panel-head">
-        <h2>Records</h2>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+            <h2 style="font-size:1.5rem;margin:0;line-height:1.2;">Records</h2>
+            <span id="admin-last-updated" class="status" style="font-size:0.8rem;"></span>
+            <span class="status" id="view-status" style="font-size:0.8rem;">Fetching travel authorities.</span>
+        </div>
         <div class="panel-head-actions">
             <button id="admin-refresh-btn" class="filter-icon-btn" type="button" aria-label="Refresh table" title="Refresh">
                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
@@ -138,7 +142,6 @@
         </table>
     </div>
     <div class="table-footer">
-        <span class="status" id="view-status">Fetching travel authorities.</span>
         <button id="view-more" class="pagination-btn" type="button">Load more</button>
     </div>
 </section>

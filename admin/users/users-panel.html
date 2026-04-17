@@ -1,37 +1,53 @@
 <section class="panel wide-panel users-panel hidden" id="users-panel">
-    <h2>Manage Users</h2>
-    <p class="panel-description">Manage user accounts and roles. Only super users can modify user roles.</p>
-    
-    <div class="user-filter-bar">
-        <div class="user-filter-row">
-            <div class="filter-field">
-                <label for="users-role-filter">Role</label>
-                <select id="users-role-filter" class="filter-select">
-                    <option value="">All Roles</option>
-                    <option value="super">Super</option>
-                    <option value="admin">Admin</option>
-                    <option value="user">User</option>
-                </select>
-            </div>
-            <div class="filter-field">
-                <label for="users-access-filter">Access</label>
-                <select id="users-access-filter" class="filter-select">
-                    <option value="">All Access</option>
-                    <option value="enabled">Enabled</option>
-                    <option value="disabled">Disabled</option>
-                </select>
-            </div>
-            <div class="filter-field">
-                <label for="users-status-filter">Status</label>
-                <select id="users-status-filter" class="filter-select">
-                    <option value="">All Status</option>
-                    <option value="online">Online</option>
-                    <option value="offline">Offline</option>
-                </select>
-            </div>
-            <button id="clear-filters-btn" class="filter-btn clear-btn user-filter-clear-btn" type="button" title="Clear all filters">
-                Clear
+    <div class="panel-head">
+        <div style="display:flex;flex-direction:column;gap:1px;">
+            <h2 style="font-size:1.5rem;margin:0;line-height:1.2;">Manage Users</h2>
+            <span class="status" style="font-size:0.8rem;">Manage user accounts and roles. Only super users can modify user roles.</span>
+            <span class="status" id="users-status" style="font-size:0.8rem;">Manage user roles and permissions.</span>
+        </div>
+        <div class="panel-head-actions">
+            <button id="users-filter-toggle-btn" class="filter-icon-btn" type="button" aria-label="Toggle filters" title="Filter">
+                <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                    <path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z"/>
+                </svg>
+                <span class="btn-label">Filter</span>
             </button>
+        </div>
+    </div>
+    <div id="users-filter-panel" class="filter-panel">
+        <div class="filter-content">
+            <h3>Filter Options</h3>
+            <div class="filter-fields">
+                <div class="filter-field">
+                    <label for="users-role-filter">Role</label>
+                    <select id="users-role-filter" class="filter-select">
+                        <option value="">All Roles</option>
+                        <option value="super">Super</option>
+                        <option value="admin">Admin</option>
+                        <option value="user">User</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="users-access-filter">Access</label>
+                    <select id="users-access-filter" class="filter-select">
+                        <option value="">All Access</option>
+                        <option value="enabled">Enabled</option>
+                        <option value="disabled">Disabled</option>
+                    </select>
+                </div>
+                <div class="filter-field">
+                    <label for="users-status-filter">Status</label>
+                    <select id="users-status-filter" class="filter-select">
+                        <option value="">All Status</option>
+                        <option value="online">Online</option>
+                        <option value="offline">Offline</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button id="users-clear-filter-btn" class="filter-btn clear-btn" type="button">Reset</button>
+                <button id="users-apply-filter-btn" class="filter-btn apply-btn" type="button">Apply Filter</button>
+            </div>
         </div>
     </div>
     
@@ -53,9 +69,6 @@
                 </tr>
             </tbody>
         </table>
-    </div>
-    <div class="table-footer">
-        <span class="status" id="users-status">Manage user roles and permissions.</span>
     </div>
 </section>
 

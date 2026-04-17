@@ -1364,9 +1364,28 @@ const bindTaFormatter = (input) => {
 };
 window.bindTaFormatter = bindTaFormatter; // Expose for upload.js
 
-// Top switcher and panel switching logic
+// Panel switching logic
 const adminPanelSwitcher = document.querySelector(".admin-panel-switcher");
 const switchButtons = document.querySelectorAll(".switch-btn");
+
+// Sidebar collapse toggle
+const adminSidebar = document.getElementById('admin-sidebar');
+const adminSidebarToggle = document.getElementById('admin-sidebar-toggle');
+const adminWrapper = document.getElementById('admin-wrapper');
+
+const savedAdminSidebarCollapsed = localStorage.getItem('adminSidebarCollapsed') === 'true';
+if (adminSidebar && savedAdminSidebarCollapsed) {
+    adminSidebar.classList.add('collapsed');
+    if (adminWrapper) adminWrapper.classList.add('sidebar-collapsed');
+}
+
+if (adminSidebar && adminSidebarToggle) {
+    adminSidebarToggle.addEventListener('click', () => {
+        const isNowCollapsed = adminSidebar.classList.toggle('collapsed');
+        if (adminWrapper) adminWrapper.classList.toggle('sidebar-collapsed', isNowCollapsed);
+        localStorage.setItem('adminSidebarCollapsed', isNowCollapsed);
+    });
+}
 
 const updateAdminSwitcherLayout = () => {
     if (!adminPanelSwitcher) return;
@@ -2210,6 +2229,15 @@ const loadTravelAuthorities = async (reset = false) => {
 
         viewRows = data || [];
         latestKnownTimestamp = viewRows[0]?.created_at || latestKnownTimestamp;
+        const adminLastUpdated = document.getElementById("admin-last-updated");
+        if (adminLastUpdated && latestKnownTimestamp) {
+            const diff = Date.now() - new Date(latestKnownTimestamp).getTime();
+            const mins = Math.floor(diff / 60000);
+            const hrs = Math.floor(diff / 3600000);
+            const days = Math.floor(diff / 86400000);
+            const rel = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : hrs < 24 ? `${hrs}h ago` : days === 1 ? 'yesterday' : `${days} days ago`;
+            adminLastUpdated.textContent = `Last record added ${rel}`;
+        }
         renderViewRows(viewRows);
         updateViewFooter();
         await populateAdminYearFilter();
@@ -2229,6 +2257,18 @@ window.loadTravelAuthoritiesIfNeeded = () => {
         loadTravelAuthorities(true);
     }
 };
+
+// Fade scrollbar in on scroll, fade out after idle
+(function () {
+    const wrap = document.querySelector('#view-panel .table-wrap');
+    if (!wrap) return;
+    let fadeTimer;
+    wrap.addEventListener('scroll', () => {
+        wrap.classList.add('is-scrolling');
+        clearTimeout(fadeTimer);
+        fadeTimer = setTimeout(() => wrap.classList.remove('is-scrolling'), 1000);
+    }, { passive: true });
+})();
 
 // Track recent admin actions to suppress own realtime notifications
 window.adminRecentUploadTimestamp = 0;
@@ -3774,18 +3814,28 @@ const loadUsers = async () => {
             renderUsersTable(filtered);
         };
 
-        usersRoleFilter.onchange = filterUsers;
-        usersAccessFilter.onchange = filterUsers;
-        usersStatusFilter.onchange = filterUsers;
-    
-        // Clear all filters button
-        const clearFiltersBtn = document.getElementById('clear-filters-btn');
+        usersRoleFilter.onchange = null;
+        usersAccessFilter.onchange = null;
+        usersStatusFilter.onchange = null;
+
+        // Apply filter button
+        const applyFilterBtn = document.getElementById('users-apply-filter-btn');
+        if (applyFilterBtn) {
+            applyFilterBtn.onclick = () => {
+                filterUsers();
+                document.getElementById('users-filter-panel')?.classList.remove('show');
+            };
+        }
+
+        // Reset filter button
+        const clearFiltersBtn = document.getElementById('users-clear-filter-btn');
         if (clearFiltersBtn) {
             clearFiltersBtn.onclick = () => {
                 usersRoleFilter.value = '';
                 usersAccessFilter.value = '';
                 usersStatusFilter.value = '';
                 filterUsers();
+                document.getElementById('users-filter-panel')?.classList.remove('show');
             };
         }
     
@@ -4112,6 +4162,22 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
             }
             // Load users for the User Management panel
             await loadUsers();
+
+            // Filter panel toggle
+            const usersFilterToggleBtn = document.getElementById('users-filter-toggle-btn');
+            const usersFilterPanel = document.getElementById('users-filter-panel');
+            if (usersFilterToggleBtn && usersFilterPanel) {
+                usersFilterToggleBtn.addEventListener('click', () => {
+                    usersFilterPanel.classList.toggle('show');
+                });
+                document.addEventListener('click', (e) => {
+                    if (usersFilterPanel.classList.contains('show') &&
+                        !usersFilterPanel.contains(e.target) &&
+                        !usersFilterToggleBtn.contains(e.target)) {
+                        usersFilterPanel.classList.remove('show');
+                    }
+                });
+            }
             
             // Initialize realtime subscription for profiles
             // This will automatically update the users table when:
