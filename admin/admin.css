@@ -354,7 +354,7 @@ body.dashboard-page::before {
     }
 }
 .admin-panels #upload-panel {
-    width: min(720px, 100%);
+    /* handled by .upload-panel-structured */
 }
 /* Scrollable panels — natural scroll within their own container */
 .admin-panels #upload-panel:not(.hidden) {
@@ -870,4 +870,118 @@ body.dashboard-page::before {
 }
 .dashboard-page .footer-links a:hover {
     color: #ffffff;
+}
+
+/* ── HIGH IMPACT STRUCTURED UPLOAD PANEL ── */
+.admin-panels #upload-panel.upload-panel-structured {
+    width: 100%;
+    max-width: 860px;
+    margin: 16px auto 32px auto;
+    padding: 32px 48px;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 12px 36px -8px rgba(11,28,59,0.06);
+    background: #ffffff;
+    /* Removed overflow:visible to restore native scrollable panel behavior */
+}
+
+/* Ensure consistent field heights horizontally */
+.structured-fields .input-wrap input[type="text"],
+.structured-fields .multiselect-display {
+    min-height: 54px;
+    border-radius: 12px;
+    box-sizing: border-box;
+}
+.structured-fields .multiselect-display {
+    align-items: center;
+}
+
+/* On desktop, naturally space it beautifully */
+.panel-header-structured {
+    text-align: left;
+    margin-bottom: 32px;
+}
+.panel-header-structured h2 {
+    font-size: 1.5rem;
+    color: var(--ink);
+    margin: 0 0 6px;
+    font-weight: bold; /* Match other tabs */
+    line-height: 1.2;
+}
+.panel-header-structured p {
+    margin: 0;
+    color: rgba(11, 28, 59, 0.65);
+    font-size: 0.8rem; /* Match the status subtext size */
+    font-weight: 400;
+}
+
+.structured-fields .field-spread {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    align-items: start;
+}
+
+.structured-fields .ocr-group {
+    background: var(--surface-soft);
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    margin: 20px 0;
+}
+
+.structured-fields .ocr-group .field-spread {
+    margin-bottom: 16px;
+}
+
+.structured-fields .file-upload-block {
+    background: var(--mist);
+    padding: 28px;
+    border-radius: var(--radius-lg);
+    border: 2px dashed rgba(11,28,59,0.18);
+    margin: 24px 0 20px;
+    text-align: center;
+    transition: all 0.2s;
+}
+.structured-fields .file-upload-block:hover,
+.structured-fields .file-upload-block:focus-within {
+    border-color: var(--sea);
+    background: #f0f4f8;
+}
+
+.structured-fields .file-upload-block label {
+    display: block;
+    margin-bottom: 12px;
+    font-size: 1.05rem;
+    font-weight: 600;
+}
+.structured-fields .file-upload-block input[type="file"] {
+    max-width: 500px;
+    margin: 0 auto 12px;
+    background: #ffffff;
+    box-shadow: 0 2px 8px rgba(11,28,59,0.04);
+}
+.structured-fields .file-upload-block .disclaimer {
+    margin: 0 auto;
+    max-width: 480px;
+    font-size: 0.85rem;
+}
+
+@media (max-width: 768px) {
+    .admin-panels #upload-panel.upload-panel-structured {
+        margin: 20px auto;
+        padding: 24px 20px;
+        border: none;
+        box-shadow: none;
+    }
+    .structured-fields .field-spread {
+        grid-template-columns: 1fr;
+        gap: 16px;
+    }
+    .structured-fields .ocr-group {
+        padding: 16px;
+        margin: 16px 0;
+    }
+    .structured-fields .file-upload-block {
+        padding: 20px 16px;
+    }
 }

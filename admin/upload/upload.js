@@ -669,6 +669,26 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         }
 
         try {
+            // Block early if TA number already exists — before any file processing or storage upload
+            uploadStatus.textContent = 'Checking TA number...';
+            uploadStatus.classList.remove("status--error");
+            const { data: existingRows, error: checkError } = await supabase
+                .from("travel_authorities")
+                .select("ta_number")
+                .eq("ta_number", taNumber)
+                .limit(1);
+            if (checkError) {
+                throw new Error(`Could not verify TA number: ${checkError.message}`);
+            }
+            if (existingRows && existingRows.length > 0) {
+                uploadStatus.textContent = `TA Number ${taNumber} already exists in the database.`;
+                uploadStatus.classList.add("status--error");
+                uploadStatus.classList.remove("status--shake");
+                void uploadStatus.offsetWidth;
+                uploadStatus.classList.add("status--shake");
+                return;
+            }
+
             // Validate and process files (PDF or images)
             uploadStatus.textContent = 'Compressing and processing files...';
             uploadStatus.classList.remove("status--error");
