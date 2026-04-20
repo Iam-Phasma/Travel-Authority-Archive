@@ -145,7 +145,7 @@ body.dashboard-page::before {
     border: none;
     background: transparent;
     cursor: pointer;
-    color: rgba(255, 255, 255, 0.55);
+    color: rgba(209, 214, 222, 0.85);
     font-size: 0.875rem;
     font-family: "Inter", system-ui, sans-serif;
     font-weight: 500;
@@ -190,6 +190,7 @@ body.dashboard-page::before {
     transition: opacity 0.18s ease, max-width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
     max-width: 160px;
     opacity: 1;
+    color: rgba(209, 214, 222, 0.85);
 }
 
 .dash-sidebar.collapsed .dash-sidebar-label {
@@ -741,7 +742,7 @@ body.dashboard-page::before {
         border: none;
         font-size: 0.72rem;
         height: 100%;
-        color: rgba(11, 28, 59, 0.45);
+        color: rgba(11, 28, 59, 1);
     }
 
     .dash-sidebar-tab.active {
