@@ -949,22 +949,93 @@ body.dashboard-page::before {
     background: #f0f4f8;
 }
 
+.structured-fields .file-upload-block.is-dragover {
+    border-color: var(--sea);
+    background: rgba(47, 111, 228, 0.1);
+    box-shadow: 0 0 0 4px rgba(47, 111, 228, 0.15);
+}
+
 .structured-fields .file-upload-block label {
     display: block;
     margin-bottom: 12px;
     font-size: 1.05rem;
     font-weight: 600;
 }
-.structured-fields .file-upload-block input[type="file"] {
+.structured-fields .file-upload-block .scan-file-row {
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
     max-width: 500px;
     margin: 0 auto 12px;
+    justify-content: center;
+}
+.structured-fields .file-upload-block input[type="file"] {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
     background: #ffffff;
     box-shadow: 0 2px 8px rgba(11,28,59,0.04);
+}
+/* Hidden by default; shown by JS removing the hidden attr */
+.structured-fields .file-upload-block .file-remove-btn {
+    display: none;
+    flex: 0 0 42px;
+    align-self: stretch;
+    width: 42px;
+    padding: 0;
+    border-radius: 14px;
+    border: 1px solid rgba(17, 24, 39, 0.12);
+    background: #ffffff;
+    color: rgba(11, 28, 59, 0.75);
+    font-size: 0.86rem;
+    font-weight: 600;
+    white-space: nowrap;
+    cursor: pointer;
+    gap: 6px;
+    box-shadow: 0 2px 8px rgba(11, 28, 59, 0.04);
+    transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease;
+}
+.structured-fields .file-upload-block .file-remove-btn svg {
+    width: 17px;
+    height: 17px;
+    flex-shrink: 0;
+}
+/* Desktop: icon only — hide the text label */
+.structured-fields .file-upload-block .file-remove-label {
+    display: none;
+}
+/* Show only when files are loaded (hidden attr removed by JS) */
+.structured-fields .file-upload-block .file-remove-btn:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.structured-fields .file-upload-block .file-remove-btn:hover {
+    background: #fff1f0;
+    border-color: rgba(181, 33, 38, 0.35);
+    color: #b52126;
+}
+.structured-fields .file-upload-block .file-remove-btn:focus-visible {
+    outline: 2px solid var(--sea);
+    outline-offset: 2px;
+}
+.structured-fields .file-upload-block .drop-hint {
+    margin: 0 auto 10px;
+    max-width: 480px;
+    font-size: 0.84rem;
+    color: rgba(11, 28, 59, 0.72);
+    display: none;
 }
 .structured-fields .file-upload-block .disclaimer {
     margin: 0 auto;
     max-width: 480px;
     font-size: 0.85rem;
+}
+
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+    .structured-fields .file-upload-block .drop-hint {
+        display: block;
+    }
 }
 
 @media (max-width: 768px) {
@@ -984,5 +1055,21 @@ body.dashboard-page::before {
     }
     .structured-fields .file-upload-block {
         padding: 20px 16px;
+    }
+    .structured-fields .file-upload-block .scan-file-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    /* Mobile: show icon + label, rounded square button */
+    .structured-fields .file-upload-block .file-remove-label {
+        display: inline;
+    }
+    .structured-fields .file-upload-block .file-remove-btn:not([hidden]) {
+        width: auto;
+        height: auto;
+        margin-top: 8px;
+        padding: 9px 16px;
+        align-self: center;
+        border-radius: 14px;
     }
 }

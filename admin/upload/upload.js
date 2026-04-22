@@ -436,6 +436,8 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     const travelDateInput = document.getElementById("travel-date");
     const travelUntilInput = document.getElementById("travel-until");
     const scanFileInput = document.getElementById("scan-file");
+    const scanFileDropZone = document.getElementById("scan-file-drop-zone");
+    const scanFileRemoveBtn = document.getElementById("scan-file-remove-btn");
     const isDemoCheckbox = document.getElementById("is-demo-checkbox");
 
     // Use validation functions from global scope (defined in admin.html)
@@ -464,13 +466,16 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     // Bind TA number formatter
     bindTaFormatter(taNumberInput);
 
-    // File input change handler
-    scanFileInput.addEventListener("change", () => {
-        if (scanFileInput.files.length > 0) {
-            const fileCount = scanFileInput.files.length;
+    const updateSelectedFilesUi = () => {
+        const fileCount = scanFileInput.files.length;
+        if (scanFileRemoveBtn) {
+            scanFileRemoveBtn.hidden = fileCount === 0;
+        }
+
+        if (fileCount > 0) {
             const hasPdf = Array.from(scanFileInput.files).some(f => f.type === 'application/pdf');
             const hasImages = Array.from(scanFileInput.files).some(f => f.type.startsWith('image/'));
-            
+
             if (fileCount === 1) {
                 uploadStatus.textContent = `Selected: ${scanFileInput.files[0].name}`;
             } else {
@@ -479,7 +484,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 if (hasImages) fileTypes.push('images');
                 uploadStatus.textContent = `Selected: ${fileCount} files (${fileTypes.join(' + ')}) - will be combined into one PDF`;
             }
-            
+
             // Show warning if too many files
             if (fileCount > 10) {
                 uploadStatus.textContent = "⚠️ Maximum 10 files allowed";
@@ -489,8 +494,84 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             }
         } else {
             uploadStatus.textContent = "Complete the required fields.";
+            uploadStatus.classList.remove("status--error");
         }
+    };
+
+    const clearSelectedFiles = () => {
+        scanFileInput.value = "";
+        if (scanFileDropZone) {
+            scanFileDropZone.classList.remove("is-dragover");
+        }
+        updateSelectedFilesUi();
+    };
+
+    // File input change handler
+    scanFileInput.addEventListener("change", () => {
+        updateSelectedFilesUi();
     });
+
+    if (scanFileRemoveBtn) {
+        scanFileRemoveBtn.addEventListener("click", () => {
+            clearSelectedFiles();
+            uploadStatus.textContent = "Selected files removed.";
+        });
+    }
+
+    // Keep remove button hidden on initial load when no files are selected.
+    updateSelectedFilesUi();
+
+    const isDesktopLikeInputMode = () => window.matchMedia("(min-width: 769px) and (hover: hover) and (pointer: fine)").matches;
+
+    if (scanFileDropZone && scanFileInput) {
+        const dragEvents = ["dragenter", "dragover", "dragleave", "drop"];
+
+        const preventDefaults = (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        dragEvents.forEach((eventName) => {
+            scanFileDropZone.addEventListener(eventName, (event) => {
+                if (!isDesktopLikeInputMode()) return;
+                preventDefaults(event);
+            });
+        });
+
+        ["dragenter", "dragover"].forEach((eventName) => {
+            scanFileDropZone.addEventListener(eventName, () => {
+                if (!isDesktopLikeInputMode()) return;
+                scanFileDropZone.classList.add("is-dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach((eventName) => {
+            scanFileDropZone.addEventListener(eventName, () => {
+                scanFileDropZone.classList.remove("is-dragover");
+            });
+        });
+
+        scanFileDropZone.addEventListener("drop", (event) => {
+            if (!isDesktopLikeInputMode()) return;
+
+            const droppedFiles = event.dataTransfer?.files;
+            if (!droppedFiles || droppedFiles.length === 0) return;
+
+            try {
+                const transfer = new DataTransfer();
+                Array.from(droppedFiles).forEach((file) => transfer.items.add(file));
+                scanFileInput.files = transfer.files;
+                scanFileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            } catch (error) {
+                console.warn("Drag-and-drop assignment to file input failed:", error);
+                uploadStatus.textContent = "Could not use dropped files. Please click to browse and select files.";
+                uploadStatus.classList.add("status--error");
+                uploadStatus.classList.remove("status--shake");
+                void uploadStatus.offsetWidth;
+                uploadStatus.classList.add("status--shake");
+            }
+        });
+    }
 
     // Demo checkbox handler
     if (isDemoCheckbox) {
@@ -849,7 +930,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                         if (hint1) hint1.textContent = 'Scan the uploaded TA to auto-fill both fields.';
                         travelDateInput.value = "";
                         travelUntilInput.value = "";
-                        scanFileInput.value = "";
+                        clearSelectedFiles();
                         if (isDemoCheckbox) isDemoCheckbox.checked = false;
                         selectedEmployees.length = 0;
                         employeesMultiSelect.updateDisplay();
@@ -889,7 +970,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             if (hint2) hint2.textContent = 'Scan the uploaded TA to auto-fill both fields.';
             travelDateInput.value = "";
             travelUntilInput.value = "";
-            scanFileInput.value = "";
+            clearSelectedFiles();
             if (isDemoCheckbox) isDemoCheckbox.checked = false;
             selectedEmployees.length = 0;
             employeesMultiSelect.updateDisplay();
@@ -922,7 +1003,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         if (hint3) hint3.textContent = 'Scan the uploaded TA to auto-fill both fields.';
         travelDateInput.value = "";
         travelUntilInput.value = "";
-        scanFileInput.value = "";
+        clearSelectedFiles();
         if (isDemoCheckbox) isDemoCheckbox.checked = false;
         selectedEmployees.length = 0;
         employeesMultiSelect.updateDisplay();

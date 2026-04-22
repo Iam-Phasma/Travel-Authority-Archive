@@ -93,9 +93,16 @@
             </div>
         </div>
 
-        <div class="file-upload-block">
+        <div class="file-upload-block" id="scan-file-drop-zone">
             <label for="scan-file">Upload Scanned <span class="required">*</span></label>
-            <input id="scan-file" type="file" accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" multiple required>
+            <div class="scan-file-row">
+                <input id="scan-file" type="file" accept="application/pdf,.pdf,image/jpeg,image/jpg,image/png" multiple required>
+                <button type="button" class="file-remove-btn" id="scan-file-remove-btn" aria-label="Remove selected files" title="Remove selected files" hidden>
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 3h6a1 1 0 0 1 1 1v1h4a1 1 0 1 1 0 2h-1v13a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7H4a1 1 0 1 1 0-2h4V4a1 1 0 0 1 1-1Zm0 4H6v12h12V7h-3m-6 0h6M10 10v7m4-7v7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+                    <span class="file-remove-label">Remove</span>
+                </button>
+            </div>
+            <p class="drop-hint" id="scan-file-drop-hint">Desktop: Drag and drop files here, or click to browse.</p>
             <p class="disclaimer">Accept PDFs and/or images (max 10 files, 10MB total). Multiple files will be combined into one PDF. Images are automatically compressed to reduce file size.</p>
         </div>
 
