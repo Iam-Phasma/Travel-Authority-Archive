@@ -7,6 +7,11 @@ const getDemoCheckboxVisible = () => {
 };
 window.getDemoCheckboxVisible = getDemoCheckboxVisible;
 
+// Allow upload without file setting
+const ALLOW_EMPTY_UPLOAD_KEY = 'adminAllowEmptyUpload';
+const getAllowEmptyUpload = () => localStorage.getItem(ALLOW_EMPTY_UPLOAD_KEY) === 'true';
+window.getAllowEmptyUpload = getAllowEmptyUpload;
+
 window.applyDemoCheckboxVisibility = (visible) => {
     // Upload panel demo checkbox wrapper
     const uploadDemoWrapper = document.getElementById('is-demo-checkbox')?.closest('.demo-field-wrapper');
@@ -47,6 +52,15 @@ settingsShowDemoCheckbox.addEventListener('change', () => {
     localStorage.setItem(DEMO_CHECKBOX_SETTING_KEY, visible);
     window.applyDemoCheckboxVisibility(visible);
 });
+
+// Allow empty upload toggle
+const settingsAllowEmptyUpload = document.getElementById('settings-allow-empty-upload');
+if (settingsAllowEmptyUpload) {
+    settingsAllowEmptyUpload.checked = getAllowEmptyUpload();
+    settingsAllowEmptyUpload.addEventListener('change', () => {
+        localStorage.setItem(ALLOW_EMPTY_UPLOAD_KEY, settingsAllowEmptyUpload.checked);
+    });
+}
 
 if (settingsScanOrphansBtn && settingsDeleteOrphansBtn && settingsOrphanStatus) {
     const setDeleteBtnVisible = (visible) => {

@@ -143,9 +143,27 @@
             <h3>Settings</h3>
             <div class="settings-list">
                 <div class="settings-section">
-                    <label class="checkbox-label settings-item">
-                        <input type="checkbox" id="settings-show-demo-checkbox" checked>
-                        <span>Show demo file checkbox in upload and edit forms</span>
+                    <label class="settings-toggle-item" for="settings-show-demo-checkbox">
+                        <span class="settings-toggle-info">
+                            <span class="settings-toggle-title">Show demo file checkbox</span>
+                            <span class="settings-toggle-desc">Display in upload and edit forms</span>
+                        </span>
+                        <span class="settings-toggle-wrap">
+                            <input type="checkbox" class="settings-toggle-input" id="settings-show-demo-checkbox" checked>
+                            <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="settings-section">
+                    <label class="settings-toggle-item" for="settings-allow-empty-upload">
+                        <span class="settings-toggle-info">
+                            <span class="settings-toggle-title">Allow upload without file</span>
+                            <span class="settings-toggle-desc">Skip the file attachment requirement</span>
+                        </span>
+                        <span class="settings-toggle-wrap">
+                            <input type="checkbox" class="settings-toggle-input" id="settings-allow-empty-upload">
+                            <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
+                        </span>
                     </label>
                 </div>
                 <div class="settings-section settings-section--orphan-tools" id="settings-orphan-tools-section" style="display: none;">

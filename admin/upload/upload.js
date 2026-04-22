@@ -704,7 +704,8 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         const employees = selectedEmployees.join(", ");
         const isDemo = isDemoCheckbox ? isDemoCheckbox.checked : false;
 
-        if (!taNumber || !purpose || !destination || !travelDate || scanFileInput.files.length === 0 || selectedEmployees.length === 0) {
+        const allowEmptyUpload = window.getAllowEmptyUpload?.() ?? false;
+        if (!taNumber || !purpose || !destination || !travelDate || (!allowEmptyUpload && scanFileInput.files.length === 0) || selectedEmployees.length === 0) {
             uploadStatus.textContent = "Please fill in all required fields.";
             uploadStatus.classList.add("status--error");
             uploadStatus.classList.remove("status--shake");
@@ -720,6 +721,14 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             void uploadStatus.offsetWidth;
             uploadStatus.classList.add("status--shake");
             return;
+        }
+
+        if (allowEmptyUpload && scanFileInput.files.length === 0) {
+            const proceed = await window.adminShowConfirmation(
+                "No file attached",
+                "You're uploading without a file. The record will be saved, but the file can be attached later."
+            );
+            if (!proceed) return;
         }
 
         if (!travelUntil) {
@@ -770,96 +779,122 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 return;
             }
 
-            // Validate and process files (PDF or images)
-            uploadStatus.textContent = 'Compressing and processing files...';
-            uploadStatus.classList.remove("status--error");
+            // File processing — skipped when no file selected and setting allows it
+            let newFileName = null;
+            let fileUrl = null;
+            let filePath = null;
 
-            const processedFile = await window.validateAndProcessFiles(scanFileInput, taNumber);
-            const preparedUpload = await window.prepareFileForStorage(processedFile, taNumber);
-            const BYTES_PER_MB = 1024 * 1024;
-            const processedSizeKB = (preparedUpload.storedSize / 1024).toFixed(0);
-            const processedSizeMB = (preparedUpload.storedSize / BYTES_PER_MB).toFixed(2);
-            
-            // Check if file is still too large
-            const maxAllowedMB = 10;
-            if (preparedUpload.storedSize > maxAllowedMB * BYTES_PER_MB) {
-                uploadStatus.textContent = `File too large after compression: ${processedSizeMB}MB (max ${maxAllowedMB}MB). Please use fewer or smaller files.`;
-                uploadStatus.classList.add("status--error");
-                uploadStatus.classList.remove("status--shake");
-                void uploadStatus.offsetWidth;
-                uploadStatus.classList.add("status--shake");
-                return;
-            }
+            if (scanFileInput.files.length > 0) {
+                uploadStatus.textContent = 'Compressing and processing files...';
+                uploadStatus.classList.remove("status--error");
 
-            const sizeLabel = preparedUpload.storedSize < BYTES_PER_MB
-                ? `${processedSizeKB} KB`
-                : `${processedSizeMB} MB`;
+                const processedFile = await window.validateAndProcessFiles(scanFileInput, taNumber);
+                const preparedUpload = await window.prepareFileForStorage(processedFile, taNumber);
+                const BYTES_PER_MB = 1024 * 1024;
+                const processedSizeKB = (preparedUpload.storedSize / 1024).toFixed(0);
+                const processedSizeMB = (preparedUpload.storedSize / BYTES_PER_MB).toFixed(2);
 
-            const compressionState = window.__uploadCompressionRun || {};
-            const detailParts = [];
-            if (compressionState.pdfPreset) {
-                detailParts.push(`PDF preset: ${compressionState.pdfPreset}`);
-            }
-            if (compressionState.imageCount > 0) {
-                const imagePresetSummary = Object.entries(compressionState.imagePresetCounts || {})
-                    .map(([name, count]) => `${name} x${count}`)
-                    .join(', ');
-                if (imagePresetSummary) {
-                    detailParts.push(`Image preset: ${imagePresetSummary}`);
+                const maxAllowedMB = 10;
+                if (preparedUpload.storedSize > maxAllowedMB * BYTES_PER_MB) {
+                    uploadStatus.textContent = `File too large after compression: ${processedSizeMB}MB (max ${maxAllowedMB}MB). Please use fewer or smaller files.`;
+                    uploadStatus.classList.add("status--error");
+                    uploadStatus.classList.remove("status--shake");
+                    void uploadStatus.offsetWidth;
+                    uploadStatus.classList.add("status--shake");
+                    return;
+                }
+
+                const sizeLabel = preparedUpload.storedSize < BYTES_PER_MB
+                    ? `${processedSizeKB} KB`
+                    : `${processedSizeMB} MB`;
+
+                const compressionState = window.__uploadCompressionRun || {};
+                const detailParts = [];
+                if (compressionState.pdfPreset) {
+                    detailParts.push(`PDF preset: ${compressionState.pdfPreset}`);
+                }
+                if (compressionState.imageCount > 0) {
+                    const imagePresetSummary = Object.entries(compressionState.imagePresetCounts || {})
+                        .map(([name, count]) => `${name} x${count}`)
+                        .join(', ');
+                    if (imagePresetSummary) {
+                        detailParts.push(`Image preset: ${imagePresetSummary}`);
+                    }
+                }
+                const detailSuffix = detailParts.length ? ` • ${detailParts.join(' • ')}` : '';
+
+                uploadStatus.textContent = preparedUpload.compressed
+                    ? `Uploading optimized file (${sizeLabel})${detailSuffix}...`
+                    : `Uploading file (${sizeLabel})...`;
+
+                // Verify user is authenticated
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError || !sessionData?.session) {
+                    throw new Error("No active session. Please log in again.");
+                }
+
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) {
+                    throw new Error("Not authenticated");
+                }
+
+                const { data: profile, error: profileError } = await supabase
+                    .from("profiles")
+                    .select("id, role")
+                    .eq("id", user.id)
+                    .maybeSingle();
+
+                if (profileError || (profile?.role !== "admin" && profile?.role !== "super")) {
+                    throw new Error("Not authorized to upload.");
+                }
+
+                const safeTa = taNumber.replace(/[^a-z0-9-_]/gi, "_");
+                const safeDate = travelDate.replace(/[^0-9-]/g, "-");
+                const fileExtension = preparedUpload.extension;
+                const timestamp = Date.now();
+                newFileName = `${taNumber}_${timestamp}${fileExtension}`;
+                filePath = `travel-authorities/${safeTa}/${safeDate}/${newFileName}`;
+
+                const { error: uploadError } = await supabase
+                    .storage
+                    .from("ta-files")
+                    .upload(filePath, preparedUpload.storageFile, { upsert: false });
+
+                if (uploadError) {
+                    throw new Error(`Storage upload failed: ${uploadError.message || "Unknown error"}`);
+                }
+
+                const { data: publicUrlData } = supabase
+                    .storage
+                    .from("ta-files")
+                    .getPublicUrl(filePath);
+
+                fileUrl = publicUrlData.publicUrl;
+            } else {
+                uploadStatus.textContent = 'Uploading record (no file attached)...';
+                uploadStatus.classList.remove("status--error");
+
+                // Auth check for no-file path
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                if (sessionError || !sessionData?.session) {
+                    throw new Error("No active session. Please log in again.");
+                }
+
+                const { data: { user }, error: userError } = await supabase.auth.getUser();
+                if (userError || !user) {
+                    throw new Error("Not authenticated");
+                }
+
+                const { data: profile, error: profileError } = await supabase
+                    .from("profiles")
+                    .select("id, role")
+                    .eq("id", user.id)
+                    .maybeSingle();
+
+                if (profileError || (profile?.role !== "admin" && profile?.role !== "super")) {
+                    throw new Error("Not authorized to upload.");
                 }
             }
-            const detailSuffix = detailParts.length ? ` • ${detailParts.join(' • ')}` : '';
-
-            uploadStatus.textContent = preparedUpload.compressed
-                ? `Uploading optimized file (${sizeLabel})${detailSuffix}...`
-                : `Uploading file (${sizeLabel})...`;
-
-            // Verify user is authenticated
-            const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-            if (sessionError || !sessionData?.session) {
-                throw new Error("No active session. Please log in again.");
-            }
-
-            const { data: { user }, error: userError } = await supabase.auth.getUser();
-            if (userError || !user) {
-                throw new Error("Not authenticated");
-            }
-
-            const { data: profile, error: profileError } = await supabase
-                .from("profiles")
-                .select("id, role")
-                .eq("id", user.id)
-                .maybeSingle();
-
-            // Allow both admin AND super users to upload
-            if (profileError || (profile?.role !== "admin" && profile?.role !== "super")) {
-                throw new Error("Not authorized to upload.");
-            }
-
-            const safeTa = taNumber.replace(/[^a-z0-9-_]/gi, "_");
-            const safeDate = travelDate.replace(/[^0-9-]/g, "-");
-            
-            // Extract file extension and rename file to TA number with timestamp
-            const fileExtension = preparedUpload.extension;
-            const timestamp = Date.now();
-            const newFileName = `${taNumber}_${timestamp}${fileExtension}`;
-            const filePath = `travel-authorities/${safeTa}/${safeDate}/${newFileName}`;
-
-            const { error: uploadError } = await supabase
-                .storage
-                .from("ta-files")
-                .upload(filePath, preparedUpload.storageFile, { upsert: false });
-
-            if (uploadError) {
-                throw new Error(`Storage upload failed: ${uploadError.message || "Unknown error"}`);
-            }
-
-            const { data: publicUrlData } = supabase
-                .storage
-                .from("ta-files")
-                .getPublicUrl(filePath);
-
-            const fileUrl = publicUrlData.publicUrl;
 
             // Mark timestamp BEFORE database operation to suppress own realtime notification
             window.adminRecentUploadTimestamp = Date.now();
@@ -943,11 +978,13 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
 
                 // Non-RETURNING-related failures: cleanup and surface the error
-                try {
-                    const { error: removeError } = await supabase.storage.from("ta-files").remove([filePath]);
-                    if (removeError) console.warn("Cleanup: failed to remove uploaded file after DB error:", removeError);
-                } catch (cleanupErr) {
-                    console.warn("Cleanup: unexpected error while removing uploaded file:", cleanupErr);
+                if (filePath) {
+                    try {
+                        const { error: removeError } = await supabase.storage.from("ta-files").remove([filePath]);
+                        if (removeError) console.warn("Cleanup: failed to remove uploaded file after DB error:", removeError);
+                    } catch (cleanupErr) {
+                        console.warn("Cleanup: unexpected error while removing uploaded file:", cleanupErr);
+                    }
                 }
 
                 if (insertError.code === '23505' || insertError.message?.includes('duplicate key') || insertError.message?.includes('unique constraint')) {

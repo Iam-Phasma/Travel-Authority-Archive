@@ -1222,6 +1222,7 @@ const renderRows = (rows) => {
         const fileUrl = safeUrl(row.file_url);
         const safeName = row.file_name || "Download";
         const displayName = formatFileLabel(safeName);
+        const hasFile = !!row.file_url;
         
         // Truncate employees to show max 2
         let employeesText = row.employees || "-";
@@ -1248,7 +1249,10 @@ const renderRows = (rows) => {
                 <td>${dateText}</td>
                 <td>${untilText}</td>
                 <td>
-                    <a class="file-link row-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>
+                    ${hasFile
+                        ? `<a class="file-link row-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>`
+                        : `<span class="file-not-ready">Unavailable</span>`
+                    }
                 </td>
             </tr>
         `;
