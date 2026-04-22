@@ -354,9 +354,7 @@ body.dashboard-page::before {
         transition: none;
     }
 }
-.admin-panels #upload-panel {
-    /* handled by .upload-panel-structured */
-}
+
 /* Scrollable panels — natural scroll within their own container */
 .admin-panels #upload-panel:not(.hidden) {
     flex: 1;
