@@ -1566,6 +1566,47 @@ const confirmConfirmBtn = document.getElementById("confirm-confirm");
 const confirmDeleteBtn = document.getElementById("confirm-delete");
 const cancelUpdateBtn = document.getElementById("cancel-update");
 const confirmUpdateBtn = document.getElementById("confirm-update");
+const updateOcrBtn = document.getElementById("update-ocr-btn");
+if (updateOcrBtn) {
+    updateOcrBtn.addEventListener("click", async () => {
+        const updateScanFile = document.getElementById("update-scan-file");
+        const file = updateScanFile && updateScanFile.files && updateScanFile.files[0];
+        if (!file) {
+            const hint = document.getElementById("update-ocr-hint");
+            if (hint) {
+                hint.textContent = "No file attached. Upload a scanned file first.";
+                hint.classList.add("status--error");
+                setTimeout(() => { hint.textContent = "Scan the attached file to autofill purpose and destination."; hint.classList.remove("status--error"); }, 3000);
+            }
+            return;
+        }
+        if (typeof window.autoFillFieldOCR !== "function") {
+            console.warn("[OCR] autoFillFieldOCR not ready yet");
+            return;
+        }
+        const originalHTML = updateOcrBtn.innerHTML;
+        updateOcrBtn.disabled = true;
+        updateOcrBtn.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" style="animation:ocr-spin .7s linear infinite"><path d="M12 4V2A10 10 0 0 0 2 12h2a8 8 0 0 1 8-8z"/></svg> Scanning\u2026';
+        const results = await Promise.allSettled([
+            window.autoFillFieldOCR("purpose", file),
+            window.autoFillFieldOCR("destination", file)
+        ]);
+        let filled = 0;
+        [["purpose", "update-purpose"], ["destination", "update-destination"]].forEach(([key, elId], i) => {
+            const r = results[i];
+            if (r.status === "fulfilled" && r.value) {
+                const el = document.getElementById(elId);
+                if (el) { el.value = r.value; el.dispatchEvent(new Event("input", { bubbles: true })); filled++; }
+            } else {
+                console.warn(`[OCR] ${key}: ${results[i].reason?.message || "failed"}`);
+            }
+        });
+        updateOcrBtn.innerHTML = filled === 2 ? "\u2713 Both filled!" : filled === 1 ? "\u2713 1 of 2 filled" : "\u2717 Not found \u2014 try a clearer scan";
+        const hint = document.getElementById("update-ocr-hint");
+        if (hint && filled > 0) hint.textContent = "Please review and correct any misscanned text before updating.";
+        setTimeout(() => { updateOcrBtn.innerHTML = originalHTML; updateOcrBtn.disabled = false; }, 2500);
+    });
+}
 const viewTaNumber = document.getElementById("view-ta-number");
 const viewPurpose = document.getElementById("view-purpose");
 const viewDestination = document.getElementById("view-destination");
@@ -1584,6 +1625,18 @@ const updateIsDemoCheckbox = document.getElementById("update-is-demo-checkbox");
 const updateStatus = document.getElementById("update-status");
 const toast = document.getElementById("toast");
 bindTaFormatter(updateTaInput);
+
+const autoResizeUpdateTextarea = (el) => {
+    if (!el || el.tagName !== 'TEXTAREA') return;
+    el.style.height = 'auto';
+    const minH = parseFloat(getComputedStyle(el).minHeight) || 0;
+    const newH = Math.min(Math.max(el.scrollHeight, minH), 170);
+    el.style.height = newH + 'px';
+    el.style.overflowY = el.scrollHeight > 170 ? 'auto' : 'hidden';
+};
+[updatePurposeInput, updateDestinationInput].forEach(el => {
+    if (el) el.addEventListener('input', () => autoResizeUpdateTextarea(el));
+});
 
 // Upload panel TA validation will be handled in upload.js after panel loads
 
@@ -2031,6 +2084,8 @@ const renderViewRows = (rows) => {
             updateTaInput.value = record.ta_number || "";
             updatePurposeInput.value = record.purpose || "";
             updateDestinationInput.value = record.destination || "";
+            autoResizeUpdateTextarea(updatePurposeInput);
+            autoResizeUpdateTextarea(updateDestinationInput);
             updateTravelDateInput.value = record.travel_date || "";
             updateTravelUntilInput.value = record.travel_until || "";
             updateScanFileInput.value = "";
@@ -2126,6 +2181,8 @@ const renderViewRows = (rows) => {
             updateTaInput.value = record.ta_number || "";
             updatePurposeInput.value = record.purpose || "";
             updateDestinationInput.value = record.destination || "";
+            autoResizeUpdateTextarea(updatePurposeInput);
+            autoResizeUpdateTextarea(updateDestinationInput);
             updateTravelDateInput.value = record.travel_date || "";
             updateTravelUntilInput.value = record.travel_until || "";
             updateScanFileInput.value = "";
@@ -2181,6 +2238,8 @@ document.getElementById("view-edit-btn").addEventListener("click", () => {
     updateTaInput.value = record.ta_number || "";
     updatePurposeInput.value = record.purpose || "";
     updateDestinationInput.value = record.destination || "";
+    autoResizeUpdateTextarea(updatePurposeInput);
+    autoResizeUpdateTextarea(updateDestinationInput);
     updateTravelDateInput.value = record.travel_date || "";
     updateTravelUntilInput.value = record.travel_until || "";
     updateScanFileInput.value = "";
