@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="footer/footer.css?v=20260321-3" />
     <!-- hCaptcha Script -->
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+    <!-- dotLottie Web Component -->
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js"></script>
     <script
       src="https://cdn.jsdelivr.net/npm/zxcvbn@4.4.2/dist/zxcvbn.js"
       integrity="sha384-LXuP8lknSGBOLVn4fwVOl+rWR+zOEtZx6CF9ZLaN6gKBgLByU4D79VWWjV4/gefq"
@@ -112,7 +114,10 @@
           <div id="login-hcaptcha"></div>
         </div>
         <div class="login-actions">
-          <button id="login-btn" type="button">Sign in</button>
+          <button id="login-btn" type="button">
+            <span id="login-btn-text">Sign in</span>
+            <dotlottie-wc id="login-btn-lottie" src="assets/load.lottie" autoplay loop></dotlottie-wc>
+          </button>
           <span class="status status--neutral hidden" id="login-status"
             >Enter your credentials.</span
           >
@@ -258,6 +263,13 @@
       const passwordInput = document.getElementById("password");
       const togglePasswordBtn = document.getElementById("toggle-password-btn");
       const loginBtn = document.getElementById("login-btn");
+      const loginBtnText = document.getElementById("login-btn-text");
+      const loginBtnLottie = document.getElementById("login-btn-lottie");
+      const setLoginLoading = (loading) => {
+        loginBtn.disabled = loading;
+        loginBtnText.style.display = loading ? "none" : "";
+        loginBtnLottie.style.display = loading ? "block" : "none";
+      };
       const loginPanel = document.getElementById("login-panel");
       const newPasswordPanel = document.getElementById("new-password-panel");
       let loginCaptchaWidgetId = null;
@@ -494,7 +506,7 @@
           "status--success",
           "hidden",
         );
-        loginBtn.disabled = true;
+        setLoginLoading(true);
 
         // Render invisible widget once, then auto-execute on each sign-in attempt
         if (loginCaptchaWidgetId === null) {
@@ -552,7 +564,7 @@
             hcaptcha.reset(loginCaptchaWidgetId);
             loginCaptchaToken = null;
           }
-          loginBtn.disabled = false;
+          setLoginLoading(false);
           const closed = captchaErr?.message === "captcha_closed";
           loginStatus.textContent = closed
             ? "Verification cancelled. Click Sign in to try again."
@@ -584,7 +596,7 @@
               hcaptcha.reset(loginCaptchaWidgetId);
               loginCaptchaToken = null;
             }
-            loginBtn.disabled = false;
+            setLoginLoading(false);
 
             if (loginResult?.code === "locked") {
               startLockoutCountdown(loginResult?.seconds_remaining, "account");
@@ -689,7 +701,7 @@
             hcaptcha.reset(loginCaptchaWidgetId);
             loginCaptchaToken = null;
           }
-          loginBtn.disabled = false;
+          setLoginLoading(false);
 
           loginStatus.textContent = GENERIC_LOGIN_FAILURE_MESSAGE;
           loginStatus.classList.remove(
