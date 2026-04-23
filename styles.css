@@ -1846,7 +1846,9 @@ button:hover {
 }
 
 .file-link {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   padding: 8px 15px;
   border-radius: var(--radius-sm);
   background: var(--hover-sea-subtle);
@@ -1857,6 +1859,23 @@ button:hover {
 }
 .file-link:hover {
   background: rgba(47, 111, 179, 0.25);
+}
+
+.file-link.is-loading {
+  pointer-events: none;
+  padding: 0;
+  overflow: hidden;
+}
+
+.file-link-lottie {
+  width: 60px;
+  height: 30px;
+  aspect-ratio: 2 / 1;
+  pointer-events: none;
+  display: block;
+  margin: 0 auto;
+  filter: brightness(0) saturate(100%) invert(31%) sepia(82%) saturate(2067%)
+    hue-rotate(199deg) brightness(95%) contrast(91%);
 }
 
 .detail-row {

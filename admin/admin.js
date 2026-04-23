@@ -1796,45 +1796,81 @@ const getReconstructedMimeType = (fileName = "") => {
     return 'application/octet-stream';
 };
 
-const openStoredFile = async (fileUrl, fileName = "") => {
+const setFileLinkLoading = (linkEl, loading) => {
+    if (!(linkEl instanceof HTMLElement)) return;
+
+    if (loading) {
+        if (linkEl.dataset.loading === 'true') return;
+        linkEl.dataset.loading = 'true';
+        linkEl.dataset.originalLabel = linkEl.innerHTML;
+        linkEl.dataset.originalWidth = linkEl.style.width || '';
+        linkEl.dataset.originalHeight = linkEl.style.height || '';
+        linkEl.style.width = `${linkEl.offsetWidth}px`;
+        linkEl.style.height = `${linkEl.offsetHeight}px`;
+        linkEl.classList.add('is-loading');
+        linkEl.setAttribute('aria-busy', 'true');
+        linkEl.innerHTML = '<dotlottie-wc class="file-link-lottie" src="../assets/load.lottie" autoplay loop></dotlottie-wc>';
+        return;
+    }
+
+    if (linkEl.dataset.loading !== 'true') return;
+    linkEl.classList.remove('is-loading');
+    linkEl.removeAttribute('aria-busy');
+    linkEl.innerHTML = linkEl.dataset.originalLabel || 'Download';
+    linkEl.style.width = linkEl.dataset.originalWidth || '';
+    linkEl.style.height = linkEl.dataset.originalHeight || '';
+    delete linkEl.dataset.loading;
+    delete linkEl.dataset.originalLabel;
+    delete linkEl.dataset.originalWidth;
+    delete linkEl.dataset.originalHeight;
+};
+
+const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
     const safeFileUrl = safeUrl(fileUrl);
     if (safeFileUrl === '#') return;
 
-    // Check if browser supports DecompressionStream (most modern desktop browsers)
-    const supportsDecompression = typeof DecompressionStream === 'function';
-    const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+    setFileLinkLoading(triggerEl, true);
 
-    // If compressed and browser supports decompression, decompress before opening
-    if (isCompressed && supportsDecompression) {
-        try {
-            showToast('Opening compressed file...', 'info', 1800);
-            const response = await fetch(safeFileUrl, { cache: 'no-store' });
-            if (!response.ok || !response.body) {
-                throw new Error(`Download failed (${response.status})`);
+    try {
+
+        // Check if browser supports DecompressionStream (most modern desktop browsers)
+        const supportsDecompression = typeof DecompressionStream === 'function';
+        const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+
+        // If compressed and browser supports decompression, decompress before opening
+        if (isCompressed && supportsDecompression) {
+            try {
+                showToast('Opening compressed file...', 'info', 1800);
+                const response = await fetch(safeFileUrl, { cache: 'no-store' });
+                if (!response.ok || !response.body) {
+                    throw new Error(`Download failed (${response.status})`);
+                }
+
+                const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
+                const decompressedBlob = await new Response(decompressedStream).blob();
+                const mimeType = getReconstructedMimeType(fileName);
+                const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+
+                const objectUrl = URL.createObjectURL(rebuiltBlob);
+                window.open(objectUrl, '_blank', 'noopener');
+
+                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+                return;
+            } catch (error) {
+                console.error('Failed to decompress file:', error);
+                // Fall through to opening the URL directly
             }
-
-            const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
-            const decompressedBlob = await new Response(decompressedStream).blob();
-            const mimeType = getReconstructedMimeType(fileName);
-            const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
-
-            const objectUrl = URL.createObjectURL(rebuiltBlob);
-            window.open(objectUrl, '_blank', 'noopener');
-            
-            setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
-            return;
-        } catch (error) {
-            console.error('Failed to decompress file:', error);
-            // Fall through to opening the URL directly
         }
-    }
 
-    // For non-compressed files or when decompression not supported/failed:
-    // Open the file URL in a new tab
-    window.open(safeFileUrl, '_blank', 'noopener');
-    
-    if (isCompressed && !supportsDecompression) {
-        showToast('Opening file (note: compressed files may need external decompression on this browser)', 'info', 3000);
+        // For non-compressed files or when decompression not supported/failed:
+        // Open the file URL in a new tab
+        window.open(safeFileUrl, '_blank', 'noopener');
+
+        if (isCompressed && !supportsDecompression) {
+            showToast('Opening file (note: compressed files may need external decompression on this browser)', 'info', 3000);
+        }
+    } finally {
+        setFileLinkLoading(triggerEl, false);
     }
 };
 
@@ -2113,7 +2149,7 @@ const renderViewRows = (rows) => {
             e.preventDefault();
             const fileUrl = e.currentTarget?.getAttribute('data-file-url') || e.currentTarget?.getAttribute('href') || '';
             const fileName = e.currentTarget?.getAttribute('data-file-name') || 'Download';
-            await openStoredFile(fileUrl, fileName);
+            await openStoredFile(fileUrl, fileName, e.currentTarget);
         });
     });
 
@@ -2211,7 +2247,7 @@ viewFileLink.addEventListener('click', async (e) => {
     const fileUrl = viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '';
     const fileName = viewFileLink.dataset.fileName || viewFileLink.textContent || 'Open file';
     if (!fileUrl || fileUrl === '#') return;
-    await openStoredFile(fileUrl, fileName);
+    await openStoredFile(fileUrl, fileName, viewFileLink);
 });
 
 document.getElementById("view-edit-btn").addEventListener("click", () => {
