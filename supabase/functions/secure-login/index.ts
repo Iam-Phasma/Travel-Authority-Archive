@@ -202,6 +202,29 @@ Deno.serve(async (req) => {
     console.error("clear_failed_login_for_email request failed:", error);
   }
 
+  // Check whether the account has been disabled by a super user.
+  try {
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from("profiles")
+      .select("access_enabled")
+      .eq("id", signInData.user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("access_enabled lookup failed:", profileError);
+      // Fail closed — deny login if we cannot verify access status.
+      return jsonResponse({ authenticated: false, code: "service_unavailable" }, 503);
+    }
+
+    // access_enabled defaults to true; only block when explicitly false.
+    if (profile?.access_enabled === false) {
+      return jsonResponse({ authenticated: false, code: "access_disabled" }, 403);
+    }
+  } catch (error) {
+    console.error("access_enabled check failed:", error);
+    return jsonResponse({ authenticated: false, code: "service_unavailable" }, 503);
+  }
+
   return jsonResponse({
     authenticated: true,
     user: {

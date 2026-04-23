@@ -29,7 +29,7 @@ DECLARE
     new_count INTEGER;
     lockout_time TIMESTAMPTZ;
     max_attempts INTEGER := 10; -- per-email lockout threshold
-    lockout_minutes INTEGER := 1; -- per-email lockout duration
+    lockout_minutes INTEGER := 5; -- per-email lockout duration
 
     request_headers JSONB := '{}'::JSONB;
     raw_forwarded_for TEXT;

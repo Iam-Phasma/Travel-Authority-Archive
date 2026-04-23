@@ -371,6 +371,21 @@
 
           if (error) {
             console.error("Secure login function error:", error);
+
+            if (error.context?.json) {
+              try {
+                const errorData = await error.context.json();
+                if (errorData && typeof errorData === "object") {
+                  return errorData;
+                }
+              } catch (parseError) {
+                console.error(
+                  "Failed to parse secure login error response:",
+                  parseError,
+                );
+              }
+            }
+
             return {
               authenticated: false,
               code: "service_unavailable",
@@ -605,6 +620,18 @@
 
             if (loginResult?.code === "ip_limited") {
               startLockoutCountdown(loginResult?.seconds_remaining, "network");
+              return;
+            }
+
+            if (loginResult?.code === "access_disabled") {
+              loginStatus.textContent =
+                "Your account access has been disabled. Please contact the administrator.";
+              loginStatus.classList.remove(
+                "status--success",
+                "hidden",
+                "status--shake",
+              );
+              loginStatus.classList.add("status--error");
               return;
             }
 

@@ -103,7 +103,7 @@ DECLARE
     new_count INTEGER;
     lockout_time TIMESTAMPTZ;
     max_attempts INTEGER := 10; -- Maximum failed attempts before lockout
-    lockout_minutes INTEGER := 1; -- Lockout duration in minutes
+    lockout_minutes INTEGER := 5; -- Lockout duration in minutes
 BEGIN
     -- Get current attempt record
     SELECT * INTO attempt_record
