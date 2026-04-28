@@ -807,6 +807,7 @@ body.dashboard-page::before {
         max-width: 80px !important;
         font-size: 0.72rem;
         pointer-events: auto !important;
+        color: rgba(11, 28, 59, 0.65);
     }
 
     /* Content fills above the tab bar */
