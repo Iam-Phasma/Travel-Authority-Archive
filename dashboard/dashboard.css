@@ -280,16 +280,16 @@ body.dashboard-page::before {
     padding: 16px 0px 12px 0px;
 }
 .dash-content #ta-panel .filter-icon-btn {
-    background: #ffffff;
-    border-color: rgba(11, 28, 59, 0.2);
-    color: rgba(11, 28, 59, 0.8);
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(47, 111, 228, 0.2);
+    color: rgba(11, 28, 59, 0.76);
     font-weight: 600;
 }
 
 .dash-content #ta-panel .filter-icon-btn:hover {
-    background: #f0f4f8;
-    border-color: rgba(22, 119, 255, 0.5);
-    color: #1677ff;
+    background: var(--hover-sea-subtle);
+    border-color: rgba(47, 111, 228, 0.28);
+    color: var(--sea);
 }
 .dash-content #ta-panel .table-wrap.max-rows-10 {
     flex: 1;
@@ -696,7 +696,7 @@ body.dashboard-page::before {
 @media (max-width: 768px) {
     #ta-last-updated,
     #ta-status {
-        display: none;
+        display: block;
     }
 
     /* Unlock body and page-content so the page can scroll naturally */

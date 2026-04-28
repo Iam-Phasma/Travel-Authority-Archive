@@ -1444,7 +1444,7 @@ const refreshTableBtn = document.getElementById("refresh-table-btn");
 const filterPanel = document.getElementById("filter-panel");
 const applyFilterBtn = document.getElementById("apply-filter-btn");
 const clearFilterBtn = document.getElementById("clear-filter-btn");
-const filterTaNumberInput = document.getElementById("filter-ta-number");
+const filterTaNumberInput = document.getElementById("ta-number-search");
 const filterEmployeeInput = document.getElementById("filter-employee");
 const filterYearSelect = document.getElementById("filter-year");
 const filterTravelDateInput = document.getElementById("filter-travel-date");
@@ -1632,7 +1632,17 @@ const formatTaNumber = (value) => {
 };
 
 filterTaNumberInput.addEventListener("input", () => {
-    filterTaNumberInput.value = formatTaNumber(filterTaNumberInput.value);
+    const formatted = formatTaNumber(filterTaNumberInput.value);
+    filterTaNumberInput.value = formatted;
+    const isComplete = /^\d{4}-\d{2}-\d{4}$/.test(formatted);
+    if (!isComplete && formatted !== "") return; // partial — wait for more digits
+    if (formatted === (activeFilters.taNumber || "")) return; // no effective change
+    filterTaNumberInput.classList.toggle("is-matched", isComplete);
+    activeFilters.taNumber = formatted;
+    saveFiltersToStorage();
+    renderRows(taRows);
+    updateTaFooter();
+    updateButtonStates();
 });
 
 // Initialize flatpickr for date filter
@@ -1665,7 +1675,6 @@ filterToggleBtn.addEventListener("click", () => {
 });
 
 applyFilterBtn.addEventListener("click", () => {
-    activeFilters.taNumber = filterTaNumberInput.value.trim();
     activeFilters.employee = filterEmployeeInput.value.trim();
     activeFilters.year = filterYearSelect.value;
     activeFilters.travelDate = filterTravelDateInput.value;
@@ -1684,6 +1693,7 @@ clearFilterBtn.addEventListener("click", () => {
     activeFilters.travelDate = "";
     activeFilters.matchAll = true;
     filterTaNumberInput.value = "";
+    filterTaNumberInput.classList.remove("is-matched");
     filterEmployeeInput.value = "";
     setFilterEmpDropdownVisible(false);
     filterYearSelect.value = "";
@@ -1749,7 +1759,10 @@ const init = async () => {
     loadSortFromStorage();
     
     // Restore UI state from loaded filters/sort
-    if (filterTaNumberInput) filterTaNumberInput.value = activeFilters.taNumber || "";
+    if (filterTaNumberInput) {
+        filterTaNumberInput.value = activeFilters.taNumber || "";
+        filterTaNumberInput.classList.toggle("is-matched", /^\d{4}-\d{2}-\d{4}$/.test(activeFilters.taNumber || ""));
+    }
     if (filterEmployeeInput) filterEmployeeInput.value = activeFilters.employee || "";
     if (filterYearSelect) filterYearSelect.value = activeFilters.year || "";
     if (filterTravelDateInput) filterTravelDateInput.value = activeFilters.travelDate || "";

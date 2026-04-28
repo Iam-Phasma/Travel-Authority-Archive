@@ -2015,6 +2015,7 @@ const applyAdminClientSorting = (rows) => {
 const renderViewRows = (rows) => {
     const filteredRows = applyAdminClientFilters(rows);
     const sortedRows = applyAdminClientSorting(filteredRows);
+    const shouldAnimateRows = window.matchMedia("(prefers-reduced-motion: no-preference)").matches;
     
     if (!sortedRows.length) {
         recordCache.clear();
@@ -2027,7 +2028,7 @@ const renderViewRows = (rows) => {
         recordCache.set(String(row.id), row);
     });
 
-    viewBody.innerHTML = sortedRows.map((row) => {
+    viewBody.innerHTML = sortedRows.map((row, index) => {
         const dateText = row.travel_date ? new Date(row.travel_date).toLocaleDateString() : "-";
         const untilText = row.travel_until ? new Date(row.travel_until).toLocaleDateString() : "-";
         const fileUrl = safeUrl(row.file_url);
@@ -2035,6 +2036,8 @@ const renderViewRows = (rows) => {
         const displayName = formatFileLabel(safeName);
         const hasFile = !!row.file_url;
         const isDemoClass = row.is_demo ? " is-demo" : "";
+        const rowClass = (isDemoClass + (shouldAnimateRows ? " row-enter" : "")).trim();
+        const rowStyle = shouldAnimateRows ? ` style="--row-enter-delay:${Math.min(index * 22, 220)}ms;"` : "";
         
         // Truncate employees to show max 2
         let employeesText = row.employees || "-";
@@ -2046,7 +2049,7 @@ const renderViewRows = (rows) => {
         }
 
         return `
-            <tr data-id="${escapeHtml(row.id)}" class="${isDemoClass}">
+            <tr data-id="${escapeHtml(row.id)}" class="${rowClass}"${rowStyle}>
                 <td>
                     <button class="view-btn icon-btn" data-id="${escapeHtml(row.id)}" aria-label="View details">
                         <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
@@ -2553,7 +2556,7 @@ const adminFilterToggleBtn = document.getElementById("admin-filter-toggle-btn");
 const adminFilterPanel = document.getElementById("admin-filter-panel");
 const adminApplyFilterBtn = document.getElementById("admin-apply-filter-btn");
 const adminClearFilterBtn = document.getElementById("admin-clear-filter-btn");
-const adminFilterTaNumberInput = document.getElementById("admin-filter-ta-number");
+const adminFilterTaNumberInput = document.getElementById("admin-ta-number-search");
 const adminFilterEmployeeInput = document.getElementById("admin-filter-employee");
 const adminFilterYearSelect = document.getElementById("admin-filter-year");
 const adminFilterTravelDateInput = document.getElementById("admin-filter-travel-date");
@@ -2705,7 +2708,17 @@ const formatAdminTaNumber = (value) => {
 };
 
 adminFilterTaNumberInput.addEventListener("input", () => {
-    adminFilterTaNumberInput.value = formatAdminTaNumber(adminFilterTaNumberInput.value);
+    const formatted = formatAdminTaNumber(adminFilterTaNumberInput.value);
+    adminFilterTaNumberInput.value = formatted;
+    const isComplete = /^\d{4}-\d{2}-\d{4}$/.test(formatted);
+    if (!isComplete && formatted !== "") return; // partial — wait for more digits
+    if (formatted === (adminActiveFilters.taNumber || "")) return; // no effective change
+    adminFilterTaNumberInput.classList.toggle("is-matched", isComplete);
+    adminActiveFilters.taNumber = formatted;
+    saveAdminFiltersToStorage();
+    renderViewRows(viewRows);
+    updateViewFooter();
+    updateAdminButtonStates();
 });
 
 // Initialize flatpickr for admin date filter
@@ -2738,7 +2751,6 @@ adminFilterToggleBtn.addEventListener("click", () => {
 });
 
 adminApplyFilterBtn.addEventListener("click", () => {
-    adminActiveFilters.taNumber = adminFilterTaNumberInput.value.trim();
     adminActiveFilters.employee = adminFilterEmployeeInput.value.trim();
     adminActiveFilters.year = adminFilterYearSelect.value;
     adminActiveFilters.travelDate = adminFilterTravelDateInput.value;
@@ -2758,6 +2770,7 @@ adminClearFilterBtn.addEventListener("click", () => {
     adminActiveFilters.travelDate = "";
     adminActiveFilters.matchAll = true;
     adminFilterTaNumberInput.value = "";
+    adminFilterTaNumberInput.classList.remove("is-matched");
     adminFilterEmployeeInput.value = "";
     setAdminFilterEmpDropdownVisible(false);
     adminFilterYearSelect.value = "";
@@ -3380,7 +3393,10 @@ const restoreAdminTableState = () => {
     loadAdminFiltersFromStorage();
     loadAdminSortFromStorage();
 
-    if (adminFilterTaNumberInput) adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";
+    if (adminFilterTaNumberInput) {
+        adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";
+        adminFilterTaNumberInput.classList.toggle("is-matched", /^\d{4}-\d{2}-\d{4}$/.test(adminActiveFilters.taNumber || ""));
+    }
     if (adminFilterEmployeeInput) adminFilterEmployeeInput.value = adminActiveFilters.employee || "";
     if (adminFilterYearSelect) adminFilterYearSelect.value = adminActiveFilters.year || "";
     if (adminFilterTravelDateInput) adminFilterTravelDateInput.value = adminActiveFilters.travelDate || "";
@@ -4290,15 +4306,6 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 
 // loadEmployees() is now called in uploadPanelLoaded.then() to ensure proper initialization
 // Note: loadAdminEmployeesForFilter() is called inside viewPanelLoaded.then() where it's defined
-
-// Preload travel authorities data in the background for faster first load
-Promise.all([employeePanelLoaded, uploadPanelLoaded]).then(() => {
-    if (typeof loadTravelAuthorities === "function") {
-        loadTravelAuthorities(true).catch(err => {
-            console.warn("Background preload of travel authorities failed:", err);
-        });
-    }
-});
 
 // Restore last active panel (wait for panels to load first)
 Promise.all([viewPanelLoaded, employeePanelLoaded, uploadPanelLoaded]).then(() => {

@@ -985,7 +985,6 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  max-height: 30px;
 }
 
 .table-wrap {
@@ -2358,6 +2357,10 @@ button:hover {
   gap: 12px;
 }
 
+.panel-head-actions-buttons {
+  display: contents; /* acts invisible on desktop — children participate in parent flex */
+}
+
 .filter-icon-btn {
   display: inline-flex;
   align-items: center;
@@ -2424,6 +2427,166 @@ button:hover {
   font-size: 0.85rem;
   font-weight: 600;
   white-space: nowrap;
+}
+
+/* TA Number quick-search in panel header */
+.ta-search-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: -10px;
+  padding: 0 14px 0 14px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.94);
+  color: rgba(11, 28, 59, 0.76);
+  border: 1px solid rgba(47, 111, 228, 0.2);
+  transition:
+    background 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease;
+}
+
+.ta-search-wrap:focus-within {
+  background: var(--hover-sea-subtle);
+  border-color: rgba(47, 111, 228, 0.28);
+  color: var(--sea);
+}
+
+.ta-search-wrap .ta-search-icon {
+  width: 18px;
+  height: 18px;
+  fill: rgba(11, 28, 59, 0.38);
+  flex-shrink: 0;
+}
+
+.ta-search-input {
+  height: 38px;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  border: none !important;
+  background: transparent !important;
+  color: rgba(11, 28, 59, 0.76);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  line-height: 1;
+  width: 148px;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.ta-search-input:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.ta-search-input::placeholder {
+  color: rgba(11, 28, 59, 0.38);
+  font-weight: 400;
+}
+
+.ta-search-input.is-matched {
+  color: var(--sea);
+}
+
+.ta-search-wrap.is-matched {
+  border-color: var(--sea);
+}
+
+@media (max-width: 500px) {
+  .ta-search-input {
+    width: 118px;
+    font-size: 0.8rem;
+  }
+}
+
+/* Mobile panel header layout (admin + dashboard) */
+@media (max-width: 640px) {
+  #ta-panel .panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+    max-height: none;
+    gap: 10px;
+    width: 100%;
+  }
+
+  #ta-panel .panel-head > div:first-child {
+    width: 100%;
+    text-align: left;
+  }
+
+  #ta-panel .panel-head-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  #ta-panel .ta-search-wrap {
+    width: 100%;
+  }
+
+  #ta-panel .ta-search-input {
+    width: 100%;
+    flex: 1;
+    font-size: 0.9rem;
+  }
+
+  #ta-panel .panel-head-actions-buttons {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  #ta-panel .panel-head-actions-buttons .filter-icon-btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+/* Mobile admin panel header layout */
+@media (max-width: 640px) {
+  #view-panel .panel-head {
+    flex-direction: column;
+    align-items: flex-start;
+    max-height: none;
+    gap: 10px;
+    width: 100%;
+  }
+
+  #view-panel .panel-head > div:first-child {
+    width: 100%;
+    text-align: left;
+  }
+
+  #view-panel .panel-head-actions {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+
+  #view-panel .ta-search-wrap {
+    width: 100%;
+  }
+
+  #view-panel .ta-search-input {
+    width: 100%;
+    flex: 1;
+    font-size: 0.9rem;
+  }
+
+  #view-panel .panel-head-actions-buttons {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+
+  #view-panel .panel-head-actions-buttons .filter-icon-btn {
+    flex: 1;
+    justify-content: center;
+  }
 }
 
 .filter-panel {

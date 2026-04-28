@@ -569,6 +569,32 @@ body.dashboard-page::before {
     background: #ffffff;
 }
 
+.admin-panels #view-panel .data-table tbody tr.row-enter {
+    opacity: 0;
+    transform: translate(-8px, -6px);
+    animation: adminRowEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    animation-delay: var(--row-enter-delay, 0ms);
+}
+
+@keyframes adminRowEnter {
+    from {
+        opacity: 0;
+        transform: translate(-8px, -6px);
+    }
+    to {
+        opacity: 1;
+        transform: translate(0, 0);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .admin-panels #view-panel .data-table tbody tr.row-enter {
+        animation: none;
+        opacity: 1;
+        transform: none;
+    }
+}
+
 /* Match header tint for Officials and Manage Users tables */
 .admin-panels #employees-panel .employee-table-header {
     background: #f0f4f8;
