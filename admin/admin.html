@@ -189,6 +189,8 @@
             .then(data => {
                 const footerHTML = data.replace(/FOOTER_ASSETS_PATH/g, '../assets');
                 document.getElementById('footer-container-inner').innerHTML = footerHTML;
+                const fy = document.getElementById('footer-year');
+                if (fy) fy.textContent = new Date().getFullYear();
             })
             .catch(error => console.error('Error loading footer:', error));
     </script>
