@@ -6,6 +6,7 @@
     <title>CTAA - Admin</title>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css?v=20260321-3">
     <link rel="stylesheet" href="../header/header.css?v=20260326-2">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
@@ -81,6 +82,10 @@
                         <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" /><path d="M4 13h3l3 3h4l3 -3h3" /></svg>
                         <span class="admin-sidebar-label">Files</span>
                     </button>
+                    <button class="switch-btn admin-sidebar-tab" data-panel="draft-ta-panel" aria-selected="false">
+                        <img src="../assets/draftta.svg" alt="" aria-hidden="true" class="admin-sidebar-icon-img">
+                        <span class="admin-sidebar-label">Draft TA</span>
+                    </button>
                     <button class="switch-btn admin-sidebar-tab" data-panel="employees-panel" aria-selected="false">
                         <svg class="icon-line icon-officials" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0" /><path d="M3 6l0 13" /><path d="M12 6l0 13" /><path d="M21 6l0 13" /></svg>
                         <span class="admin-sidebar-label">Officials</span>
@@ -99,6 +104,8 @@
                         <div id="view-panel-container"></div>
 
                         <div id="employees-panel-container"></div>
+
+                        <div id="draft-ta-panel-container"></div>
 
                         <div id="users-panel-container"></div>
                     </div><!-- end .admin-panels -->
@@ -129,6 +136,7 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -136,6 +144,7 @@
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
     <script src="upload/ocr.js"></script>
+    <script src="draft-ta/draft-ta-panel.js"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
     <script type="module" src="admin.js?v=20260401"></script>
 

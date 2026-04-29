@@ -6,6 +6,7 @@
     <title>CTAA - Dashboard</title>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css?v=20260321-3">
     <link rel="stylesheet" href="../header/header.css?v=20260326-2">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
@@ -57,6 +58,10 @@
                     <button class="dash-sidebar-tab" data-tab="files" aria-selected="false">
                         <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path stroke="none" d="M0 0h24v24H0z" fill="none" /><path d="M4 6a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2l0 -12" /><path d="M4 13h3l3 3h4l3 -3h3" /></svg>
                         <span class="dash-sidebar-label">Files</span>
+                    </button>
+                    <button class="dash-sidebar-tab" data-tab="draft-ta" aria-selected="false">
+                        <img src="../assets/draftta.svg" alt="" aria-hidden="true" class="dash-sidebar-icon-img">
+                        <span class="dash-sidebar-label">Draft TA</span>
                     </button>
                 </nav>
             </aside>
@@ -234,6 +239,98 @@
                         </div>
                     </div>
                 </div>
+                <div class="dash-tab-pane" id="tab-draft-ta">
+                    <section class="panel upload-panel-structured" id="dash-draft-ta-panel">
+                        <div class="panel-header-structured">
+                            <h2>Draft Travel Authority</h2>
+                            <p>Prepare the core travel details and generate a TA PDF.</p>
+                        </div>
+                        <div class="fields structured-fields">
+                            <div class="field-spread">
+                                <div>
+                                    <label for="panel-draft-ta-purpose">Purpose <span class="required">*</span></label>
+                                    <div class="input-wrap input-wrap--textarea">
+                                        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5h16a1 1 0 0 1 1 1v10a3 3 0 0 1-3 3H8a5 5 0 0 1-5-5V6a1 1 0 0 1 1-1Zm1 2v7a3 3 0 0 0 3 3h10a1 1 0 0 0 1-1V7H5Zm3 1h8a1 1 0 1 1 0 2H8a1 1 0 0 1 0-2Zm0 4h6a1 1 0 1 1 0 2H8a1 1 0 0 1 0-2Z" /></svg></span>
+                                        <textarea id="panel-draft-ta-purpose" placeholder="Enter travel purpose" maxlength="1000"></textarea>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="panel-draft-ta-destination">Destination <span class="required">*</span></label>
+                                    <div class="input-wrap input-wrap--textarea">
+                                        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" /></svg></span>
+                                        <textarea id="panel-draft-ta-destination" placeholder="Enter destination" maxlength="1000"></textarea>
+                                    </div>
+                                    <button type="button" class="map-pick-btn" id="panel-draft-ta-map-pick" title="Pick location on map">
+                                        <svg viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 11m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/></svg>
+                                        Pick on Map
+                                    </button>
+                                    <span class="map-pick-hint">Pinpoint a location to auto-fill destination</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="panel-draft-ta-officials-search">Officials <span class="required">*</span></label>
+                                <div class="multiselect-wrapper">
+                                    <div class="multiselect-display" id="panel-draft-ta-officials-display"><span class="multiselect-placeholder">Select officials...</span></div>
+                                    <div class="multiselect-dropdown" id="panel-draft-ta-officials-dropdown">
+                                        <div class="multiselect-search-wrapper"><input type="text" class="multiselect-search" id="panel-draft-ta-officials-search" placeholder="Search Officials..."></div>
+                                        <div class="multiselect-options" id="panel-draft-ta-officials-options"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="form-section-sep">
+                            <div class="field-spread">
+                                <div>
+                                    <label for="panel-draft-ta-travel-date">Travel Date <span class="required">*</span></label>
+                                    <div class="input-wrap">
+                                        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v12a3 3 0 0 0 3 3h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 14H6a1 1 0 0 1-1-1V10h14v8ZM7 12h5v5H7v-5Z" /></svg></span>
+                                        <input id="panel-draft-ta-travel-date" type="text" placeholder="Select travel date" readonly>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="panel-draft-ta-travel-end">Travel End</label>
+                                    <div class="input-wrap">
+                                        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v12a3 3 0 0 0 3 3h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 14H6a1 1 0 0 1-1-1V10h14v8ZM7 12h5v5H7v-5Z" /></svg></span>
+                                        <input id="panel-draft-ta-travel-end" type="text" placeholder="Select end date" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field-spread">
+                                <div>
+                                    <label for="panel-draft-ta-travel-type">Travel Type</label>
+                                    <div class="input-wrap">
+                                        <select id="panel-draft-ta-travel-type"><option value="official_business" selected>Official Business</option><option value="official_time_only">Official Time Only</option></select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="panel-draft-ta-funding-option">Funding Option</label>
+                                    <div class="input-wrap">
+                                        <select id="panel-draft-ta-funding-option"><option value="cash_advance">Cash Advance</option><option value="reimbursement" selected>Reimbursement</option></select>
+                                    </div>
+                                </div>
+                            </div>
+                            <hr class="form-section-sep">
+                            <div class="field-spread">
+                                <div>
+                                    <label for="panel-draft-ta-date-request">Date Requested <span class="required">*</span></label>
+                                    <div class="input-wrap">
+                                        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v12a3 3 0 0 0 3 3h13a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2Zm0 14H6a1 1 0 0 1-1-1V10h14v8ZM7 12h5v5H7v-5Z" /></svg></span>
+                                        <input id="panel-draft-ta-date-request" type="text" placeholder="Select date requested" readonly>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label for="panel-draft-ta-iso-control">ISO Control No.</label>
+                                    <div class="input-wrap">
+                                        <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 5l-.5 3H5v2h3.17l-.5 3H4v2h3.33l-.5 3h2l.5-3h3l-.5 3h2l.5-3H18v-2h-3.17l.5-3H19V8h-3.33l.5-3h-2l-.5 3h-3l.5-3H9zm2.17 5h3l-.5 3h-3l.5-3z"/></svg></span>
+                                        <input id="panel-draft-ta-iso-control" type="text" value="AD-HRS-F010-00" maxlength="30" placeholder="AD-HRS-F010-00">
+                                    </div>
+                                </div>
+                            </div>
+                                <button id="panel-draft-ta-clear" class="modal-btn cancel" type="button">Clear Fields</button>
+                                <button id="panel-draft-ta-create" class="modal-btn confirm" type="button" style="background:#081430;">Create TA</button>
+                            </div>
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
 
@@ -294,9 +391,11 @@
 
     <script type="module" src="dashboard.js?v=20260401"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
+    <script src="../admin/draft-ta/draft-ta-panel.js"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
 
     <div id="footer-container"></div>

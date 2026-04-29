@@ -304,7 +304,7 @@ const generateTAPDF = (formData) => {
     // Form code — bottom-right of Approved by column
     doc.setFontSize(7);
     doc.setFont('helvetica', 'bolditalic');
-    doc.text('AD-HRS-F010-00', pageWidth - margin - 1, yPos, { align: 'right' });
+    doc.text(formData.isoControlNo || 'AD-HRS-F010-00', pageWidth - margin - 1, yPos, { align: 'right' });
     yPos += 1.5;
 
     // Draw approval section vertical dividers

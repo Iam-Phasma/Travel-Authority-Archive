@@ -175,6 +175,21 @@ body.dashboard-page::before {
     flex-shrink: 0;
 }
 
+.admin-sidebar-icon-img {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    object-fit: contain;
+    filter: invert(1);
+    opacity: 0.72;
+    transition: opacity 0.18s;
+}
+
+.admin-sidebar-tab.active .admin-sidebar-icon-img,
+.admin-sidebar-tab:hover .admin-sidebar-icon-img {
+    opacity: 1;
+}
+
 .admin-sidebar-nav .admin-sidebar-tab svg.icon-line {
     fill: none;
     stroke: currentColor;
@@ -356,14 +371,16 @@ body.dashboard-page::before {
 }
 
 /* Scrollable panels — natural scroll within their own container */
-.admin-panels #upload-panel:not(.hidden) {
+.admin-panels #upload-panel:not(.hidden),
+.admin-panels #draft-ta-panel:not(.hidden) {
     flex: 1;
     min-height: 0;
     overflow-y: auto;
     padding-bottom: 24px;
     scrollbar-width: none;
 }
-.admin-panels #upload-panel:not(.hidden)::-webkit-scrollbar {
+.admin-panels #upload-panel:not(.hidden)::-webkit-scrollbar,
+.admin-panels #draft-ta-panel:not(.hidden)::-webkit-scrollbar {
     display: none;
 }
 
@@ -802,6 +819,18 @@ body.dashboard-page::before {
         height: 22px;
     }
 
+    .admin-sidebar-icon-img {
+        width: 22px;
+        height: 22px;
+        filter: none;
+        opacity: 0.65;
+    }
+
+    .admin-sidebar-tab.active .admin-sidebar-icon-img,
+    .admin-sidebar-tab:hover .admin-sidebar-icon-img {
+        opacity: 1;
+    }
+
     .admin-sidebar-label {
         opacity: 1 !important;
         max-width: 80px !important;
@@ -821,9 +850,10 @@ body.dashboard-page::before {
         transition: none;
     }
 
-    /* view-panel/users-panel: restore scroll inside content on mobile */
+    /* view-panel/users-panel/draft-ta: restore scroll inside content on mobile */
     #view-panel:not(.hidden),
-    #users-panel:not(.hidden) {
+    #users-panel:not(.hidden),
+    #draft-ta-panel:not(.hidden) {
         overflow-y: auto;
     }
 
@@ -899,7 +929,8 @@ body.dashboard-page::before {
 }
 
 /* ── HIGH IMPACT STRUCTURED UPLOAD PANEL ── */
-.admin-panels #upload-panel.upload-panel-structured {
+.admin-panels #upload-panel.upload-panel-structured,
+.admin-panels #draft-ta-panel.upload-panel-structured {
     width: 100%;
     max-width: 860px;
     margin: 16px auto 32px auto;
@@ -912,6 +943,7 @@ body.dashboard-page::before {
 
 /* Ensure consistent field heights horizontally */
 .structured-fields .input-wrap input[type="text"],
+.structured-fields .input-wrap select,
 .structured-fields .multiselect-display {
     min-height: 54px;
     border-radius: 12px;
@@ -945,6 +977,14 @@ body.dashboard-page::before {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 20px;
     align-items: start;
+}
+
+.structured-fields .upload-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin-top: 8px;
+    flex-wrap: wrap;
 }
 
 .structured-fields .ocr-group {
@@ -1064,7 +1104,8 @@ body.dashboard-page::before {
 }
 
 @media (max-width: 768px) {
-    .admin-panels #upload-panel.upload-panel-structured {
+    .admin-panels #upload-panel.upload-panel-structured,
+    .admin-panels #draft-ta-panel.upload-panel-structured {
         margin: 20px auto;
         padding: 24px 20px;
         border: none;

@@ -2474,10 +2474,14 @@ const switchDashTab = (target) => {
     const pane = document.getElementById(`tab-${target}`);
     if (pane) pane.classList.add('active');
     if (target === 'insights') scheduleInsightsLayoutSync();
+    if (target === 'draft-ta' && window.initDraftTaPanel) {
+        window.initDraftTaPanel(supabase);
+    }
     localStorage.setItem('dashActiveTab', target);
 };
 
 document.querySelectorAll('.dash-sidebar-tab').forEach(tab => {
+    if (!tab.dataset.tab) return; // skip action-type buttons (e.g. Draft TA)
     tab.addEventListener('click', () => {
         switchDashTab(tab.getAttribute('data-tab'));
     });

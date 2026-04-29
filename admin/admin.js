@@ -101,6 +101,18 @@ const employeePanelLoaded = Promise.all([
     return false;
 });
 
+// Load draft-ta panel
+const draftTaPanelLoaded = fetch('draft-ta/draft-ta-panel.html')
+    .then(r => r.text())
+    .then(panelHTML => {
+        document.getElementById('draft-ta-panel-container').innerHTML = panelHTML;
+        return true;
+    })
+    .catch(error => {
+        console.error('Error loading draft-ta panel:', error);
+        return false;
+    });
+
 // Load users panel lazily (super users only)
 let usersPanelLoadedPromise = null;
 const loadUsersPanel = () => {
@@ -1482,9 +1494,10 @@ const activateAdminPanel = (targetPanel) => {
     const uploadPanel = document.getElementById("upload-panel");
     const viewPanel = document.getElementById("view-panel");
     const employeesPanel = document.getElementById("employees-panel");
+    const draftTaPanel = document.getElementById("draft-ta-panel");
     const usersPanel = document.getElementById("users-panel");
 
-    const allPanels = [uploadPanel, viewPanel, employeesPanel, usersPanel];
+    const allPanels = [uploadPanel, viewPanel, employeesPanel, draftTaPanel, usersPanel];
 
     // Show/hide panels
     allPanels.forEach((panelEl) => {
@@ -1512,6 +1525,20 @@ const activateAdminPanel = (targetPanel) => {
             if (window.employeeRenderList) {
                 window.employeeRenderList();
             }
+        }
+    } else if (targetPanel === "draft-ta-panel") {
+        const showDraftTaPanel = () => {
+            const currentPanel = document.getElementById("draft-ta-panel");
+            if (!currentPanel) return;
+            revealAdminPanel(currentPanel);
+            if (window.initDraftTaPanel) {
+                window.initDraftTaPanel(supabase);
+            }
+        };
+        if (draftTaPanel) {
+            showDraftTaPanel();
+        } else {
+            draftTaPanelLoaded.then(loaded => { if (loaded) showDraftTaPanel(); });
         }
     } else if (targetPanel === "users-panel") {
         const showUsersPanel = () => {
@@ -4432,7 +4459,7 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 // Note: loadAdminEmployeesForFilter() is called inside viewPanelLoaded.then() where it's defined
 
 // Restore last active panel (wait for panels to load first)
-Promise.all([viewPanelLoaded, employeePanelLoaded, uploadPanelLoaded]).then(() => {
+Promise.all([viewPanelLoaded, employeePanelLoaded, uploadPanelLoaded, draftTaPanelLoaded]).then(() => {
     const savedPanel = localStorage.getItem("adminActivePanel");
     if (!savedPanel || savedPanel === "upload-panel") return;
     const targetBtn = document.querySelector(`.switch-btn[data-panel="${savedPanel}"]`);
