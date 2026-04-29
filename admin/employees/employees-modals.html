@@ -2,6 +2,7 @@
     <div class="modal-content">
         <h3>Confirm Official Deletion</h3>
         <p>Are you sure you want to delete this official from the list?</p>
+        <p id="delete-employee-records-note" class="modal-records-note hidden"></p>
         <div class="modal-actions">
             <button class="modal-btn cancel" id="cancel-delete-employee">Cancel</button>
             <button class="modal-btn confirm" id="confirm-delete-employee">Delete</button>
@@ -22,7 +23,7 @@
                 <input id="edit-employee-position" type="text" placeholder="Enter position" autocomplete="off" list="employee-position-suggestions">
             </div>
         </div>
-        <span class="status status--warning hidden" id="edit-employee-records-note"></span>
+        <p class="modal-records-note hidden" id="edit-employee-records-note"></p>
         <span class="status hidden" id="edit-employee-status"></span>
         <div class="modal-actions">
             <button class="modal-btn cancel" id="cancel-edit-employee">Cancel</button>

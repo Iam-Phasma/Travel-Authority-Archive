@@ -1838,6 +1838,17 @@ button:hover {
   animation: fadeUp 300ms ease-out both;
 }
 
+.modal-records-note {
+  font-size: 0.8rem;
+  color: #c88e19;
+  background: rgba(216, 180, 0, 0.1);
+  border: 1px solid rgba(216, 180, 0, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin: 4px 0 0;
+  line-height: 1.45;
+}
+
 .detail-list {
   display: flex;
   flex-direction: column;
@@ -3637,6 +3648,18 @@ button:hover {
 .ctrl-tooltip-box.active {
   opacity: 1;
   visibility: visible;
+}
+
+.ctrl-tip-scope {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(15, 26, 31, 0.4);
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(15, 26, 31, 0.08);
 }
 
 .ctrl-tip-row {
