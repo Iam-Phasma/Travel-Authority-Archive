@@ -1529,6 +1529,7 @@ const activateAdminPanel = (targetPanel) => {
         } else {
             loadUsersPanel().then((loaded) => {
                 if (loaded) {
+                    initControlHeaderTooltip();
                     showUsersPanel();
                 }
             });
@@ -3648,7 +3649,7 @@ const renderUsersTable = (users) => {
     }
     
     if (!users || users.length === 0) {
-        usersBody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
+        usersBody.innerHTML = '<tr><td colspan="7">No users found.</td></tr>';
         usersStatus.textContent = 'No users available.';
         return;
     }
@@ -3667,6 +3668,8 @@ const renderUsersTable = (users) => {
         const editTooltip = isOnline ? editDisabledReason : 'Edit user name';
         const roleDisabledReason = isOnline ? "Can't change role: user is online." : (!accessEnabled ? "Can't change role: access is disabled." : "");
         const roleTooltip = roleDisabledReason || 'Change user role';
+        const isAdmin = user.role === 'admin';
+        const controlLevel = user.control ?? 1;
         return `
         <tr class="${!accessEnabled ? 'user-disabled' : ''}">
             <td class="text-left">${escapeHtml(nameDisplay)}</td>
@@ -3687,6 +3690,13 @@ const renderUsersTable = (users) => {
                         <option value="super" ${user.role === 'super' ? 'selected' : ''}>Super</option>
                     </select>
                 </span>
+            </td>
+            <td>
+                ${isAdmin ? `
+                <select class="control-select" data-user-id="${escapeHtml(user.id)}" data-current-control="${controlLevel}" ${isOnline ? 'disabled' : ''}>
+                        <option value="1" ${controlLevel === 1 ? 'selected' : ''}>Level 1</option>
+                        <option value="2" ${controlLevel === 2 ? 'selected' : ''}>Level 2</option>
+                    </select>` : '<span aria-hidden="true" style="font-size:0.75rem;opacity:0.35;">—</span>'}
             </td>
             <td>
                 <span class="user-edit-tooltip-wrap" title="${escapeHtml(editTooltip)}">
@@ -3763,6 +3773,29 @@ const renderUsersTable = (users) => {
             }
 
             await toggleUserAccess(userId, newAccess, e.target);
+        });
+    });
+
+    // Add change event listeners to control selects
+    document.querySelectorAll('.control-select').forEach(select => {
+        select.addEventListener('change', async (e) => {
+            const userId = e.target.getAttribute('data-user-id');
+            const currentControl = parseInt(e.target.getAttribute('data-current-control'), 10);
+            const newControl = parseInt(e.target.value, 10);
+
+            if (newControl === currentControl) return;
+
+            const levelLabels = { 1: 'Level 1 — edit only', 2: 'Level 2 — edit + delete' };
+            const confirmChange = await window.adminShowConfirmation(
+                'Confirm Control Change',
+                `Set admin control to ${levelLabels[newControl] || `Level ${newControl}`}?`
+            );
+            if (!confirmChange) {
+                e.target.value = currentControl.toString();
+                return;
+            }
+
+            await changeUserControl(userId, newControl, e.target);
         });
     });
 
@@ -3885,7 +3918,8 @@ const loadUsers = async () => {
         const enrichedUsers = data.map((user) => ({
             ...user,
             FName: namesById[user.id]?.FName || '',
-            LName: namesById[user.id]?.LName || ''
+            LName: namesById[user.id]?.LName || '',
+            control: user.control ?? 1
         }));
 
         // Sort by role priority: super > admin > user
@@ -3967,6 +4001,89 @@ const loadUsers = async () => {
             usersStatus.textContent = error?.message || 'Failed to load users.';
             usersStatus.classList.add('status--error');
         }
+    }
+};
+
+const initControlHeaderTooltip = () => {
+    const icon = document.querySelector('#users-panel .ctrl-tooltip-icon');
+    const box  = document.querySelector('#users-panel .ctrl-tooltip-box');
+    if (!icon || !box) return;
+
+    // Move box to body so it is never clipped by table overflow or sticky headers
+    document.body.appendChild(box);
+
+    const show = () => {
+        const r = icon.getBoundingClientRect();
+
+        // Position off-screen but visible to measure
+        box.style.top        = '-9999px';
+        box.style.left       = '-9999px';
+        box.style.visibility = 'hidden';
+        box.classList.add('active');
+
+        const boxW = box.offsetWidth  || 160;
+        const boxH = box.offsetHeight || 70;
+
+        let left = r.left + r.width / 2 - boxW / 2;
+        left = Math.max(8, Math.min(left, window.innerWidth - boxW - 8));
+        const top = r.bottom + 10;
+
+        box.style.top        = top + 'px';
+        box.style.left       = left + 'px';
+        box.style.visibility = '';
+        icon.style.opacity   = '0.7';
+    };
+
+    const hide = () => {
+        box.classList.remove('active');
+        icon.style.opacity = '';
+    };
+
+    const trigger = icon.closest('.ctrl-tooltip');
+    trigger.addEventListener('mouseenter', show);
+    trigger.addEventListener('mouseleave', hide);
+    trigger.addEventListener('focusin',    show);
+    trigger.addEventListener('focusout',   hide);
+};
+
+const changeUserControl = async (userId, newControl, selectElement) => {
+    const originalControl = parseInt(selectElement.getAttribute('data-current-control'), 10);
+    const usersStatus = document.getElementById('users-status');
+
+    try {
+        if (usersStatus) {
+            usersStatus.textContent = 'Updating control level...';
+            usersStatus.classList.remove('status--error');
+        }
+
+        const { error } = await supabase
+            .from('profiles')
+            .update({ control: newControl })
+            .eq('id', userId);
+
+        if (error) throw error;
+
+        selectElement.setAttribute('data-current-control', newControl.toString());
+        if (usersStatus) usersStatus.textContent = 'Control level updated successfully.';
+        window.showToast(`Control set to Level ${newControl}`, 'success');
+
+        await loadUsers();
+    } catch (error) {
+        console.error('Failed to update control level:', error);
+        selectElement.value = originalControl.toString();
+
+        let errorMessage = 'Failed to update control level.';
+        if (error.message?.includes('Permission denied')) {
+            errorMessage = 'Permission denied. Only super users can change control levels.';
+        } else if (error.message) {
+            errorMessage = error.message;
+        }
+
+        if (usersStatus) {
+            usersStatus.textContent = errorMessage;
+            usersStatus.classList.add('status--error');
+        }
+        window.showToast(errorMessage, 'error');
     }
 };
 
@@ -4270,6 +4387,7 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
             if (!loaded) {
                 return;
             }
+            initControlHeaderTooltip();
             enforceUsersPanelAccess();
             const usersPanelBtn = document.getElementById('users-panel-btn');
             if (usersPanelBtn && localStorage.getItem('adminActivePanel') === 'users-panel') {

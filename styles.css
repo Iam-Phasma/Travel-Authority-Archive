@@ -3508,6 +3508,139 @@ button:hover {
   box-shadow: 0 0 0 3px rgba(47, 111, 179, 0.15);
 }
 
+/* ── Control level select ── */
+.control-select {
+  padding: 8px 12px;
+  border: 1px solid rgba(15, 26, 31, 0.15);
+  border-radius: 8px;
+  background: white;
+  color: var(--ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 200ms ease, box-shadow 200ms ease;
+  min-width: 110px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230b1c3b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+}
+
+.control-select:hover:not(:disabled) {
+  border-color: rgba(15, 26, 31, 0.25);
+}
+
+.control-select:focus {
+  outline: none;
+  border-color: var(--sea);
+  box-shadow: 0 0 0 3px rgba(47, 111, 179, 0.15);
+}
+
+.control-select:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+/* Control column header wrapper */
+.th-control-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Custom tooltip for control column */
+.ctrl-tooltip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.ctrl-tooltip-icon {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  opacity: 0.38;
+  cursor: help;
+  transition: opacity 150ms ease;
+  flex-shrink: 0;
+  display: block;
+}
+
+.ctrl-tooltip:hover .ctrl-tooltip-icon {
+  opacity: 0.7;
+}
+
+.ctrl-tooltip-box {
+  position: fixed;
+  top: var(--ctrl-tip-top, 0px);
+  left: var(--ctrl-tip-left, 0px);
+  background: #ffffff;
+  color: var(--ink);
+  border: 1px solid rgba(15, 26, 31, 0.12);
+  border-radius: 8px;
+  padding: 8px 11px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 140ms ease, visibility 140ms ease;
+  z-index: 9999;
+  box-shadow: 0 4px 18px rgba(11, 28, 59, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 152px;
+}
+
+.ctrl-tooltip-box::after {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-bottom-color: rgba(15, 26, 31, 0.12);
+}
+
+.ctrl-tooltip-box.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ctrl-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  line-height: 1.35;
+}
+
+.ctrl-tip-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.ctrl-tip-badge.lvl1 {
+  background: rgba(47, 111, 179, 0.12);
+  color: rgba(47, 111, 179, 0.9);
+}
+
+.ctrl-tip-badge.lvl2 {
+  background: rgba(210, 130, 30, 0.12);
+  color: rgba(180, 100, 10, 0.9);
+}
+
+/* Column header info icon */
+.col-tooltip-icon {
+  fill: currentColor;
+  vertical-align: middle;
+}
+
 .user-disabled {
   opacity: 0.5;
 }
@@ -3529,7 +3662,7 @@ button:hover {
 
 .users-table {
   width: 100%;
-  min-width: 1020px;
+  min-width: 1160px;
   table-layout: auto;
 }
 
@@ -3575,7 +3708,13 @@ button:hover {
 
 .users-table th:nth-child(6),
 .users-table td:nth-child(6) {
-  width: 120px;
+  width: 148px;
+  text-align: center;
+}
+
+.users-table th:nth-child(7),
+.users-table td:nth-child(7) {
+  width: 100px;
   text-align: center;
 }
 
@@ -3708,6 +3847,12 @@ button:hover {
     min-width: 90px;
     font-size: 0.85rem;
     padding: 6px 28px 6px 8px;
+  }
+
+  .control-select {
+    min-width: 80px;
+    font-size: 0.85rem;
+    padding: 5px 24px 5px 8px;
   }
 }
 

@@ -662,22 +662,27 @@ window.initEmployeeManagement = (supabase) => {
             return;
         }
 
-        // Warn if the name change will leave existing records with the old name
-        if (!editEmployeeNameWarningShown && newName !== editEmployeeData.name && editEmployeeRecordsNote) {
-            const { count } = await supabase
-                .from('travel_authorities')
-                .select('id', { count: 'exact', head: true })
-                .ilike('employees', `%${editEmployeeData.name}%`);
-            if (count && count > 0) {
-                editEmployeeRecordsNote.textContent = `Note: ${count} existing record${count === 1 ? '' : 's'} reference this name and will keep the old name. Click Update again to confirm.`;
-                editEmployeeRecordsNote.classList.remove('hidden');
-                editEmployeeNameWarningShown = true;
-                return;
-            } else {
-                editEmployeeRecordsNote.classList.add('hidden');
+        // On name change: first click warns + shows affected count; second click proceeds and cascades
+        if (newName !== editEmployeeData.name) {
+            if (!editEmployeeNameWarningShown && editEmployeeRecordsNote) {
+                const { count } = await supabase
+                    .from('travel_authorities')
+                    .select('id', { count: 'exact', head: true })
+                    .ilike('employees', `%${editEmployeeData.name}%`);
+                if (count && count > 0) {
+                    editEmployeeRecordsNote.textContent = `Note: ${count} existing travel authorit${count === 1 ? 'y' : 'ies'} will also have the name updated. Click Update again to confirm.`;
+                    editEmployeeRecordsNote.classList.remove('hidden');
+                    editEmployeeNameWarningShown = true;
+                    return;
+                } else {
+                    editEmployeeRecordsNote.classList.add('hidden');
+                }
             }
         }
         editEmployeeNameWarningShown = false;
+
+        const oldName = editEmployeeData.name;
+        const nameChanged = newName !== oldName;
 
         try {
             editEmployeeStatus.textContent = "Updating official...";
@@ -699,6 +704,33 @@ window.initEmployeeManagement = (supabase) => {
             // Ensure the update actually affected a row (useful to surface RLS/permission issues)
             if (!updatedRows || updatedRows.length === 0) {
                 throw new Error("Update failed — record not found or insufficient permissions.");
+            }
+
+            // Cascade name change to all travel_authorities records that reference the old name
+            if (nameChanged) {
+                const { data: affectedTAs, error: fetchError } = await supabase
+                    .from('travel_authorities')
+                    .select('id, employees')
+                    .ilike('employees', `%${oldName}%`);
+
+                if (fetchError) throw fetchError;
+
+                if (affectedTAs && affectedTAs.length > 0) {
+                    // Replace the old name within each comma-separated string
+                    const updates = affectedTAs.map(record => {
+                        const updatedEmployees = record.employees
+                            .split(',')
+                            .map(n => n.trim() === oldName ? newName : n.trim())
+                            .join(', ');
+                        return supabase
+                            .from('travel_authorities')
+                            .update({ employees: updatedEmployees })
+                            .eq('id', record.id);
+                    });
+                    const results = await Promise.all(updates);
+                    const cascadeError = results.find(r => r.error)?.error;
+                    if (cascadeError) throw cascadeError;
+                }
             }
 
             editEmployeeStatus.textContent = "Official updated successfully!";

@@ -13,6 +13,7 @@
 
 -- Drop old function signature first
 DROP FUNCTION IF EXISTS get_all_users_with_emails();
+DROP FUNCTION IF EXISTS get_all_users_with_emails(TEXT);
 
 CREATE OR REPLACE FUNCTION get_all_users_with_emails(
     client_session_token TEXT DEFAULT NULL
@@ -23,7 +24,8 @@ RETURNS TABLE (
     role TEXT,
     access_enabled BOOLEAN,
     is_online BOOLEAN,
-    last_seen TIMESTAMPTZ
+    last_seen TIMESTAMPTZ,
+    control SMALLINT
 )
 LANGUAGE plpgsql
 SECURITY DEFINER -- This allows the function to access auth.users
@@ -58,7 +60,8 @@ BEGIN
         COALESCE(p.role, 'user')::TEXT as role,
         COALESCE(p.access_enabled, true)::BOOLEAN as access_enabled,
         (p.last_seen IS NOT NULL AND p.last_seen > NOW() - INTERVAL '5 minutes')::BOOLEAN as is_online,
-        p.last_seen::TIMESTAMPTZ
+        p.last_seen::TIMESTAMPTZ,
+        COALESCE(p.control, 1::SMALLINT)::SMALLINT as control
     FROM auth.users au
     LEFT JOIN profiles p ON p.id = au.id
     ORDER BY au.email;
