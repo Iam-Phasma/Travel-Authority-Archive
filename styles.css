@@ -1737,6 +1737,27 @@ button:hover {
   color: rgba(15, 26, 31, 0.45);
 }
 
+.user-edit-btn.icon-btn {
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(15, 26, 31, 0.45);
+  transition: color 150ms ease;
+  margin-right: 0;
+}
+
+.user-edit-btn.icon-btn:hover:not(:disabled) {
+  color: #c88e19;
+  background: none;
+}
+
+.user-edit-btn.icon-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  background: none;
+}
+
 .user-edit-tooltip-wrap {
   display: inline-flex;
   align-items: center;
@@ -3682,6 +3703,12 @@ button:hover {
   text-overflow: ellipsis;
 }
 
+.user-name-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .users-table th:nth-child(2),
 .users-table td:nth-child(2) {
   min-width: 240px;
@@ -3714,11 +3741,6 @@ button:hover {
   text-align: center;
 }
 
-.users-table th:nth-child(7),
-.users-table td:nth-child(7) {
-  width: 100px;
-  text-align: center;
-}
 
 .text-left {
   text-align: left !important;

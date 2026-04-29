@@ -3650,7 +3650,7 @@ const renderUsersTable = (users) => {
     }
     
     if (!users || users.length === 0) {
-        usersBody.innerHTML = '<tr><td colspan="7">No users found.</td></tr>';
+        usersBody.innerHTML = '<tr><td colspan="6">No users found.</td></tr>';
         usersStatus.textContent = 'No users available.';
         return;
     }
@@ -3673,7 +3673,24 @@ const renderUsersTable = (users) => {
         const controlLevel = user.control ?? 1;
         return `
         <tr class="${!accessEnabled ? 'user-disabled' : ''}">
-            <td class="text-left">${escapeHtml(nameDisplay)}</td>
+            <td class="text-left">
+                <span class="user-name-cell">
+                    <span class="user-edit-tooltip-wrap" title="${escapeHtml(editTooltip)}">
+                        <button
+                            type="button"
+                            class="update-btn icon-btn user-edit-btn"
+                            data-user-id="${escapeHtml(user.id)}"
+                            ${isOnline ? 'disabled' : ''}
+                            aria-label="Edit user name"
+                        >
+                            <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm18-11.5c.39-.39.39-1.02 0-1.41L19.66 3c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75L21 5.75z"/>
+                            </svg>
+                        </button>
+                    </span>
+                    ${escapeHtml(nameDisplay)}
+                </span>
+            </td>
             <td class="text-left" title="${escapeHtml(fullEmail)}">${escapeHtml(displayEmail)}</td>
             <td><span class="status-indicator ${statusClass}">${statusText}</span></td>
             <td>
@@ -3698,21 +3715,6 @@ const renderUsersTable = (users) => {
                         <option value="1" ${controlLevel === 1 ? 'selected' : ''}>Level 1</option>
                         <option value="2" ${controlLevel === 2 ? 'selected' : ''}>Level 2</option>
                     </select>` : '<span aria-hidden="true" style="font-size:0.75rem;opacity:0.35;">—</span>'}
-            </td>
-            <td>
-                <span class="user-edit-tooltip-wrap" title="${escapeHtml(editTooltip)}">
-                    <button
-                        type="button"
-                        class="update-btn icon-btn user-edit-btn"
-                        data-user-id="${escapeHtml(user.id)}"
-                        ${isOnline ? 'disabled' : ''}
-                        aria-label="Edit user name"
-                    >
-                        <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
-                            <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm18-11.5c.39-.39.39-1.02 0-1.41L19.66 3c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75L21 5.75z"/>
-                        </svg>
-                    </button>
-                </span>
             </td>
         </tr>
     `;
@@ -3956,8 +3958,9 @@ const loadUsers = async () => {
             }
             if (status) {
                 filtered = filtered.filter(u => {
-                    if (status === 'online') return u.is_online === true;
-                    if (status === 'offline') return u.is_online === false;
+                    if (status === 'online') return u.is_online === true && u.access_enabled !== false;
+                    if (status === 'offline') return u.is_online === false && u.access_enabled !== false;
+                    if (status === 'blocked') return u.access_enabled === false;
                     return true;
                 });
             }
