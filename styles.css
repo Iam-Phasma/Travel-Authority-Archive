@@ -3402,6 +3402,16 @@ button:hover {
   animation: none;
 }
 
+.status-indicator.status-blocked {
+  background: #fdecea;
+  color: #c62828;
+}
+
+.status-indicator.status-blocked::before {
+  background: #e53935;
+  animation: none;
+}
+
 @keyframes pulse {
   0%,
   100% {
@@ -3639,14 +3649,6 @@ button:hover {
 .col-tooltip-icon {
   fill: currentColor;
   vertical-align: middle;
-}
-
-.user-disabled {
-  opacity: 0.5;
-}
-
-.user-disabled td {
-  text-decoration: line-through;
 }
 
 /* Users Table Specific Styles */

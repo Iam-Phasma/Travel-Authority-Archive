@@ -311,7 +311,7 @@ const requireAdmin = async () => {
 
     const { data: profileData, error: profileError } = await supabase
         .from("profiles")
-        .select("session_token")
+        .select("session_token, control")
         .eq("id", user.id)
         .maybeSingle();
 
@@ -339,7 +339,7 @@ const requireAdmin = async () => {
             .eq("id", user.id);
     }
     
-    return role; // Return the role for UI customization
+    return { role, control: profileData.control ?? 1 }; // Return role + control for UI customization
 
     // Note: Actual access control for admin operations (upload, delete) 
     // is enforced by Supabase RLS policies, not this client-side check.
@@ -2076,11 +2076,12 @@ const renderViewRows = (rows) => {
                             <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a.996.996 0 0 0 0-1.41l-2.34-2.34a.996.996 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
                         </svg>
                     </button>
+                    ${(window.adminCurrentRole === 'super' || window.adminCurrentControl >= 2) ? `
                     <button class="delete-btn icon-btn" data-id="${escapeHtml(row.id)}" aria-label="Delete" title="Delete">
                         <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                             <path d="M9 3h6l1 2h4a1 1 0 1 1 0 2h-1l-1.1 12.1a2 2 0 0 1-2 1.9H8.1a2 2 0 0 1-2-1.9L5 7H4a1 1 0 0 1 0-2h4l1-2Zm1.1 7a1 1 0 1 0-2 0v7a1 1 0 1 0 2 0v-7Zm5.9 0a1 1 0 1 0-2 0v7a1 1 0 1 0 2 0v-7Z" />
                         </svg>
-                    </button>
+                    </button>` : ''}
                 </td>
             </tr>
         `;
@@ -3661,8 +3662,8 @@ const renderUsersTable = (users) => {
         const displayEmail = truncateEmail(user.email || 'No email', 10);
         const fullEmail = user.email || 'No email';
         const isOnline = user.is_online === true;
-        const statusClass = isOnline ? 'status-online' : 'status-offline';
-        const statusText = isOnline ? 'Online' : 'Offline';
+        const statusClass = !accessEnabled ? 'status-blocked' : (isOnline ? 'status-online' : 'status-offline');
+        const statusText = !accessEnabled ? 'Blocked' : (isOnline ? 'Online' : 'Offline');
         const nameDisplay = formatHeaderLikeName(user.FName, user.LName, useCompactName) || fullEmail.split('@')[0] || 'Unknown User';
         const editDisabledReason = "Can't edit: user is online.";
         const editTooltip = isOnline ? editDisabledReason : 'Edit user name';
@@ -4324,9 +4325,11 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 
 // Initialize and check permissions
 (async () => {
-    const userRole = await requireAdmin();
-    if (!userRole) return; // Redirected to login or dashboard
+    const result = await requireAdmin();
+    if (!result) return; // Redirected to login or dashboard
+    const { role: userRole, control: userControl } = result;
     window.adminCurrentRole = userRole;
+    window.adminCurrentControl = userControl;
     enforceUsersPanelAccess();
     window.dispatchEvent(new CustomEvent('admin-role-ready', { detail: { role: userRole } }));
     
