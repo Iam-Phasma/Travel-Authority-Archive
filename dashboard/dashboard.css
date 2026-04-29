@@ -271,6 +271,20 @@ body.dashboard-page::before {
     animation: fadeUp 280ms ease-out both;
 }
 
+/* Draft TA tab: scrollable panel */
+#tab-draft-ta.dash-tab-pane.active {
+    display: block;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 0 24px;
+    animation: fadeUp 280ms ease-out both;
+    scrollbar-width: none;
+}
+#tab-draft-ta.dash-tab-pane.active::-webkit-scrollbar {
+    display: none;
+}
+
 .dash-content #ta-panel {
     margin-top: 5px;
     margin-bottom: 0;
@@ -1076,7 +1090,7 @@ body.dashboard-page::before {
         gap: 16px;
     }
     #tab-draft-ta .upload-actions {
-        justify-content: stretch;
+        flex-direction: column;
     }
     #tab-draft-ta .upload-actions .modal-btn {
         flex: 1;
