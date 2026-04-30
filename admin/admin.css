@@ -185,6 +185,11 @@ body.dashboard-page::before {
     transition: opacity 0.18s;
 }
 
+.admin-sidebar-icon-draftta {
+    width: 17px;
+    height: 17px;
+}
+
 .admin-sidebar-tab.active .admin-sidebar-icon-img,
 .admin-sidebar-tab:hover .admin-sidebar-icon-img {
     opacity: 1;

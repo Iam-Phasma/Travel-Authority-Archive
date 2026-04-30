@@ -185,6 +185,11 @@ body.dashboard-page::before {
     transition: opacity 0.18s;
 }
 
+.dash-sidebar-icon-draftta {
+    width: 17px;
+    height: 17px;
+}
+
 .dash-sidebar-tab.active .dash-sidebar-icon-img,
 .dash-sidebar-tab:hover .dash-sidebar-icon-img {
     opacity: 1;
