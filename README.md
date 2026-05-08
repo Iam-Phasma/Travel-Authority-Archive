@@ -8,7 +8,8 @@ The project includes:
 
 - Public login and password reset flow with hCaptcha.
 - Role-based routing for user, admin, and super users.
-- Admin tools for uploading, viewing, and managing travel authority records.
+- Admin tools for uploading, viewing, drafting, and managing travel authority records.
+- TA drafting with a built-in map-based destination picker.
 - Official (employee) management and user management controls.
 - Dashboard analytics and record browsing for regular users.
 - Security hardening with lockouts, rate limiting, session controls, and access revocation.
@@ -26,22 +27,27 @@ The project includes:
   - flatpickr
   - zxcvbn
   - hCaptcha
+  - Leaflet (interactive map picker)
 
 ## Project Structure
 
 - `index.html`: Login page and password reset UI
 - `config.js`: Frontend Supabase configuration
 - `auto-logout.js`: Shared inactivity logout module
+- `DESIGN-SYSTEM.md`: Complete visual and UI design reference for the project
 - `admin/`: Admin portal
   - `admin.html`: Main admin app shell and logic
+  - `admin-settings.js`: Admin-scoped localStorage settings (demo checkbox, allow-empty-upload)
   - `upload/`: Upload panel and processing logic
   - `view/`: File/record viewing panel and modals
   - `employees/`: Official management panel and scripts
   - `users/`: User and role management panel
-  - `security-documentation.html`: In-app security documentation page
+  - `draft-ta/`: TA drafting panel and PDF generation logic
 - `dashboard/`: User dashboard and analytics view
 - `pdf-generator/`: PDF generation utilities
-- `header/`, `footer/`: Shared layout components
+- `header/`: Shared header component
+  - `draft-location-picker.js`: Shared Leaflet + Nominatim map/location picker module
+- `footer/`: Shared footer component
 - `sql/`: SQL migrations/functions/policy scripts
 - `supabase/functions/`: Edge Functions
   - `secure-login/`: Login wrapper with lockout logic
