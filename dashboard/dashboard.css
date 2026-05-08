@@ -290,9 +290,13 @@ body.dashboard-page::before {
   flex-direction: column;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
-  padding: 0;
+  overflow-y: auto;
+  padding: 0 0 24px;
+  scrollbar-width: none;
   animation: fadeUp 280ms ease-out both;
+}
+#tab-draft-ta.dash-tab-pane.active::-webkit-scrollbar {
+  display: none;
 }
 
 .dash-content #ta-panel {
@@ -1622,14 +1626,11 @@ body.dashboard-page::before {
 #tab-draft-ta .upload-panel-structured {
   width: 100%;
   max-width: 860px;
-  margin: 16px auto 0;
+  margin: auto;
   padding: 32px 48px 24px;
   border-radius: var(--radius-xl);
   box-shadow: 0 12px 36px -8px rgba(11, 28, 59, 0.06);
   background: #ffffff;
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
 }
 
 #tab-draft-ta .panel-header-structured {
@@ -1672,7 +1673,7 @@ body.dashboard-page::before {
 
 @media (max-width: 768px) {
   #tab-draft-ta .upload-panel-structured {
-    margin: 20px auto 0;
+    margin: 16px auto 24px;
     padding: 24px 20px 20px;
     border: none;
     box-shadow: none;
