@@ -897,7 +897,8 @@ body.dashboard-page::before {
     color: #ffffff;
 }
 .dashboard-page .header-user-btn .user-icon {
-    fill: #ffffff;
+    fill: none;
+    stroke: #ffffff;
 }
 .dashboard-page .header-user-name {
     color: #ffffff;
@@ -908,7 +909,8 @@ body.dashboard-page::before {
     box-shadow: none;
 }
 .dashboard-page .header-user-btn:hover .user-icon {
-    fill: #ffffff;
+    fill: none;
+    stroke: #ffffff;
 }
 .dashboard-page .gov-footer {
     background: #2f6fe4;

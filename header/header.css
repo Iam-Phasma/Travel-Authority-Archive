@@ -196,10 +196,14 @@
 }
 
 .header-user-btn .user-icon {
-    width: 18px;
-    height: 18px;
-    fill: rgba(11, 28, 59, 0.58);
-    transition: fill 180ms ease;
+    width: 24px;
+    height: 24px;
+    fill: none;
+    stroke: rgba(11, 28, 59, 0.7);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    transition: stroke 180ms ease;
     flex-shrink: 0;
 }
 
@@ -220,7 +224,7 @@
 }
 
 .header-user-btn:hover .user-icon {
-    fill: var(--sea);
+    stroke: var(--sea);
 }
 
 .header-user-btn:active {
@@ -294,7 +298,11 @@
 .header-popup-user-info svg {
     width: 20px;
     height: 20px;
-    fill: rgba(15, 26, 31, 0.5);
+    fill: none;
+    stroke: rgba(15, 26, 31, 0.5);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
     flex-shrink: 0;
 }
 
@@ -335,9 +343,13 @@
 .header-popup-option svg {
     width: 20px;
     height: 20px;
-    fill: rgba(15, 26, 31, 0.5);
+    fill: none;
+    stroke: rgba(15, 26, 31, 0.5);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
     flex-shrink: 0;
-    transition: fill 200ms ease;
+    transition: stroke 200ms ease;
 }
 
 .header-popup-option:hover {
@@ -345,7 +357,7 @@
 }
 
 .header-popup-option:hover svg {
-    fill: var(--sea);
+    stroke: var(--sea);
 }
 
 .header-popup-option:active {
