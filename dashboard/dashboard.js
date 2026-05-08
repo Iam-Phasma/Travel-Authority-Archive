@@ -1136,6 +1136,32 @@ const scrollToUpcomingDateGroup = (isoDate) => {
   target.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
+const syncSegmentedControl = (container) => {
+  if (!container) return;
+
+  const activeButton = container.querySelector("button.active");
+  const pill = container.querySelector(".segmented-switcher-pill");
+  if (!activeButton || !pill) {
+    container.classList.remove("is-ready");
+    return;
+  }
+
+  const activeRect = activeButton.getBoundingClientRect();
+  const containerRect = container.getBoundingClientRect();
+  const offsetX = activeRect.left - containerRect.left - 3.5;
+
+  container.style.setProperty("--seg-pill-x", `${Math.max(0, offsetX)}px`);
+  container.style.setProperty("--seg-pill-w", `${activeRect.width}px`);
+  container.style.setProperty("--seg-pill-h", `${activeRect.height}px`);
+  container.classList.add("is-ready");
+};
+
+const syncAllSegmentedControls = () => {
+  document
+    .querySelectorAll("[data-segmented-control]")
+    .forEach((container) => syncSegmentedControl(container));
+};
+
 const renderAgendaTabs = () => {
   document.querySelectorAll(".agenda-tab-btn").forEach((btn) => {
     const isActive =
@@ -1143,6 +1169,9 @@ const renderAgendaTabs = () => {
     btn.classList.toggle("active", isActive);
     btn.setAttribute("aria-selected", isActive ? "true" : "false");
   });
+  syncSegmentedControl(
+    document.querySelector(".agenda-tabs[data-segmented-control]"),
+  );
 };
 
 const updateFcBadgesAndSummary = () => {
@@ -1294,6 +1323,7 @@ const queueAgendaCalendarLayoutSync = () => {
   agendaCalendarSyncFrame = window.requestAnimationFrame(() => {
     agendaCalendarSyncFrame = null;
     syncAgendaCalendarLayout();
+    syncAllSegmentedControls();
   });
 };
 
@@ -1452,6 +1482,7 @@ const queueInsightsLayoutSync = () => {
 const scheduleInsightsLayoutSync = () => {
   queueInsightsLayoutSync();
   queueAgendaCalendarLayoutSync();
+  syncAllSegmentedControls();
 
   if (insightsResizeTimeout !== null) {
     window.clearTimeout(insightsResizeTimeout);
@@ -1464,12 +1495,14 @@ const scheduleInsightsLayoutSync = () => {
     insightsResizeTimeout = null;
     queueInsightsLayoutSync();
     queueAgendaCalendarLayoutSync();
+    syncAllSegmentedControls();
   }, 180);
 
   insightsViewportSettleTimeout = window.setTimeout(() => {
     insightsViewportSettleTimeout = null;
     queueInsightsLayoutSync();
     queueAgendaCalendarLayoutSync();
+    syncAllSegmentedControls();
   }, 420);
 };
 
@@ -3363,6 +3396,9 @@ const initDestinationsChart = async () => {
     };
 
     renderChart("calabarzon");
+    syncSegmentedControl(
+      document.querySelector(".dest-switcher[data-segmented-control]"),
+    );
 
     document.querySelectorAll(".dest-switch-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -3370,6 +3406,7 @@ const initDestinationsChart = async () => {
           .querySelectorAll(".dest-switch-btn")
           .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
+        syncSegmentedControl(btn.closest("[data-segmented-control]"));
         renderChart(btn.dataset.view);
       });
     });
