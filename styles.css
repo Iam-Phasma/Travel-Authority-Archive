@@ -1721,6 +1721,27 @@ button:hover {
   fill: currentColor;
 }
 
+.icon-btn svg.icon-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Larger icons for action column buttons (edit, delete, hide, unhide) */
+.actions-cell .icon-btn svg,
+.employee-item-actions .icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* View button also gets larger icon */
+.view-btn.icon-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
 .view-btn {
   padding: 9px 14px;
   border-radius: var(--radius-sm);
@@ -2448,6 +2469,14 @@ button:hover {
   width: 18px;
   height: 18px;
   fill: currentColor;
+}
+
+.filter-icon-btn svg.icon-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* New-data pulse on refresh button */
