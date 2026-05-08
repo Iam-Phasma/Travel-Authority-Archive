@@ -3123,6 +3123,13 @@ button:hover {
   align-items: end;
   gap: 16px;
   flex-wrap: wrap;
+  position: relative;
+}
+
+.emp-filter-panel {
+  top: calc(100% + 8px);
+  right: 0;
+  left: auto;
 }
 
 .employee-list-heading {
@@ -3137,7 +3144,9 @@ button:hover {
 
 .employee-search-input {
   width: 100%;
-  padding: 11px 14px;
+  height: 38px;
+  padding: 0 14px;
+  box-sizing: border-box;
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: white;
