@@ -812,6 +812,111 @@ let insightsResizeTimeout = null;
 let insightsViewportSettleTimeout = null;
 let insightsBreakpointQuery = null;
 let agendaTrackerInitialized = false;
+let fcCalendar = null;
+
+// --- Tooltip singleton ---
+let agendaTooltipEl = null;
+let agendaTooltipCloseHandler = null;
+
+const getOrCreateAgendaTooltip = () => {
+    if (!agendaTooltipEl) {
+        agendaTooltipEl = document.createElement('div');
+        agendaTooltipEl.className = 'agenda-ta-tooltip';
+        document.body.appendChild(agendaTooltipEl);
+    }
+    return agendaTooltipEl;
+};
+
+const hideAgendaTooltip = () => {
+    if (!agendaTooltipEl) return;
+    agendaTooltipEl.classList.remove('is-visible');
+    if (agendaTooltipCloseHandler) {
+        document.removeEventListener('click', agendaTooltipCloseHandler);
+        agendaTooltipCloseHandler = null;
+    }
+};
+
+const showAgendaTooltip = (btn, row) => {
+    hideAgendaTooltip();
+    const tooltip = getOrCreateAgendaTooltip();
+
+    const officialsStr = typeof row.employees === 'string' ? row.employees.trim() : '';
+    let officialNames = [];
+    if (officialsStr) {
+        // Split on commas but reattach suffix tokens (Jr., Sr., III, CESO III, etc.) to the previous name
+        const SUFFIX_RE = /^(jr\.?|sr\.?|i{2,}|iv|vi*|ceso\s*\w*|ph\.?d\.?|dpa|rn|cpa|md|lpt|msn|bsn|edd|lld)$/i;
+        const parts = officialsStr.split(',').map((s) => s.trim()).filter(Boolean);
+        for (const part of parts) {
+            if (SUFFIX_RE.test(part) && officialNames.length > 0) {
+                officialNames[officialNames.length - 1] += ', ' + part;
+            } else {
+                officialNames.push(part);
+            }
+        }
+    }
+    const officials = officialNames.length
+        ? `<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials">${escapeHtml(officialNames.join(', '))}</div>`
+        : '<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials" style="color:rgba(11,28,59,0.4)">None listed</div>';
+
+    tooltip.innerHTML = `
+        <div class="agenda-ta-tooltip-title">${escapeHtml(row.ta_number || '-')}</div>
+        <div class="agenda-ta-tooltip-row">
+            <div class="agenda-ta-tooltip-label">Destination</div>
+            <div class="agenda-ta-tooltip-value">${escapeHtml(row.destination || '—')}</div>
+        </div>
+        <div class="agenda-ta-tooltip-row">
+            <div class="agenda-ta-tooltip-label">Purpose</div>
+            <div class="agenda-ta-tooltip-value">${escapeHtml(row.purpose || '—')}</div>
+        </div>
+        <div class="agenda-ta-tooltip-row">
+            <div class="agenda-ta-tooltip-label">Officials</div>
+            ${officials}
+        </div>
+    `;
+
+    // Position: prefer below button, flip if near bottom
+    const rect = btn.getBoundingClientRect();
+    const ttW = 280;
+    const ttH = tooltip.offsetHeight || 160;
+    let left = rect.left;
+    let top = rect.bottom + 8;
+
+    if (left + ttW > window.innerWidth - 12) left = window.innerWidth - ttW - 12;
+    if (top + ttH > window.innerHeight - 12) top = rect.top - ttH - 8;
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+    tooltip.style.minWidth = `${ttW}px`;
+    tooltip.classList.add('is-visible');
+
+    agendaTooltipCloseHandler = (e) => {
+        if (!tooltip.contains(e.target) && e.target !== btn) {
+            hideAgendaTooltip();
+        }
+    };
+    setTimeout(() => document.addEventListener('click', agendaTooltipCloseHandler), 0);
+};
+
+const buildAgendaInfoBtn = (row) => {
+    return `<button type="button" class="agenda-info-btn" data-ta-key="${escapeHtml(row.ta_number || '')}" aria-label="Info for ${escapeHtml(row.ta_number || 'TA')}">i</button>`;
+};
+
+const attachAgendaInfoBtnListeners = (container) => {
+    container.querySelectorAll('.agenda-info-btn').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const taKey = btn.getAttribute('data-ta-key');
+            const row = taRows.find((r) => r.ta_number === taKey);
+            if (!row) return;
+            if (agendaTooltipEl && agendaTooltipEl.classList.contains('is-visible') && agendaTooltipEl.dataset.openFor === taKey) {
+                hideAgendaTooltip();
+                return;
+            }
+            agendaTooltipEl && (agendaTooltipEl.dataset.openFor = taKey);
+            showAgendaTooltip(btn, row);
+        });
+    });
+};
 
 const toIsoDateLocal = (date) => {
     const year = date.getFullYear();
@@ -840,10 +945,17 @@ const formatAgendaDateLabel = (isoDate) => {
     });
 };
 
+const formatTaDateRange = (row) => {
+    if (!row || !row.travel_date) return 'No travel date';
+    const start = formatAgendaDateLabel(row.travel_date);
+    if (!row.travel_until || row.travel_until === row.travel_date) return start;
+    const end = formatAgendaDateLabel(row.travel_until);
+    return `${start} – ${end}`;
+};
+
 const todayLocalDate = new Date();
 const agendaState = {
     selectedDateIso: toIsoDateLocal(todayLocalDate),
-    visibleMonthDate: getMonthStartDate(todayLocalDate),
     activeTab: 'today'
 };
 
@@ -921,88 +1033,46 @@ const renderAgendaTabs = () => {
     });
 };
 
-const renderAgendaCalendar = () => {
-    const monthLabel = document.getElementById('agenda-month-label');
-    const calendarGrid = document.getElementById('agenda-calendar-grid');
-    const monthSummary = document.getElementById('agenda-month-summary');
-    if (!monthLabel || !calendarGrid) return;
+const updateFcBadgesAndSummary = () => {
+    const calEl = document.getElementById('agenda-fc-calendar');
+    if (!calEl) return;
 
-    const monthStart = new Date(agendaState.visibleMonthDate.getFullYear(), agendaState.visibleMonthDate.getMonth(), 1);
-    const monthEnd = new Date(agendaState.visibleMonthDate.getFullYear(), agendaState.visibleMonthDate.getMonth() + 1, 0);
-    const leadingSlots = monthStart.getDay();
-    const dayCount = monthEnd.getDate();
-    const todayIso = toIsoDateLocal(new Date());
+    calEl.querySelectorAll('.fc-daygrid-day').forEach((dayEl) => {
+        const isoDate = dayEl.getAttribute('data-date');
+        if (!isoDate) return;
 
-    monthLabel.textContent = monthStart.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        // Remove old badge and class
+        dayEl.querySelectorAll('.fc-ta-badge').forEach((b) => b.remove());
+        dayEl.classList.remove('has-ta-events');
 
-    const cells = [];
-    let scheduledDaysCount = 0;
-    let scheduledItemsCount = 0;
-    for (let i = 0; i < leadingSlots; i++) {
-        cells.push('<span class="agenda-day-empty" aria-hidden="true"></span>');
-    }
-
-    for (let day = 1; day <= dayCount; day++) {
-        const isoDate = toIsoDateLocal(new Date(monthStart.getFullYear(), monthStart.getMonth(), day));
-        const eventRows = getAgendaRowsForDate(isoDate);
-        const eventCount = eventRows.length;
-        const hasEvents = eventCount > 0;
-        const isToday = isoDate === todayIso;
-        const isSelected = isoDate === agendaState.selectedDateIso;
-        if (hasEvents) {
-            scheduledDaysCount += 1;
-            scheduledItemsCount += eventCount;
+        const count = getAgendaRowsForDate(isoDate).length;
+        if (count > 0) {
+            dayEl.classList.add('has-ta-events');
+            const frame = dayEl.querySelector('.fc-daygrid-day-frame');
+            if (frame) {
+                const badge = document.createElement('span');
+                badge.className = 'fc-ta-badge';
+                badge.textContent = count;
+                badge.setAttribute('aria-hidden', 'true');
+                frame.appendChild(badge);
+            }
         }
-
-        const eventCountBadge = hasEvents
-            ? `<span class="agenda-day-count" aria-hidden="true">${eventCount}</span>`
-            : '';
-
-        const eventTaPreview = hasEvents
-            ? ` ${eventCount} TA${eventCount === 1 ? '' : 's'}: ${eventRows
-                .slice(0, 3)
-                .map((row) => row.ta_number || '-')
-                .join(', ')}${eventCount > 3 ? ', ...' : ''}`
-            : '';
-
-        const classNames = [
-            'agenda-day-btn',
-            hasEvents ? 'has-events' : '',
-            isToday ? 'is-today' : '',
-            isSelected ? 'is-selected' : ''
-        ].filter(Boolean).join(' ');
-
-        cells.push(`
-            <button
-                type="button"
-                class="${classNames}"
-                data-agenda-date="${isoDate}"
-                aria-label="${formatAgendaDateLabel(isoDate)}${hasEvents ? `, ${eventCount} travel record${eventCount === 1 ? '' : 's'}` : ''}"
-                title="${formatAgendaDateLabel(isoDate)}.${eventTaPreview}"
-            ><span class="agenda-day-content"><span class="agenda-day-number">${day}</span>${eventCountBadge}</span></button>
-        `);
-    }
-
-    calendarGrid.innerHTML = cells.join('');
-    if (monthSummary) {
-        monthSummary.textContent = scheduledItemsCount > 0
-            ? `${scheduledDaysCount} scheduled day${scheduledDaysCount === 1 ? '' : 's'} · ${scheduledItemsCount} TA item${scheduledItemsCount === 1 ? '' : 's'} this month`
-            : 'No travel records this month.';
-    }
+    });
 };
 
 const renderAgendaList = () => {
     const agendaList = document.getElementById('agenda-ta-list');
     const agendaTargetDate = document.getElementById('agenda-target-date');
-    const agendaCountBadge = document.getElementById('agenda-count-badge');
-    if (!agendaList || !agendaTargetDate || !agendaCountBadge) return;
+    if (!agendaList || !agendaTargetDate) return;
 
     if (agendaState.activeTab === 'today') {
-        const todayIso = toIsoDateLocal(new Date());
-        const rows = getAgendaRowsForDate(todayIso);
+        const viewIso = agendaState.selectedDateIso || toIsoDateLocal(new Date());
+        const rows = getAgendaRowsForDate(viewIso);
+        const isActualToday = viewIso === toIsoDateLocal(new Date());
 
-        agendaTargetDate.textContent = `Today: ${formatAgendaDateLabel(todayIso)}`;
-        agendaCountBadge.textContent = `${rows.length} TA${rows.length === 1 ? '' : 's'}`;
+        agendaTargetDate.textContent = isActualToday
+            ? `Today: ${formatAgendaDateLabel(viewIso)}`
+            : formatAgendaDateLabel(viewIso);
 
         if (!rows.length) {
             agendaList.innerHTML = '<div class="agenda-empty">No travel authorities scheduled for this date.</div>';
@@ -1010,29 +1080,27 @@ const renderAgendaList = () => {
         }
 
         agendaList.innerHTML = rows.map((row, index) => {
-            const dateLabel = row.travel_date
-                ? formatAgendaDateLabel(row.travel_date)
-                : 'No travel date';
+            const dateLabel = formatTaDateRange(row);
 
             return `
                 <div class="agenda-item">
                     <span class="agenda-item-index">${index + 1}.</span>
                     <span class="agenda-item-ta">${escapeHtml(row.ta_number || '-')}</span>
+                    ${buildAgendaInfoBtn(row)}
                     <span class="agenda-item-date">${escapeHtml(dateLabel)}</span>
                 </div>
             `;
         }).join('');
+        attachAgendaInfoBtnListeners(agendaList);
         return;
     }
 
     const upcomingBuckets = buildUpcomingAgendaBuckets();
-    const totalUpcomingItems = upcomingBuckets.reduce((sum, bucket) => sum + bucket.rows.length, 0);
     const tomorrowDate = new Date();
     tomorrowDate.setDate(tomorrowDate.getDate() + 1);
     const tomorrowIso = toIsoDateLocal(tomorrowDate);
 
     agendaTargetDate.textContent = `Upcoming from: ${formatAgendaDateLabel(tomorrowIso)}`;
-    agendaCountBadge.textContent = `${upcomingBuckets.length} day${upcomingBuckets.length === 1 ? '' : 's'} · ${totalUpcomingItems} TA`;
 
     if (!upcomingBuckets.length) {
         agendaList.innerHTML = '<div class="agenda-empty">No upcoming travel authorities found.</div>';
@@ -1045,7 +1113,8 @@ const renderAgendaList = () => {
             <div class="agenda-item agenda-item--upcoming">
                 <span class="agenda-item-index">${index + 1}.</span>
                 <span class="agenda-item-ta">${escapeHtml(row.ta_number || '-')}</span>
-                <span class="agenda-item-date">${escapeHtml(row.travel_date ? formatAgendaDateLabel(row.travel_date) : 'No travel date')}</span>
+                ${buildAgendaInfoBtn(row)}
+                <span class="agenda-item-date">${escapeHtml(row.travel_date ? formatTaDateRange(row) : 'No travel date')}</span>
             </div>
         `).join('');
 
@@ -1053,7 +1122,6 @@ const renderAgendaList = () => {
             <section class="agenda-date-group" data-upcoming-date-group="${bucket.isoDate}">
                 <header class="agenda-date-group-header">
                     <span>${escapeHtml(headerLabel)}</span>
-                    <span class="agenda-date-group-count">${bucket.rows.length} TA${bucket.rows.length === 1 ? '' : 's'}</span>
                 </header>
                 ${items}
             </section>
@@ -1063,12 +1131,13 @@ const renderAgendaList = () => {
     if (agendaState.selectedDateIso && agendaState.selectedDateIso > toIsoDateLocal(new Date())) {
         scrollToUpcomingDateGroup(agendaState.selectedDateIso);
     }
+    attachAgendaInfoBtnListeners(agendaList);
 };
 
 const renderAgendaTracker = () => {
     if (!agendaTrackerInitialized) return;
     renderAgendaTabs();
-    renderAgendaCalendar();
+    updateFcBadgesAndSummary();
     renderAgendaList();
     queueInsightsLayoutSync();
 };
@@ -1079,47 +1148,42 @@ const initAgendaTracker = () => {
         return;
     }
 
-    const calendarGrid = document.getElementById('agenda-calendar-grid');
-    const prevMonthBtn = document.getElementById('agenda-prev-month');
-    const nextMonthBtn = document.getElementById('agenda-next-month');
-
-    if (!calendarGrid || !prevMonthBtn || !nextMonthBtn) {
-        return;
-    }
+    const fcContainer = document.getElementById('agenda-fc-calendar');
+    if (!fcContainer) return;
 
     agendaTrackerInitialized = true;
 
-    prevMonthBtn.addEventListener('click', () => {
-        agendaState.visibleMonthDate = new Date(
-            agendaState.visibleMonthDate.getFullYear(),
-            agendaState.visibleMonthDate.getMonth() - 1,
-            1
-        );
-        renderAgendaTracker();
-    });
-
-    nextMonthBtn.addEventListener('click', () => {
-        agendaState.visibleMonthDate = new Date(
-            agendaState.visibleMonthDate.getFullYear(),
-            agendaState.visibleMonthDate.getMonth() + 1,
-            1
-        );
-        renderAgendaTracker();
-    });
-
-    calendarGrid.addEventListener('click', (event) => {
-        const dateButton = event.target.closest('[data-agenda-date]');
-        if (!dateButton) return;
-
-        const selectedIso = dateButton.getAttribute('data-agenda-date');
-        if (!selectedIso) return;
-
-        agendaState.selectedDateIso = selectedIso;
-        if (agendaState.activeTab === 'today') {
-            agendaState.activeTab = 'upcoming';
+    fcCalendar = new FullCalendar.Calendar(fcContainer, {
+        initialView: 'dayGridMonth',
+        headerToolbar: {
+            left: 'title',
+            center: '',
+            right: 'prev,next'
+        },
+        height: 'auto',
+        fixedWeekCount: true,
+        showNonCurrentDates: true,
+        events: [],
+        datesSet: () => {
+            updateFcBadgesAndSummary();
+        },
+        dateClick: (info) => {
+            document.querySelectorAll('#agenda-fc-calendar .fc-day-selected')
+                .forEach((el) => el.classList.remove('fc-day-selected'));
+            info.dayEl.classList.add('fc-day-selected');
+            agendaState.selectedDateIso = info.dateStr;
+            agendaState.activeTab = 'today';
+            renderAgendaTabs();
+            renderAgendaList();
+            queueInsightsLayoutSync();
         }
-        renderAgendaTracker();
     });
+
+    fcCalendar.render();
+
+    // Mark today as selected on init
+    const todayEl = fcContainer.querySelector('.fc-day-today');
+    if (todayEl) todayEl.classList.add('fc-day-selected');
 
     document.querySelectorAll('.agenda-tab-btn').forEach((btn) => {
         btn.addEventListener('click', () => {
@@ -1127,14 +1191,20 @@ const initAgendaTracker = () => {
             if (!tabName) return;
             agendaState.activeTab = tabName;
             if (tabName === 'today') {
-                const todayDate = new Date();
-                agendaState.visibleMonthDate = getMonthStartDate(todayDate);
+                agendaState.selectedDateIso = toIsoDateLocal(new Date());
+                fcCalendar.today();
+                // Highlight today
+                document.querySelectorAll('#agenda-fc-calendar .fc-day-selected')
+                    .forEach((el) => el.classList.remove('fc-day-selected'));
+                const todayDayEl = fcContainer.querySelector('.fc-day-today');
+                if (todayDayEl) todayDayEl.classList.add('fc-day-selected');
             }
-            renderAgendaTracker();
+            renderAgendaTabs();
+            renderAgendaList();
         });
     });
 
-    renderAgendaTracker();
+    renderAgendaList();
 };
 
 const syncInsightsLayout = () => {

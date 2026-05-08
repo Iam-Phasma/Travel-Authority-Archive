@@ -417,142 +417,162 @@ body.dashboard-page::before {
     padding: 16px;
     min-width: 0;
 }
-.agenda-calendar-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 12px;
-}
-.agenda-month-label {
-    margin: 0;
-    color: #0b1c3b;
-    font-size: 1.45rem;
-    line-height: 1.05;
-    font-weight: 700;
-}
-.agenda-calendar-nav {
-    display: flex;
-    gap: 6px;
-}
-.agenda-nav-btn {
-    width: 32px;
-    height: 32px;
-    border-radius: 9px;
-    border: 1px solid rgba(47, 111, 228, 0.18);
-    background: rgba(47, 111, 228, 0.08);
-    color: rgba(11, 28, 59, 0.65);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: background 0.16s, color 0.16s, border-color 0.16s;
-}
-.agenda-nav-btn:hover {
-    background: rgba(47, 111, 228, 0.15);
-    color: var(--sea);
-    border-color: rgba(47, 111, 228, 0.28);
-}
-.agenda-nav-btn svg {
-    width: 17px;
-    height: 17px;
-    fill: currentColor;
-}
-.agenda-weekdays {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 8px;
-    margin-bottom: 8px;
-}
-.agenda-weekdays span {
-    text-align: center;
-    color: rgba(11, 28, 59, 0.55);
-    font-size: 0.82rem;
-    font-weight: 600;
-}
+/* --- FullCalendar overrides for Agenda Tracker --- */
 .agenda-calendar-meta {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
+    margin-bottom: 8px;
 }
 .agenda-month-summary {
     color: rgba(11, 28, 59, 0.58);
     font-size: 0.78rem;
     font-weight: 600;
 }
-.agenda-calendar-legend {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+/* Strip FC chrome */
+#agenda-fc-calendar .fc-scrollgrid,
+#agenda-fc-calendar .fc-scrollgrid td,
+#agenda-fc-calendar .fc-scrollgrid th {
+    border: none !important;
 }
-.agenda-legend-item {
-    display: inline-flex;
+/* Toolbar */
+#agenda-fc-calendar .fc-toolbar {
+    margin-bottom: 10px;
     align-items: center;
-    gap: 5px;
-    font-size: 0.74rem;
-    color: rgba(11, 28, 59, 0.58);
+}
+#agenda-fc-calendar .fc-toolbar-title {
+    font-size: 1.45rem;
+    font-weight: 700;
+    color: #0b1c3b;
+    font-family: inherit;
+}
+#agenda-fc-calendar .fc-button,
+#agenda-fc-calendar .fc-button-primary {
+    background: transparent !important;
+    border: none !important;
+    color: rgba(11, 28, 59, 0.5) !important;
+    border-radius: 0 !important;
+    width: 28px;
+    height: 28px;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    box-shadow: none !important;
+    transition: color 0.16s;
+    font-size: 1.1rem !important;
+    font-weight: 700 !important;
+}
+#agenda-fc-calendar .fc-button:hover,
+#agenda-fc-calendar .fc-button-primary:hover {
+    background: transparent !important;
+    border-color: transparent !important;
+    color: var(--sea) !important;
+}
+/* Gap between prev and next */
+#agenda-fc-calendar .fc-toolbar-chunk:last-child {
+    display: flex;
+    gap: 12px;
+}
+/* Thicker arrow icons */
+#agenda-fc-calendar .fc-icon {
+    font-size: 1.3rem !important;
+    font-weight: 900 !important;
+    -webkit-font-smoothing: antialiased;
+}
+#agenda-fc-calendar .fc-button:focus {
+    box-shadow: none !important;
+    outline: none;
+}
+/* Column headers */
+#agenda-fc-calendar .fc-col-header-cell {
+    background: transparent;
+    border: none !important;
+    padding-bottom: 6px;
+}
+#agenda-fc-calendar .fc-col-header-cell-cushion {
+    color: rgba(11, 28, 59, 0.55);
+    font-size: 0.82rem;
     font-weight: 600;
+    text-decoration: none !important;
+    font-family: inherit;
 }
-.agenda-legend-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    display: inline-block;
+/* Day cells — use padding on td to simulate gap */
+#agenda-fc-calendar .fc-daygrid-day {
+    padding: 3px !important;
+    border: none !important;
+    background: transparent !important;
+    cursor: pointer;
 }
-.agenda-legend-dot--low { background: #3b82f6; }
-.agenda-legend-dot--mid { background: #0ea5a6; }
-.agenda-legend-dot--high { background: #f97316; }
-.agenda-calendar-grid {
-    display: grid;
-    grid-template-columns: repeat(7, minmax(0, 1fr));
-    gap: 8px;
-}
-.agenda-day-empty {
-    height: 48px;
-}
-.agenda-day-btn {
-    height: 48px;
-    border: 1px solid rgba(11, 28, 59, 0.05);
-    border-radius: 10px;
+#agenda-fc-calendar .fc-daygrid-day-frame {
     background: #f2f4f8;
+    border-radius: 10px;
+    border: 1px solid rgba(11, 28, 59, 0.05);
+    min-height: 52px !important;
+    position: relative;
+    transition: background 0.14s, border-color 0.14s;
+    overflow: visible;
+}
+#agenda-fc-calendar .fc-daygrid-day:hover .fc-daygrid-day-frame {
+    background: #e9edf7;
+}
+/* Day number — centered */
+#agenda-fc-calendar .fc-daygrid-day-top {
+    justify-content: center;
+    padding-top: 0;
+}
+#agenda-fc-calendar .fc-daygrid-day-number {
     color: rgba(11, 28, 59, 0.56);
     font-size: 0.96rem;
     font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.14s, background 0.14s, color 0.14s, border-color 0.14s;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.agenda-day-btn:hover {
-    background: #e9edf7;
-    color: rgba(11, 28, 59, 0.86);
-}
-.agenda-day-content {
-    width: 100%;
-    height: 100%;
-    align-self: stretch;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-end;
-    padding-bottom: 7px;
-    position: relative;
-    box-sizing: border-box;
-}
-.agenda-day-number {
+    text-decoration: none !important;
+    padding: 14px 0 0 0;
+    font-family: inherit;
     line-height: 1;
-    pointer-events: none;
+    display: block;
+    width: 100%;
+    text-align: center;
 }
-.agenda-day-count {
+/* Today */
+#agenda-fc-calendar .fc-day-today .fc-daygrid-day-frame {
+    background: rgba(47, 111, 228, 0.08) !important;
+    border-color: rgba(47, 111, 228, 0.4) !important;
+}
+#agenda-fc-calendar .fc-day-today .fc-daygrid-day-number {
+    color: var(--sea);
+    font-weight: 700;
+    position: relative;
+}
+/* Persistent dot under today's number, even when another day is selected */
+#agenda-fc-calendar .fc-day-today .fc-daygrid-day-number::after {
+    content: '';
+    display: block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--sea);
+    margin: 3px auto 0;
+}
+/* Selected */
+#agenda-fc-calendar .fc-day-selected .fc-daygrid-day-frame {
+    background: #6f63e8 !important;
+    border-color: rgba(111, 99, 232, 0.5) !important;
+    box-shadow: 0 8px 18px rgba(111, 99, 232, 0.25);
+}
+#agenda-fc-calendar .fc-day-selected .fc-daygrid-day-number {
+    color: #ffffff;
+}
+/* When today is also selected, keep dot white */
+#agenda-fc-calendar .fc-day-today.fc-day-selected .fc-daygrid-day-number::after {
+    background: rgba(255, 255, 255, 0.7);
+}
+/* Hide FC event bars — we use custom badges */
+#agenda-fc-calendar .fc-daygrid-day-events,
+#agenda-fc-calendar .fc-daygrid-more-link {
+    display: none !important;
+}
+/* TA count badge */
+#agenda-fc-calendar .fc-ta-badge {
     position: absolute;
-    right: 5px;
     top: 5px;
+    right: 5px;
     min-width: 16px;
     height: 16px;
     border-radius: 999px;
@@ -565,25 +585,22 @@ body.dashboard-page::before {
     color: #ffffff;
     background: #3b82f6;
     line-height: 1;
+    pointer-events: none;
+    z-index: 2;
 }
-.agenda-day-btn.is-selected {
-    background: #6f63e8;
-    color: #ffffff;
-    border-color: rgba(111, 99, 232, 0.5);
-    box-shadow: 0 8px 18px rgba(111, 99, 232, 0.25);
+#agenda-fc-calendar .fc-day-selected .fc-ta-badge {
+    background: rgba(255, 255, 255, 0.3);
 }
-.agenda-day-btn.is-selected .agenda-day-count {
-    background: rgba(255, 255, 255, 0.28);
-    color: #ffffff;
+#agenda-fc-calendar .fc-day-other .fc-daygrid-day-frame {
+    background: rgba(242, 244, 248, 0.55);
+    border-color: rgba(11, 28, 59, 0.05);
 }
-.agenda-day-btn.is-today:not(.is-selected) {
-    border-color: rgba(47, 111, 228, 0.4);
-    color: var(--sea);
-    font-weight: 700;
-    background: rgba(47, 111, 228, 0.08);
+#agenda-fc-calendar .fc-day-other .fc-daygrid-day-number {
+    color: rgba(11, 28, 59, 0.3);
 }
-.agenda-day-btn.has-events:not(.is-selected) {
-    border-color: rgba(47, 111, 228, 0.34);
+#agenda-fc-calendar .fc-day-other .fc-ta-badge {
+    background: rgba(59, 130, 246, 0.45);
+    color: rgba(255, 255, 255, 0.85);
 }
 .agenda-list-panel {
     display: flex;
@@ -644,7 +661,7 @@ body.dashboard-page::before {
 }
 .agenda-item {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto 1fr auto;
     gap: 10px;
     align-items: center;
     padding: 10px 12px;
@@ -669,10 +686,91 @@ body.dashboard-page::before {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.agenda-info-btn {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(47, 111, 228, 0.35);
+    background: transparent;
+    color: rgba(47, 111, 228, 0.7);
+    font-size: 0.7rem;
+    font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    line-height: 1;
+    padding: 0;
+}
+.agenda-info-btn:hover {
+    background: rgba(47, 111, 228, 0.1);
+    border-color: var(--sea);
+    color: var(--sea);
+}
 .agenda-item-date {
     font-size: 0.82rem;
     color: rgba(11, 28, 59, 0.58);
     white-space: nowrap;
+    text-align: right;
+}
+/* Floating tooltip popup */
+.agenda-ta-tooltip {
+    position: fixed;
+    z-index: 9999;
+    background: #ffffff;
+    border: 1px solid rgba(11, 28, 59, 0.12);
+    border-radius: 12px;
+    box-shadow: 0 8px 28px rgba(11, 28, 59, 0.14);
+    padding: 14px 16px;
+    min-width: 220px;
+    max-width: 300px;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.15s, transform 0.15s;
+}
+.agenda-ta-tooltip.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+.agenda-ta-tooltip-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: rgba(11, 28, 59, 0.45);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 10px;
+}
+.agenda-ta-tooltip-row {
+    margin-bottom: 8px;
+}
+.agenda-ta-tooltip-row:last-child {
+    margin-bottom: 0;
+}
+.agenda-ta-tooltip-label {
+    font-size: 0.74rem;
+    font-weight: 700;
+    color: rgba(11, 28, 59, 0.45);
+    margin-bottom: 2px;
+}
+.agenda-ta-tooltip-value {
+    font-size: 0.84rem;
+    color: #0b1c3b;
+    font-weight: 500;
+    line-height: 1.4;
+}
+.agenda-ta-tooltip-officials {
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
+}
+.agenda-ta-tooltip-official {
+    font-size: 0.82rem;
+    color: #0b1c3b;
+    padding: 2px 0;
 }
 .agenda-empty {
     min-height: 200px;
@@ -1284,6 +1382,64 @@ body.dashboard-page::before {
     .agenda-calendar-panel,
     .agenda-list-panel {
         padding: 14px;
+    }
+
+    /* Calendar cells on phones: keep number and badge in separate vertical zones */
+    #agenda-fc-calendar .fc-daygrid-day-frame {
+        min-height: 62px !important;
+    }
+
+    #agenda-fc-calendar .fc-daygrid-day-number {
+        padding-top: 22px;
+    }
+
+    #agenda-fc-calendar .fc-ta-badge {
+        top: 6px;
+        right: 6px;
+    }
+
+    /* Agenda list on phones: keep full text and allow horizontal scrolling */
+    .agenda-ta-list {
+        overflow-x: auto;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior-x: contain;
+    }
+
+    .agenda-date-group {
+        width: max-content;
+        min-width: 100%;
+    }
+
+    .agenda-date-group-header,
+    .agenda-item {
+        width: max-content;
+        min-width: 100%;
+    }
+
+    .agenda-item {
+        grid-template-columns: 34px max-content 28px max-content;
+        column-gap: 12px;
+        justify-content: start;
+    }
+
+    .agenda-item-ta {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: nowrap;
+    }
+
+    .agenda-item-date {
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .agenda-item-index {
+        width: 34px;
+    }
+
+    .agenda-info-btn {
+        justify-self: start;
     }
 
     .agenda-day-btn {
