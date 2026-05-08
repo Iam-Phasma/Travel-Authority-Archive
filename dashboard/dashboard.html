@@ -6,6 +6,7 @@
     <title>CTAA - Dashboard</title>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css?v=20260321-3">
     <link rel="stylesheet" href="../header/header.css?v=20260326-2">
@@ -247,24 +248,7 @@
                         </div>
                         <div class="agenda-tracker-grid">
                             <section class="agenda-calendar-panel" aria-label="Travel calendar">
-                                <div class="agenda-calendar-header">
-                                    <h4 class="agenda-month-label" id="agenda-month-label">-</h4>
-                                    <div class="agenda-calendar-nav">
-                                        <button class="agenda-nav-btn" id="agenda-prev-month" type="button" aria-label="Previous month">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-                                        </button>
-                                        <button class="agenda-nav-btn" id="agenda-next-month" type="button" aria-label="Next month">
-                                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m8.59 16.59 1.41 1.41L16 12 10 6 8.59 7.41 13.17 12z"/></svg>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="agenda-weekdays" aria-hidden="true">
-                                    <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-                                </div>
-                                <div class="agenda-calendar-meta">
-                                    <span class="agenda-month-summary" id="agenda-month-summary">No travel records this month.</span>
-                                </div>
-                                <div class="agenda-calendar-grid" id="agenda-calendar-grid"></div>
+                                <div id="agenda-fc-calendar"></div>
                             </section>
 
                             <section class="agenda-list-panel" aria-label="Travel agenda list">
@@ -274,7 +258,6 @@
                                 </div>
                                 <div class="agenda-list-meta">
                                     <span class="agenda-target-date" id="agenda-target-date">-</span>
-                                    <span class="agenda-count-badge" id="agenda-count-badge">0 TA</span>
                                 </div>
                                 <div class="agenda-ta-list" id="agenda-ta-list"></div>
                             </section>
@@ -434,6 +417,7 @@
     </div>
 
     <script type="module" src="dashboard.js?v=20260401"></script>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
