@@ -212,9 +212,10 @@
                                         <h3 class="insight-card-title" id="dest-card-title">Travel Destinations by Region</h3>
                                         <p class="insight-card-subtitle" id="dest-card-subtitle">Groups destination records by Philippine region.</p>
                                     </div>
-                                    <div class="dest-switcher">
-                                        <button class="dest-switch-btn" data-view="region">By Region</button>
-                                        <button class="dest-switch-btn active" data-view="calabarzon">By Province</button>
+                                    <div class="dest-switcher insight-segmented-switcher" data-segmented-control>
+                                        <span class="segmented-switcher-pill" aria-hidden="true"></span>
+                                        <button class="dest-switch-btn" data-view="region">Region</button>
+                                        <button class="dest-switch-btn active" data-view="calabarzon">Province</button>
                                     </div>
                                 </div>
                                 <div class="insight-graph-scroll dest-chart-source">
@@ -252,7 +253,8 @@
                             </section>
 
                             <section class="agenda-list-panel" aria-label="Travel agenda list">
-                                <div class="agenda-tabs" role="tablist" aria-label="Agenda tabs">
+                                <div class="agenda-tabs insight-segmented-switcher" data-segmented-control role="tablist" aria-label="Agenda tabs">
+                                    <span class="segmented-switcher-pill" aria-hidden="true"></span>
                                     <button class="agenda-tab-btn active" id="agenda-tab-today" data-agenda-tab="today" role="tab" aria-selected="true" type="button">Today</button>
                                     <button class="agenda-tab-btn" id="agenda-tab-upcoming" data-agenda-tab="upcoming" role="tab" aria-selected="false" type="button">Upcoming</button>
                                 </div>
