@@ -6,92 +6,93 @@ import { initAutoLogout } from "../auto-logout.js";
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
 const markCurrentUserOffline = async () => {
-    try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData?.session?.user?.id;
-        if (!userId) return;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData?.session?.user?.id;
+    if (!userId) return;
 
-        const offlineTimestamp = new Date(Date.now() - (10 * 60 * 1000)).toISOString();
-        const { error } = await supabase
-            .from("profiles")
-            .update({ last_seen: offlineTimestamp })
-            .eq("id", userId);
+    const offlineTimestamp = new Date(
+      Date.now() - 10 * 60 * 1000,
+    ).toISOString();
+    const { error } = await supabase
+      .from("profiles")
+      .update({ last_seen: offlineTimestamp })
+      .eq("id", userId);
 
-        if (error) {
-            console.warn("Failed to mark user offline:", error.message);
-        }
-    } catch (error) {
-        console.warn("Offline marker skipped:", error.message);
+    if (error) {
+      console.warn("Failed to mark user offline:", error.message);
     }
+  } catch (error) {
+    console.warn("Offline marker skipped:", error.message);
+  }
 };
 
 const clearDashboardClientState = () => {
-    localStorage.removeItem("dashboardFilters");
-    localStorage.removeItem("dashboardSort");
-    sessionStorage.removeItem("dashboardLoginMarker");
+  localStorage.removeItem("dashboardFilters");
+  localStorage.removeItem("dashboardSort");
+  sessionStorage.removeItem("dashboardLoginMarker");
 };
 
 // Initialize auto-logout (5 minutes warning, 6 minutes total)
 initAutoLogout(supabase, {
-    warningTime: 5 * 60 * 1000, // 5 minutes
-    logoutTime: 6 * 60 * 1000,   // 6 minutes (5 min warning + 1 min countdown)
-    onLogout: async () => {
-        await markCurrentUserOffline();
-        clearDashboardClientState();
-    }
+  warningTime: 5 * 60 * 1000, // 5 minutes
+  logoutTime: 6 * 60 * 1000, // 6 minutes (5 min warning + 1 min countdown)
+  onLogout: async () => {
+    await markCurrentUserOffline();
+    clearDashboardClientState();
+  },
 });
 
 // Realtime subscription to monitor current user's access status
 const setupAccessMonitoring = async () => {
-    try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const user = sessionData?.session?.user;
-        if (!user) return;
+  try {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData?.session?.user;
+    if (!user) return;
 
-        // Subscribe to changes on current user's profile
-        const accessChannel = supabase
-            .channel('user_access_monitoring')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'profiles',
-                    filter: `id=eq.${user.id}`
-                },
-                (payload) => {
-                    
-                    // Check if access was disabled
-                    if (payload.new && payload.new.access_enabled === false) {
-                        // Show toast notification
-                        let toastEl = document.getElementById("toast");
-                        if (!toastEl) {
-                            toastEl = document.createElement("div");
-                            toastEl.id = "toast";
-                            toastEl.className = "toast";
-                            document.body.appendChild(toastEl);
-                        }
-                        toastEl.textContent = "Access disabled: You have been logged out.";
-                        toastEl.classList.add("show", "toast--error");
-                        
-                        // Immediate logout
-                        setTimeout(async () => {
-                            try {
-                                await markCurrentUserOffline();
-                                clearDashboardClientState();
-                                await supabase.auth.signOut();
-                            } catch (error) {
-                                console.error("Forced logout error:", error);
-                            }
-                            window.location.href = '../index.html';
-                        }, 1000);
-                    }
-                }
-            )
-            .subscribe((status) => {});
-    } catch (err) {
-        console.error("Error setting up access monitoring:", err);
-    }
+    // Subscribe to changes on current user's profile
+    const accessChannel = supabase
+      .channel("user_access_monitoring")
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "profiles",
+          filter: `id=eq.${user.id}`,
+        },
+        (payload) => {
+          // Check if access was disabled
+          if (payload.new && payload.new.access_enabled === false) {
+            // Show toast notification
+            let toastEl = document.getElementById("toast");
+            if (!toastEl) {
+              toastEl = document.createElement("div");
+              toastEl.id = "toast";
+              toastEl.className = "toast";
+              document.body.appendChild(toastEl);
+            }
+            toastEl.textContent = "Access disabled: You have been logged out.";
+            toastEl.classList.add("show", "toast--error");
+
+            // Immediate logout
+            setTimeout(async () => {
+              try {
+                await markCurrentUserOffline();
+                clearDashboardClientState();
+                await supabase.auth.signOut();
+              } catch (error) {
+                console.error("Forced logout error:", error);
+              }
+              window.location.href = "../index.html";
+            }, 1000);
+          }
+        },
+      )
+      .subscribe((status) => {});
+  } catch (err) {
+    console.error("Error setting up access monitoring:", err);
+  }
 };
 
 // Initialize access monitoring
@@ -100,218 +101,256 @@ setupAccessMonitoring();
 // Define header button initialization function
 // Show confirmation modal and return a Promise
 const showConfirmation = (title, message) => {
-    return new Promise((resolve) => {
-        confirmModalTitle.textContent = title;
-        confirmModalMessage.textContent = message;
-        confirmModal.classList.add("show");
-        
-        // Apply red styling for logout confirmation
-        const isLogout = title === 'Confirm Logout';
-        if (isLogout) {
-            confirmConfirmBtn.style.background = '#a1251b';
-        }
+  return new Promise((resolve) => {
+    confirmModalTitle.textContent = title;
+    confirmModalMessage.textContent = message;
+    confirmModal.classList.add("show");
 
-        const handleConfirm = () => {
-            confirmModal.classList.remove("show");
-            cleanup();
-            resolve(true);
-        };
+    // Apply red styling for logout confirmation
+    const isLogout = title === "Confirm Logout";
+    if (isLogout) {
+      confirmConfirmBtn.style.background = "#a1251b";
+    }
 
-        const handleCancel = () => {
-            confirmModal.classList.remove("show");
-            cleanup();
-            resolve(false);
-        };
+    const handleConfirm = () => {
+      confirmModal.classList.remove("show");
+      cleanup();
+      resolve(true);
+    };
 
-        const handleClickOutside = (e) => {
-            if (e.target === confirmModal) {
-                confirmModal.classList.remove("show");
-                cleanup();
-                resolve(false);
-            }
-        };
+    const handleCancel = () => {
+      confirmModal.classList.remove("show");
+      cleanup();
+      resolve(false);
+    };
 
-        const cleanup = () => {
-            confirmConfirmBtn.removeEventListener('click', handleConfirm);
-            cancelConfirmBtn.removeEventListener('click', handleCancel);
-            confirmModal.removeEventListener('click', handleClickOutside);
-            // Reset button styling
-            if (isLogout) {
-                confirmConfirmBtn.style.background = '';
-            }
-        };
+    const handleClickOutside = (e) => {
+      if (e.target === confirmModal) {
+        confirmModal.classList.remove("show");
+        cleanup();
+        resolve(false);
+      }
+    };
 
-        confirmConfirmBtn.addEventListener('click', handleConfirm);
-        cancelConfirmBtn.addEventListener('click', handleCancel);
-        confirmModal.addEventListener('click', handleClickOutside);
-    });
+    const cleanup = () => {
+      confirmConfirmBtn.removeEventListener("click", handleConfirm);
+      cancelConfirmBtn.removeEventListener("click", handleCancel);
+      confirmModal.removeEventListener("click", handleClickOutside);
+      // Reset button styling
+      if (isLogout) {
+        confirmConfirmBtn.style.background = "";
+      }
+    };
+
+    confirmConfirmBtn.addEventListener("click", handleConfirm);
+    cancelConfirmBtn.addEventListener("click", handleCancel);
+    confirmModal.addEventListener("click", handleClickOutside);
+  });
 };
 
 let headerButtonsInitialized = false;
 window.initHeaderButtons = () => {
-    if (headerButtonsInitialized) return;
+  if (headerButtonsInitialized) return;
 
-    const userMenuBtn = document.getElementById('user-menu-btn');
-    const headerPopup = document.getElementById('header-popup-panel');
-    const draftTaOption = document.getElementById('header-draft-ta-option');
-    const settingsOption = document.getElementById('header-settings-option');
-    const logoutOption = document.getElementById('header-logout-option');
-    const draftTaModal = document.getElementById('header-draft-ta-modal');
-    const draftTaForm = document.getElementById('header-draft-ta-form');
-    const draftTaCloseBtn = document.getElementById('header-draft-ta-close');
-    const draftTaClearBtn = document.getElementById('header-draft-ta-clear');
-    const draftTaCreateBtn = document.getElementById('header-draft-ta-create');
-    const draftTaPurposeInput = document.getElementById('header-draft-ta-purpose');
-    const draftTaDestinationInput = document.getElementById('header-draft-ta-destination');
-    const draftTaTravelTypeSelect = document.getElementById('header-draft-ta-travel-type');
-    const draftTaFundingOptionSelect = document.getElementById('header-draft-ta-funding-option');
-    const draftTaDateRequestInput = document.getElementById('header-draft-ta-date-request');
-    const draftTaTravelDateInput = document.getElementById('header-draft-ta-travel-date');
-    const draftTaTravelEndInput = document.getElementById('header-draft-ta-travel-end');
-    const draftTaOfficialsDisplay = document.getElementById('header-draft-ta-officials-display');
-    const draftTaOfficialsDropdown = document.getElementById('header-draft-ta-officials-dropdown');
-    const draftTaOfficialsSearch = document.getElementById('header-draft-ta-officials-search');
-    const draftTaOfficialsOptions = document.getElementById('header-draft-ta-officials-options');
-    const userEmailElement = document.getElementById('header-user-email');
-    const userNameElement = document.getElementById('header-user-name');
-    const headerDraftSelectedEmployees = [];
-    let headerDraftEmployeesList = [];
-    let headerDraftEmployeesMultiSelect = null;
+  const userMenuBtn = document.getElementById("user-menu-btn");
+  const headerPopup = document.getElementById("header-popup-panel");
+  const draftTaOption = document.getElementById("header-draft-ta-option");
+  const settingsOption = document.getElementById("header-settings-option");
+  const logoutOption = document.getElementById("header-logout-option");
+  const draftTaModal = document.getElementById("header-draft-ta-modal");
+  const draftTaForm = document.getElementById("header-draft-ta-form");
+  const draftTaCloseBtn = document.getElementById("header-draft-ta-close");
+  const draftTaClearBtn = document.getElementById("header-draft-ta-clear");
+  const draftTaCreateBtn = document.getElementById("header-draft-ta-create");
+  const draftTaPurposeInput = document.getElementById(
+    "header-draft-ta-purpose",
+  );
+  const draftTaDestinationInput = document.getElementById(
+    "header-draft-ta-destination",
+  );
+  const draftTaTravelTypeSelect = document.getElementById(
+    "header-draft-ta-travel-type",
+  );
+  const draftTaFundingOptionSelect = document.getElementById(
+    "header-draft-ta-funding-option",
+  );
+  const draftTaDateRequestInput = document.getElementById(
+    "header-draft-ta-date-request",
+  );
+  const draftTaTravelDateInput = document.getElementById(
+    "header-draft-ta-travel-date",
+  );
+  const draftTaTravelEndInput = document.getElementById(
+    "header-draft-ta-travel-end",
+  );
+  const draftTaOfficialsDisplay = document.getElementById(
+    "header-draft-ta-officials-display",
+  );
+  const draftTaOfficialsDropdown = document.getElementById(
+    "header-draft-ta-officials-dropdown",
+  );
+  const draftTaOfficialsSearch = document.getElementById(
+    "header-draft-ta-officials-search",
+  );
+  const draftTaOfficialsOptions = document.getElementById(
+    "header-draft-ta-officials-options",
+  );
+  const userEmailElement = document.getElementById("header-user-email");
+  const userNameElement = document.getElementById("header-user-name");
+  const headerDraftSelectedEmployees = [];
+  let headerDraftEmployeesList = [];
+  let headerDraftEmployeesMultiSelect = null;
 
-    window.headerDraftSelectedEmployees = headerDraftSelectedEmployees;
+  window.headerDraftSelectedEmployees = headerDraftSelectedEmployees;
 
-    if (!userMenuBtn || !headerPopup) {
+  if (!userMenuBtn || !headerPopup) {
+    return;
+  }
+
+  headerButtonsInitialized = true;
+
+  const capitalizeWords = (str) => {
+    if (!str) return "";
+    return str
+      .split(" ")
+      .map((word) => {
+        if (!word) return "";
+        return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+      })
+      .join(" ");
+  };
+
+  const setResponsiveHeaderName = (rawFName, rawLName, fallbackName) => {
+    if (!userNameElement) return;
+
+    const fname = capitalizeWords(rawFName || "");
+    const lname = capitalizeWords(rawLName || "");
+    const fullName = `${fname} ${lname}`.trim();
+
+    const renderName = () => {
+      const isSmallScreen = window.matchMedia("(max-width: 768px)").matches;
+      if (isSmallScreen && fname) {
+        const initials = fname
+          .split(/\s+/)
+          .filter(Boolean)
+          .map((word) => word.charAt(0).toUpperCase())
+          .join("");
+        const compactName = `${initials} ${lname}`.trim();
+        userNameElement.textContent = compactName || fullName || fallbackName;
         return;
+      }
+
+      userNameElement.textContent = fullName || fallbackName;
+    };
+
+    renderName();
+
+    if (window.__headerNameResizeHandler) {
+      window.removeEventListener("resize", window.__headerNameResizeHandler);
+    }
+    window.__headerNameResizeHandler = renderName;
+    window.addEventListener("resize", window.__headerNameResizeHandler);
+  };
+
+  const getTodayLocalISO = () => {
+    const now = new Date();
+    const tzOffsetMs = now.getTimezoneOffset() * 60000;
+    return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
+  };
+
+  const setDraftTaDateRequestDefault = () => {
+    if (draftTaDateRequestInput && !draftTaDateRequestInput.value) {
+      draftTaDateRequestInput.value = getTodayLocalISO();
+    }
+  };
+
+  const setDraftTaOptionDefaults = () => {
+    if (draftTaTravelTypeSelect && !draftTaTravelTypeSelect.value) {
+      draftTaTravelTypeSelect.value = "official_business";
+    }
+    if (draftTaFundingOptionSelect && !draftTaFundingOptionSelect.value) {
+      draftTaFundingOptionSelect.value = "reimbursement";
+    }
+  };
+
+  const loadHeaderDraftEmployees = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("employee_list")
+        .select("name, position, is_active")
+        .order("is_active", { ascending: false })
+        .order("name", { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      headerDraftEmployeesList = data || [];
+    } catch (error) {
+      console.error("Failed to load officials for Draft TA:", error);
+      headerDraftEmployeesList = [];
     }
 
-    headerButtonsInitialized = true;
+    return headerDraftEmployeesList;
+  };
 
-    const capitalizeWords = (str) => {
-        if (!str) return '';
-        return str.split(' ').map(word => {
-            if (!word) return '';
-            return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-        }).join(' ');
+  const createHeaderDraftOfficialsMultiSelect = () => {
+    if (
+      !draftTaOfficialsDisplay ||
+      !draftTaOfficialsDropdown ||
+      !draftTaOfficialsSearch ||
+      !draftTaOfficialsOptions
+    ) {
+      return null;
+    }
+
+    const closeDropdown = () => {
+      draftTaOfficialsSearch.value = "";
+      draftTaOfficialsDropdown.classList.remove("show");
     };
 
-    const setResponsiveHeaderName = (rawFName, rawLName, fallbackName) => {
-        if (!userNameElement) return;
+    const updateDisplay = () => {
+      if (headerDraftSelectedEmployees.length === 0) {
+        draftTaOfficialsDisplay.innerHTML =
+          '<span class="multiselect-placeholder">Select officials...</span>';
+        return;
+      }
 
-        const fname = capitalizeWords(rawFName || '');
-        const lname = capitalizeWords(rawLName || '');
-        const fullName = `${fname} ${lname}`.trim();
+      draftTaOfficialsDisplay.innerHTML = headerDraftSelectedEmployees
+        .map(
+          (name) =>
+            `<span class="multiselect-tag">${escapeHtml(name)}<button type="button" class="multiselect-remove" data-name="${escapeHtml(name)}">&times;</button></span>`,
+        )
+        .join("");
 
-        const renderName = () => {
-            const isSmallScreen = window.matchMedia('(max-width: 768px)').matches;
-            if (isSmallScreen && fname) {
-                const initials = fname
-                    .split(/\s+/)
-                    .filter(Boolean)
-                    .map(word => word.charAt(0).toUpperCase())
-                    .join('');
-                const compactName = `${initials} ${lname}`.trim();
-                userNameElement.textContent = compactName || fullName || fallbackName;
-                return;
+      draftTaOfficialsDisplay
+        .querySelectorAll(".multiselect-remove")
+        .forEach((btn) => {
+          btn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            const name = btn.getAttribute("data-name");
+            const index = headerDraftSelectedEmployees.indexOf(name);
+
+            if (index > -1) {
+              headerDraftSelectedEmployees.splice(index, 1);
+              updateDisplay();
+              renderOptions();
             }
-
-            userNameElement.textContent = fullName || fallbackName;
-        };
-
-        renderName();
-
-        if (window.__headerNameResizeHandler) {
-            window.removeEventListener('resize', window.__headerNameResizeHandler);
-        }
-        window.__headerNameResizeHandler = renderName;
-        window.addEventListener('resize', window.__headerNameResizeHandler);
+          });
+        });
     };
 
-    const getTodayLocalISO = () => {
-        const now = new Date();
-        const tzOffsetMs = now.getTimezoneOffset() * 60000;
-        return new Date(now.getTime() - tzOffsetMs).toISOString().slice(0, 10);
-    };
+    const renderOptions = () => {
+      const searchTerm = draftTaOfficialsSearch.value.toLowerCase();
+      const filteredEmployees = headerDraftEmployeesList.filter(
+        (emp) =>
+          emp.name.toLowerCase().includes(searchTerm) &&
+          !headerDraftSelectedEmployees.includes(emp.name),
+      );
 
-    const setDraftTaDateRequestDefault = () => {
-        if (draftTaDateRequestInput && !draftTaDateRequestInput.value) {
-            draftTaDateRequestInput.value = getTodayLocalISO();
-        }
-    };
-
-    const setDraftTaOptionDefaults = () => {
-        if (draftTaTravelTypeSelect && !draftTaTravelTypeSelect.value) {
-            draftTaTravelTypeSelect.value = 'official_business';
-        }
-        if (draftTaFundingOptionSelect && !draftTaFundingOptionSelect.value) {
-            draftTaFundingOptionSelect.value = 'reimbursement';
-        }
-    };
-
-    const loadHeaderDraftEmployees = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('employee_list')
-                .select('name, position, is_active')
-                .order('is_active', { ascending: false })
-                .order('name', { ascending: true });
-
-            if (error) {
-                throw error;
-            }
-
-            headerDraftEmployeesList = data || [];
-        } catch (error) {
-            console.error('Failed to load officials for Draft TA:', error);
-            headerDraftEmployeesList = [];
-        }
-
-        return headerDraftEmployeesList;
-    };
-
-    const createHeaderDraftOfficialsMultiSelect = () => {
-        if (!draftTaOfficialsDisplay || !draftTaOfficialsDropdown || !draftTaOfficialsSearch || !draftTaOfficialsOptions) {
-            return null;
-        }
-
-        const closeDropdown = () => {
-            draftTaOfficialsSearch.value = '';
-            draftTaOfficialsDropdown.classList.remove('show');
-        };
-
-        const updateDisplay = () => {
-            if (headerDraftSelectedEmployees.length === 0) {
-                draftTaOfficialsDisplay.innerHTML = '<span class="multiselect-placeholder">Select officials...</span>';
-                return;
-            }
-
-            draftTaOfficialsDisplay.innerHTML = headerDraftSelectedEmployees.map(name =>
-                `<span class="multiselect-tag">${escapeHtml(name)}<button type="button" class="multiselect-remove" data-name="${escapeHtml(name)}">&times;</button></span>`
-            ).join('');
-
-            draftTaOfficialsDisplay.querySelectorAll('.multiselect-remove').forEach((btn) => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const name = btn.getAttribute('data-name');
-                    const index = headerDraftSelectedEmployees.indexOf(name);
-
-                    if (index > -1) {
-                        headerDraftSelectedEmployees.splice(index, 1);
-                        updateDisplay();
-                        renderOptions();
-                    }
-                });
-            });
-        };
-
-        const renderOptions = () => {
-            const searchTerm = draftTaOfficialsSearch.value.toLowerCase();
-            const filteredEmployees = headerDraftEmployeesList.filter((emp) =>
-                emp.name.toLowerCase().includes(searchTerm) && !headerDraftSelectedEmployees.includes(emp.name)
-            );
-
-            if (filteredEmployees.length === 0) {
-                if (searchTerm.trim()) {
-                    draftTaOfficialsOptions.innerHTML = `
+      if (filteredEmployees.length === 0) {
+        if (searchTerm.trim()) {
+          draftTaOfficialsOptions.innerHTML = `
                         <div class="multiselect-no-options">
                             No matching officials found
                             <br>
@@ -319,468 +358,516 @@ window.initHeaderButtons = () => {
                         </div>
                     `;
 
-                    const addBtn = draftTaOfficialsOptions.querySelector('.multiselect-add-btn');
-                    if (addBtn) {
-                        addBtn.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            const nameToAdd = draftTaOfficialsSearch.value.trim();
+          const addBtn = draftTaOfficialsOptions.querySelector(
+            ".multiselect-add-btn",
+          );
+          if (addBtn) {
+            addBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              const nameToAdd = draftTaOfficialsSearch.value.trim();
 
-                            if (!nameToAdd) return;
+              if (!nameToAdd) return;
 
-                            const namePattern = /^[a-zA-ZÀ-ÿ\s\-'.,]+$/;
-                            if (!namePattern.test(nameToAdd)) {
-                                alert('Only letters, spaces, hyphens, apostrophes, periods, and commas are allowed.');
-                                return;
-                            }
+              const namePattern = /^[a-zA-ZÀ-ÿ\s\-'.,]+$/;
+              if (!namePattern.test(nameToAdd)) {
+                alert(
+                  "Only letters, spaces, hyphens, apostrophes, periods, and commas are allowed.",
+                );
+                return;
+              }
 
-                            if (nameToAdd.length > 30) {
-                                alert('Official name cannot exceed 30 characters.');
-                                return;
-                            }
+              if (nameToAdd.length > 30) {
+                alert("Official name cannot exceed 30 characters.");
+                return;
+              }
 
-                            const existingEmployee = headerDraftEmployeesList.find(emp => emp.name.toLowerCase() === nameToAdd.toLowerCase());
-                            if (existingEmployee) {
-                                if (!headerDraftSelectedEmployees.includes(existingEmployee.name)) {
-                                    headerDraftSelectedEmployees.push(existingEmployee.name);
-                                    draftTaOfficialsSearch.value = '';
-                                    updateDisplay();
-                                    renderOptions();
-                                }
-                                return;
-                            }
-
-                            if (!headerDraftSelectedEmployees.includes(nameToAdd)) {
-                                headerDraftSelectedEmployees.push(nameToAdd);
-                            }
-
-                            draftTaOfficialsSearch.value = '';
-                            updateDisplay();
-                            renderOptions();
-                        });
-                    }
-                } else {
-                    draftTaOfficialsOptions.innerHTML = '<div class="multiselect-no-options">No officials available</div>';
+              const existingEmployee = headerDraftEmployeesList.find(
+                (emp) => emp.name.toLowerCase() === nameToAdd.toLowerCase(),
+              );
+              if (existingEmployee) {
+                if (
+                  !headerDraftSelectedEmployees.includes(existingEmployee.name)
+                ) {
+                  headerDraftSelectedEmployees.push(existingEmployee.name);
+                  draftTaOfficialsSearch.value = "";
+                  updateDisplay();
+                  renderOptions();
                 }
                 return;
-            }
+              }
 
-            draftTaOfficialsOptions.innerHTML = filteredEmployees.map((emp) => {
-                const inactiveClass = emp.is_active === false ? ' inactive-employee' : '';
-                const inactiveLabel = emp.is_active === false ? ' <span class="inactive-label">(Inactive)</span>' : '';
-                return `<div class="multiselect-option${inactiveClass}" data-name="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</div>`;
-            }).join('');
+              if (!headerDraftSelectedEmployees.includes(nameToAdd)) {
+                headerDraftSelectedEmployees.push(nameToAdd);
+              }
 
-            draftTaOfficialsOptions.querySelectorAll('.multiselect-option').forEach((option) => {
-                option.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const name = option.getAttribute('data-name');
-
-                    if (!headerDraftSelectedEmployees.includes(name)) {
-                        headerDraftSelectedEmployees.push(name);
-                        draftTaOfficialsSearch.value = '';
-                        updateDisplay();
-                        renderOptions();
-                    }
-                });
+              draftTaOfficialsSearch.value = "";
+              updateDisplay();
+              renderOptions();
             });
-        };
+          }
+        } else {
+          draftTaOfficialsOptions.innerHTML =
+            '<div class="multiselect-no-options">No officials available</div>';
+        }
+        return;
+      }
 
-        draftTaOfficialsDisplay.addEventListener('click', async (e) => {
+      draftTaOfficialsOptions.innerHTML = filteredEmployees
+        .map((emp) => {
+          const inactiveClass =
+            emp.is_active === false ? " inactive-employee" : "";
+          const inactiveLabel =
+            emp.is_active === false
+              ? ' <span class="inactive-label">(Inactive)</span>'
+              : "";
+          return `<div class="multiselect-option${inactiveClass}" data-name="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</div>`;
+        })
+        .join("");
+
+      draftTaOfficialsOptions
+        .querySelectorAll(".multiselect-option")
+        .forEach((option) => {
+          option.addEventListener("click", (e) => {
             e.stopPropagation();
-            const shouldOpen = !draftTaOfficialsDropdown.classList.contains('show');
+            const name = option.getAttribute("data-name");
 
-            if (!shouldOpen) {
-                closeDropdown();
-                return;
+            if (!headerDraftSelectedEmployees.includes(name)) {
+              headerDraftSelectedEmployees.push(name);
+              draftTaOfficialsSearch.value = "";
+              updateDisplay();
+              renderOptions();
             }
-
-            draftTaOfficialsDropdown.classList.add('show');
-            renderOptions();
-            draftTaOfficialsSearch.focus();
-        });
-
-        draftTaOfficialsSearch.addEventListener('input', renderOptions);
-        draftTaOfficialsSearch.addEventListener('click', (e) => e.stopPropagation());
-
-        document.addEventListener('click', (e) => {
-            const headerPopupPanel = document.getElementById('header-popup-panel');
-            const userMenuButton = document.getElementById('user-menu-btn');
-
-            if (headerPopupPanel && (headerPopupPanel.contains(e.target) || e.target === userMenuButton || userMenuButton?.contains(e.target))) {
-                return;
-            }
-
-            closeDropdown();
-        });
-
-        return { updateDisplay, renderOptions, closeDropdown };
-    };
-
-    const ensureHeaderDraftOfficialsMultiSelect = async () => {
-        if (!headerDraftEmployeesMultiSelect) {
-            headerDraftEmployeesMultiSelect = createHeaderDraftOfficialsMultiSelect();
-            headerDraftEmployeesMultiSelect?.updateDisplay();
-        }
-
-        await loadHeaderDraftEmployees();
-        headerDraftEmployeesMultiSelect?.renderOptions();
-    };
-
-    const closeDraftTaModal = () => {
-        if (!draftTaModal) return;
-        headerDraftEmployeesMultiSelect?.closeDropdown();
-        draftTaModal.classList.remove('show');
-        document.body.classList.remove('header-modal-open');
-
-        // Clear all form fields
-        if (draftTaPurposeInput) draftTaPurposeInput.value = '';
-        if (draftTaDestinationInput) draftTaDestinationInput.value = '';
-        if (draftTaTravelTypeSelect) draftTaTravelTypeSelect.value = 'official_business';
-        if (draftTaFundingOptionSelect) draftTaFundingOptionSelect.value = 'reimbursement';
-        if (draftTaDateRequestInput) draftTaDateRequestInput.value = '';
-        if (draftTaTravelDateInput) draftTaTravelDateInput.value = '';
-        if (draftTaTravelEndInput) {
-            draftTaTravelEndInput.value = '';
-            draftTaTravelEndInput.setCustomValidity('');
-        }
-
-        // Clear selected officials
-        headerDraftSelectedEmployees.length = 0;
-        headerDraftEmployeesMultiSelect?.updateDisplay();
-    };
-
-    const clearDraftTaForm = () => {
-        // Clear all form fields but keep modal open
-        if (draftTaPurposeInput) draftTaPurposeInput.value = '';
-        if (draftTaDestinationInput) draftTaDestinationInput.value = '';
-        if (draftTaTravelTypeSelect) draftTaTravelTypeSelect.value = 'official_business';
-        if (draftTaFundingOptionSelect) draftTaFundingOptionSelect.value = 'reimbursement';
-        if (draftTaDateRequestInput) draftTaDateRequestInput.value = getTodayLocalISO();
-        if (draftTaTravelDateInput) draftTaTravelDateInput.value = '';
-        if (draftTaTravelEndInput) {
-            draftTaTravelEndInput.value = '';
-            draftTaTravelEndInput.setCustomValidity('');
-        }
-
-        // Clear selected officials
-        headerDraftSelectedEmployees.length = 0;
-        headerDraftEmployeesMultiSelect?.updateDisplay();
-
-        // Focus back on purpose input
-        draftTaPurposeInput?.focus();
-    };
-
-    const openDraftTaModal = async () => {
-        if (!draftTaModal) return;
-        await ensureHeaderDraftOfficialsMultiSelect();
-        setDraftTaDateRequestDefault();
-        setDraftTaOptionDefaults();
-        headerPopup.classList.remove('show');
-        draftTaModal.classList.add('show');
-        document.body.classList.add('header-modal-open');
-        window.requestAnimationFrame(() => {
-            draftTaPurposeInput?.focus();
+          });
         });
     };
 
-    // Fetch and display user email and name
-    if (userEmailElement || userNameElement) {
-        supabase.auth.getSession().then(async ({ data: { session } }) => {
-            if (session?.user?.email) {
-                if (userEmailElement) {
-                    userEmailElement.textContent = session.user.email;
-                }
-                
-                // Fetch user's first and last name from profiles
-                try {
-                    const { data: profile, error } = await supabase
-                        .from('profiles')
-                        .select('FName, LName, role')
-                        .eq('id', session.user.id)
-                        .maybeSingle();
-                    
-                    if (!error && profile) {
-                        setResponsiveHeaderName(
-                            profile.FName,
-                            profile.LName,
-                            session.user.email.split('@')[0]
-                        );
-                    } else if (userNameElement) {
-                        setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
-                    }
-                } catch (err) {
-                    console.error('Error fetching user name:', err);
-                    if (userNameElement) {
-                        setResponsiveHeaderName('', '', session.user.email.split('@')[0]);
-                    }
-                }
-            } else {
-                if (userEmailElement) {
-                    userEmailElement.textContent = 'Not available';
-                }
-                if (userNameElement) {
-                    setResponsiveHeaderName('', '', 'User');
-                }
+    draftTaOfficialsDisplay.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const shouldOpen = !draftTaOfficialsDropdown.classList.contains("show");
+
+      if (!shouldOpen) {
+        closeDropdown();
+        return;
+      }
+
+      draftTaOfficialsDropdown.classList.add("show");
+      renderOptions();
+      draftTaOfficialsSearch.focus();
+    });
+
+    draftTaOfficialsSearch.addEventListener("input", renderOptions);
+    draftTaOfficialsSearch.addEventListener("click", (e) =>
+      e.stopPropagation(),
+    );
+
+    document.addEventListener("click", (e) => {
+      const headerPopupPanel = document.getElementById("header-popup-panel");
+      const userMenuButton = document.getElementById("user-menu-btn");
+
+      if (
+        headerPopupPanel &&
+        (headerPopupPanel.contains(e.target) ||
+          e.target === userMenuButton ||
+          userMenuButton?.contains(e.target))
+      ) {
+        return;
+      }
+
+      closeDropdown();
+    });
+
+    return { updateDisplay, renderOptions, closeDropdown };
+  };
+
+  const ensureHeaderDraftOfficialsMultiSelect = async () => {
+    if (!headerDraftEmployeesMultiSelect) {
+      headerDraftEmployeesMultiSelect = createHeaderDraftOfficialsMultiSelect();
+      headerDraftEmployeesMultiSelect?.updateDisplay();
+    }
+
+    await loadHeaderDraftEmployees();
+    headerDraftEmployeesMultiSelect?.renderOptions();
+  };
+
+  const closeDraftTaModal = () => {
+    if (!draftTaModal) return;
+    headerDraftEmployeesMultiSelect?.closeDropdown();
+    draftTaModal.classList.remove("show");
+    document.body.classList.remove("header-modal-open");
+
+    // Clear all form fields
+    if (draftTaPurposeInput) draftTaPurposeInput.value = "";
+    if (draftTaDestinationInput) draftTaDestinationInput.value = "";
+    if (draftTaTravelTypeSelect)
+      draftTaTravelTypeSelect.value = "official_business";
+    if (draftTaFundingOptionSelect)
+      draftTaFundingOptionSelect.value = "reimbursement";
+    if (draftTaDateRequestInput) draftTaDateRequestInput.value = "";
+    if (draftTaTravelDateInput) draftTaTravelDateInput.value = "";
+    if (draftTaTravelEndInput) {
+      draftTaTravelEndInput.value = "";
+      draftTaTravelEndInput.setCustomValidity("");
+    }
+
+    // Clear selected officials
+    headerDraftSelectedEmployees.length = 0;
+    headerDraftEmployeesMultiSelect?.updateDisplay();
+  };
+
+  const clearDraftTaForm = () => {
+    // Clear all form fields but keep modal open
+    if (draftTaPurposeInput) draftTaPurposeInput.value = "";
+    if (draftTaDestinationInput) draftTaDestinationInput.value = "";
+    if (draftTaTravelTypeSelect)
+      draftTaTravelTypeSelect.value = "official_business";
+    if (draftTaFundingOptionSelect)
+      draftTaFundingOptionSelect.value = "reimbursement";
+    if (draftTaDateRequestInput)
+      draftTaDateRequestInput.value = getTodayLocalISO();
+    if (draftTaTravelDateInput) draftTaTravelDateInput.value = "";
+    if (draftTaTravelEndInput) {
+      draftTaTravelEndInput.value = "";
+      draftTaTravelEndInput.setCustomValidity("");
+    }
+
+    // Clear selected officials
+    headerDraftSelectedEmployees.length = 0;
+    headerDraftEmployeesMultiSelect?.updateDisplay();
+
+    // Focus back on purpose input
+    draftTaPurposeInput?.focus();
+  };
+
+  const openDraftTaModal = async () => {
+    if (!draftTaModal) return;
+    await ensureHeaderDraftOfficialsMultiSelect();
+    setDraftTaDateRequestDefault();
+    setDraftTaOptionDefaults();
+    headerPopup.classList.remove("show");
+    draftTaModal.classList.add("show");
+    document.body.classList.add("header-modal-open");
+    window.requestAnimationFrame(() => {
+      draftTaPurposeInput?.focus();
+    });
+  };
+
+  // Fetch and display user email and name
+  if (userEmailElement || userNameElement) {
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session } }) => {
+        if (session?.user?.email) {
+          if (userEmailElement) {
+            userEmailElement.textContent = session.user.email;
+          }
+
+          // Fetch user's first and last name from profiles
+          try {
+            const { data: profile, error } = await supabase
+              .from("profiles")
+              .select("FName, LName, role")
+              .eq("id", session.user.id)
+              .maybeSingle();
+
+            if (!error && profile) {
+              setResponsiveHeaderName(
+                profile.FName,
+                profile.LName,
+                session.user.email.split("@")[0],
+              );
+            } else if (userNameElement) {
+              setResponsiveHeaderName("", "", session.user.email.split("@")[0]);
             }
-        }).catch(() => {
-            if (userEmailElement) {
-                userEmailElement.textContent = 'Not available';
-            }
+          } catch (err) {
+            console.error("Error fetching user name:", err);
             if (userNameElement) {
-                setResponsiveHeaderName('', '', 'User');
+              setResponsiveHeaderName("", "", session.user.email.split("@")[0]);
             }
+          }
+        } else {
+          if (userEmailElement) {
+            userEmailElement.textContent = "Not available";
+          }
+          if (userNameElement) {
+            setResponsiveHeaderName("", "", "User");
+          }
+        }
+      })
+      .catch(() => {
+        if (userEmailElement) {
+          userEmailElement.textContent = "Not available";
+        }
+        if (userNameElement) {
+          setResponsiveHeaderName("", "", "User");
+        }
+      });
+  }
+
+  // Toggle popup when user menu button is clicked
+  if (userMenuBtn && headerPopup) {
+    userMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      headerPopup.classList.toggle("show");
+    });
+  }
+
+  if (draftTaForm) {
+    draftTaForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+    });
+  }
+
+  if (draftTaOption) {
+    draftTaOption.addEventListener("click", () => {
+      void openDraftTaModal();
+    });
+  }
+
+  if (draftTaCloseBtn) {
+    draftTaCloseBtn.addEventListener("click", closeDraftTaModal);
+  }
+
+  if (draftTaClearBtn) {
+    draftTaClearBtn.addEventListener("click", clearDraftTaForm);
+  }
+
+  if (draftTaTravelDateInput && draftTaTravelEndInput) {
+    const validateTravelDates = () => {
+      const travelDate = draftTaTravelDateInput.value;
+      const travelEnd = draftTaTravelEndInput.value;
+
+      if (travelDate && travelEnd && travelEnd < travelDate) {
+        draftTaTravelEndInput.setCustomValidity(
+          "Travel end date cannot be before travel date",
+        );
+      } else {
+        draftTaTravelEndInput.setCustomValidity("");
+      }
+    };
+
+    draftTaTravelDateInput.addEventListener("change", validateTravelDates);
+    draftTaTravelEndInput.addEventListener("change", validateTravelDates);
+  }
+
+  if (draftTaCreateBtn) {
+    draftTaCreateBtn.addEventListener("click", () => {
+      // Validate required fields
+      if (!draftTaPurposeInput?.value.trim()) {
+        alert("Please enter the purpose of travel.");
+        draftTaPurposeInput?.focus();
+        return;
+      }
+
+      if (!draftTaDestinationInput?.value.trim()) {
+        alert("Please enter the destination.");
+        draftTaDestinationInput?.focus();
+        return;
+      }
+
+      if (!draftTaTravelDateInput?.value) {
+        alert("Please select the travel date.");
+        draftTaTravelDateInput?.focus();
+        return;
+      }
+
+      if (headerDraftSelectedEmployees.length === 0) {
+        alert("Please select at least one official.");
+        return;
+      }
+
+      // Check date validation
+      const travelDate = draftTaTravelDateInput.value;
+      const travelEnd = draftTaTravelEndInput?.value;
+      const dateRequest = draftTaDateRequestInput?.value || getTodayLocalISO();
+      const travelType = draftTaTravelTypeSelect?.value || "official_business";
+      const fundingOption =
+        draftTaFundingOptionSelect?.value || "reimbursement";
+
+      if (travelDate && travelEnd && travelEnd < travelDate) {
+        alert("Travel end date cannot be before travel date.");
+        draftTaTravelEndInput?.focus();
+        return;
+      }
+
+      // Format dates
+      const formatDate = (dateStr) => {
+        if (!dateStr) return "";
+        const date = new Date(dateStr + "T00:00:00");
+        return date.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
         });
-    }
+      };
 
-    // Toggle popup when user menu button is clicked
-    if (userMenuBtn && headerPopup) {
-        userMenuBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            headerPopup.classList.toggle('show');
-        });
-    }
-
-    if (draftTaForm) {
-        draftTaForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-        });
-    }
-
-    if (draftTaOption) {
-        draftTaOption.addEventListener('click', () => {
-            void openDraftTaModal();
-        });
-    }
-
-    if (draftTaCloseBtn) {
-        draftTaCloseBtn.addEventListener('click', closeDraftTaModal);
-    }
-
-    if (draftTaClearBtn) {
-        draftTaClearBtn.addEventListener('click', clearDraftTaForm);
-    }
-
-    if (draftTaTravelDateInput && draftTaTravelEndInput) {
-        const validateTravelDates = () => {
-            const travelDate = draftTaTravelDateInput.value;
-            const travelEnd = draftTaTravelEndInput.value;
-
-            if (travelDate && travelEnd && travelEnd < travelDate) {
-                draftTaTravelEndInput.setCustomValidity('Travel end date cannot be before travel date');
-            } else {
-                draftTaTravelEndInput.setCustomValidity('');
-            }
+      // Prepare officials data with positions
+      const officialsData = headerDraftSelectedEmployees.map((name) => {
+        const cleanName = String(name || "").trim();
+        const employee = headerDraftEmployeesList.find(
+          (emp) => String(emp.name || "").trim() === cleanName,
+        );
+        return {
+          name: cleanName,
+          position: employee ? employee.position : "",
         };
+      });
 
-        draftTaTravelDateInput.addEventListener('change', validateTravelDates);
-        draftTaTravelEndInput.addEventListener('change', validateTravelDates);
-    }
+      // Prepare form data
+      const formData = {
+        purpose: draftTaPurposeInput.value.trim(),
+        destination: draftTaDestinationInput.value.trim(),
+        travelType,
+        fundingOption,
+        dateRequested: dateRequest,
+        dateRequestedFormatted: formatDate(dateRequest),
+        travelDateFormatted: formatDate(travelDate),
+        travelEndFormatted: travelEnd ? formatDate(travelEnd) : "",
+        travelEnd: travelEnd,
+        officials: officialsData,
+      };
 
-    if (draftTaCreateBtn) {
-        draftTaCreateBtn.addEventListener('click', () => {
-            // Validate required fields
-            if (!draftTaPurposeInput?.value.trim()) {
-                alert('Please enter the purpose of travel.');
-                draftTaPurposeInput?.focus();
-                return;
-            }
-
-            if (!draftTaDestinationInput?.value.trim()) {
-                alert('Please enter the destination.');
-                draftTaDestinationInput?.focus();
-                return;
-            }
-
-            if (!draftTaTravelDateInput?.value) {
-                alert('Please select the travel date.');
-                draftTaTravelDateInput?.focus();
-                return;
-            }
-
-            if (headerDraftSelectedEmployees.length === 0) {
-                alert('Please select at least one official.');
-                return;
-            }
-
-            // Check date validation
-            const travelDate = draftTaTravelDateInput.value;
-            const travelEnd = draftTaTravelEndInput?.value;
-            const dateRequest = draftTaDateRequestInput?.value || getTodayLocalISO();
-            const travelType = draftTaTravelTypeSelect?.value || 'official_business';
-            const fundingOption = draftTaFundingOptionSelect?.value || 'reimbursement';
-
-            if (travelDate && travelEnd && travelEnd < travelDate) {
-                alert('Travel end date cannot be before travel date.');
-                draftTaTravelEndInput?.focus();
-                return;
-            }
-
-            // Format dates
-            const formatDate = (dateStr) => {
-                if (!dateStr) return '';
-                const date = new Date(dateStr + 'T00:00:00');
-                return date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-            };
-
-            // Prepare officials data with positions
-            const officialsData = headerDraftSelectedEmployees.map(name => {
-                const cleanName = String(name || '').trim();
-                const employee = headerDraftEmployeesList.find(emp => String(emp.name || '').trim() === cleanName);
-                return {
-                    name: cleanName,
-                    position: employee ? employee.position : ''
-                };
-            });
-
-            // Prepare form data
-            const formData = {
-                purpose: draftTaPurposeInput.value.trim(),
-                destination: draftTaDestinationInput.value.trim(),
-                travelType,
-                fundingOption,
-                dateRequested: dateRequest,
-                dateRequestedFormatted: formatDate(dateRequest),
-                travelDateFormatted: formatDate(travelDate),
-                travelEndFormatted: travelEnd ? formatDate(travelEnd) : '',
-                travelEnd: travelEnd,
-                officials: officialsData
-            };
-
-            // Generate PDF
-            if (window.generateTAPDF) {
-                window.generateTAPDF(formData);
-                closeDraftTaModal();
-            } else {
-                alert('PDF generator not loaded. Please refresh the page.');
-            }
-        });
-    }
-
-    if (draftTaModal) {
-        draftTaModal.addEventListener('click', (e) => {
-            if (e.target === draftTaModal) {
-                closeDraftTaModal();
-            }
-        });
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape' && draftTaModal?.classList.contains('show')) {
-            closeDraftTaModal();
-        }
+      // Generate PDF
+      if (window.generateTAPDF) {
+        window.generateTAPDF(formData);
+        closeDraftTaModal();
+      } else {
+        alert("PDF generator not loaded. Please refresh the page.");
+      }
     });
+  }
 
-    // Handle settings option click
-    if (settingsOption && headerPopup) {
-        settingsOption.addEventListener('click', () => {
-            headerPopup.classList.remove('show');
-            document.getElementById('settings-modal').classList.add('show');
-        });
-    }
-
-    // Handle logout option click
-    if (logoutOption && headerPopup) {
-        logoutOption.addEventListener('click', async () => {
-            headerPopup.classList.remove('show');
-            
-            // Show confirmation dialog
-            const confirmed = await showConfirmation(
-                'Confirm Logout',
-                'Are you sure you want to log out?'
-            );
-
-            if (!confirmed) {
-                return; // User cancelled
-            }
-
-            try {
-                await markCurrentUserOffline();
-                clearDashboardClientState();
-                await supabase.auth.signOut();
-                window.location.href = "../index.html";
-            } catch (error) {
-                console.error("Logout error:", error);
-                clearDashboardClientState();
-                window.location.href = "../index.html";
-            }
-        });
-    }
-
-    // Close popup when clicking outside
-    document.addEventListener('click', (e) => {
-        if (headerPopup && !headerPopup.contains(e.target) && 
-            e.target !== userMenuBtn && !userMenuBtn?.contains(e.target)) {
-            headerPopup.classList.remove('show');
-        }
+  if (draftTaModal) {
+    draftTaModal.addEventListener("click", (e) => {
+      if (e.target === draftTaModal) {
+        closeDraftTaModal();
+      }
     });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && draftTaModal?.classList.contains("show")) {
+      closeDraftTaModal();
+    }
+  });
+
+  // Handle settings option click
+  if (settingsOption && headerPopup) {
+    settingsOption.addEventListener("click", () => {
+      headerPopup.classList.remove("show");
+      document.getElementById("settings-modal").classList.add("show");
+    });
+  }
+
+  // Handle logout option click
+  if (logoutOption && headerPopup) {
+    logoutOption.addEventListener("click", async () => {
+      headerPopup.classList.remove("show");
+
+      // Show confirmation dialog
+      const confirmed = await showConfirmation(
+        "Confirm Logout",
+        "Are you sure you want to log out?",
+      );
+
+      if (!confirmed) {
+        return; // User cancelled
+      }
+
+      try {
+        await markCurrentUserOffline();
+        clearDashboardClientState();
+        await supabase.auth.signOut();
+        window.location.href = "../index.html";
+      } catch (error) {
+        console.error("Logout error:", error);
+        clearDashboardClientState();
+        window.location.href = "../index.html";
+      }
+    });
+  }
+
+  // Close popup when clicking outside
+  document.addEventListener("click", (e) => {
+    if (
+      headerPopup &&
+      !headerPopup.contains(e.target) &&
+      e.target !== userMenuBtn &&
+      !userMenuBtn?.contains(e.target)
+    ) {
+      headerPopup.classList.remove("show");
+    }
+  });
 };
 
 const getUserRole = async (userId) => {
-    try {
-        const { data, error } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", userId)
-            .maybeSingle();
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
 
-        if (error) {
-            throw error;
-        }
-
-        return data?.role || "user";
-    } catch (error) {
-        console.error("Role lookup error:", error);
-        return "user";
+    if (error) {
+      throw error;
     }
+
+    return data?.role || "user";
+  } catch (error) {
+    console.error("Role lookup error:", error);
+    return "user";
+  }
 };
 
 const requireUser = async () => {
-    const { data: sessionData, error } = await supabase.auth.getSession();
-    if (error || !sessionData?.session) {
-        // No valid session - redirect to login
-        console.warn("No valid session found. Redirecting to login.");
-        window.location.href = "../index.html";
-        return;
+  const { data: sessionData, error } = await supabase.auth.getSession();
+  if (error || !sessionData?.session) {
+    // No valid session - redirect to login
+    console.warn("No valid session found. Redirecting to login.");
+    window.location.href = "../index.html";
+    return;
+  }
+
+  const user = sessionData.session.user;
+
+  // Clear persisted table state once per new authenticated session.
+  try {
+    const loginMarker = `${user.id}:${sessionData.session.access_token || ""}`;
+    const previousLoginMarker = sessionStorage.getItem("dashboardLoginMarker");
+
+    if (previousLoginMarker !== loginMarker) {
+      localStorage.removeItem("dashboardFilters");
+      localStorage.removeItem("dashboardSort");
+      sessionStorage.setItem("dashboardLoginMarker", loginMarker);
     }
+  } catch (storageError) {
+    console.warn(
+      "Unable to reset dashboard table state for new login:",
+      storageError,
+    );
+  }
 
-    const user = sessionData.session.user;
+  // Verify user role from database (not localStorage which can be manipulated)
+  const role = await getUserRole(user.id);
+  dashboardUserRole = role || "user";
 
-    // Clear persisted table state once per new authenticated session.
-    try {
-        const loginMarker = `${user.id}:${sessionData.session.access_token || ""}`;
-        const previousLoginMarker = sessionStorage.getItem("dashboardLoginMarker");
+  // If user is actually an admin, redirect to admin panel
+  if (role === "admin") {
+    window.location.href = "../admin/admin.html";
+    return;
+  }
 
-        if (previousLoginMarker !== loginMarker) {
-            localStorage.removeItem("dashboardFilters");
-            localStorage.removeItem("dashboardSort");
-            sessionStorage.setItem("dashboardLoginMarker", loginMarker);
-        }
-    } catch (storageError) {
-        console.warn("Unable to reset dashboard table state for new login:", storageError);
-    }
-    
-    // Verify user role from database (not localStorage which can be manipulated)
-    const role = await getUserRole(user.id);
-    dashboardUserRole = role || "user";
-    
-    // If user is actually an admin, redirect to admin panel
-    if (role === "admin") {
-        window.location.href = "../admin/admin.html";
-        return;
-    }
-
-    // Note: Access control for data operations is enforced by Supabase RLS policies.
-    // Client-side checks are for UX only and should not be relied upon for security.
+  // Note: Access control for data operations is enforced by Supabase RLS policies.
+  // Client-side checks are for UX only and should not be relied upon for security.
 };
 
 // Periodic session validation to detect session termination
 // WARNING: Users can disable this in DevTools, so server-side security (RLS) is critical
 const validateSession = async () => {
-    const { data: sessionData, error } = await supabase.auth.getSession();
-    if (error || !sessionData?.session) {
-        console.warn("Session expired or invalid. Redirecting to login.");
-        window.location.href = "../index.html";
-    }
+  const { data: sessionData, error } = await supabase.auth.getSession();
+  if (error || !sessionData?.session) {
+    console.warn("Session expired or invalid. Redirecting to login.");
+    window.location.href = "../index.html";
+  }
 };
 
 // Check session every 30 seconds
@@ -795,15 +882,15 @@ let taRows = [];
 let latestKnownTimestamp = null;
 const currentYear = new Date().getFullYear().toString();
 let activeFilters = {
-    taNumber: "",
-    employee: "",
-    year: currentYear,
-    travelDate: "",
-    matchAll: true
+  taNumber: "",
+  employee: "",
+  year: currentYear,
+  travelDate: "",
+  matchAll: true,
 };
 let activeSort = {
-    by: "",
-    order: "asc"
+  by: "",
+  order: "asc",
 };
 let employeesListForFilter = [];
 let insightsHeightObserver = null;
@@ -813,60 +900,68 @@ let insightsViewportSettleTimeout = null;
 let insightsBreakpointQuery = null;
 let agendaTrackerInitialized = false;
 let fcCalendar = null;
+let agendaCalendarSyncFrame = null;
+let agendaCalendarResizeTimeout = null;
+let agendaCalendarViewportSettleTimeout = null;
 
 // --- Tooltip singleton ---
 let agendaTooltipEl = null;
 let agendaTooltipCloseHandler = null;
 
 const getOrCreateAgendaTooltip = () => {
-    if (!agendaTooltipEl) {
-        agendaTooltipEl = document.createElement('div');
-        agendaTooltipEl.className = 'agenda-ta-tooltip';
-        document.body.appendChild(agendaTooltipEl);
-    }
-    return agendaTooltipEl;
+  if (!agendaTooltipEl) {
+    agendaTooltipEl = document.createElement("div");
+    agendaTooltipEl.className = "agenda-ta-tooltip";
+    document.body.appendChild(agendaTooltipEl);
+  }
+  return agendaTooltipEl;
 };
 
 const hideAgendaTooltip = () => {
-    if (!agendaTooltipEl) return;
-    agendaTooltipEl.classList.remove('is-visible');
-    if (agendaTooltipCloseHandler) {
-        document.removeEventListener('click', agendaTooltipCloseHandler);
-        agendaTooltipCloseHandler = null;
-    }
+  if (!agendaTooltipEl) return;
+  agendaTooltipEl.classList.remove("is-visible");
+  if (agendaTooltipCloseHandler) {
+    document.removeEventListener("click", agendaTooltipCloseHandler);
+    agendaTooltipCloseHandler = null;
+  }
 };
 
 const showAgendaTooltip = (btn, row) => {
-    hideAgendaTooltip();
-    const tooltip = getOrCreateAgendaTooltip();
+  hideAgendaTooltip();
+  const tooltip = getOrCreateAgendaTooltip();
 
-    const officialsStr = typeof row.employees === 'string' ? row.employees.trim() : '';
-    let officialNames = [];
-    if (officialsStr) {
-        // Split on commas but reattach suffix tokens (Jr., Sr., III, CESO III, etc.) to the previous name
-        const SUFFIX_RE = /^(jr\.?|sr\.?|i{2,}|iv|vi*|ceso\s*\w*|ph\.?d\.?|dpa|rn|cpa|md|lpt|msn|bsn|edd|lld)$/i;
-        const parts = officialsStr.split(',').map((s) => s.trim()).filter(Boolean);
-        for (const part of parts) {
-            if (SUFFIX_RE.test(part) && officialNames.length > 0) {
-                officialNames[officialNames.length - 1] += ', ' + part;
-            } else {
-                officialNames.push(part);
-            }
-        }
+  const officialsStr =
+    typeof row.employees === "string" ? row.employees.trim() : "";
+  let officialNames = [];
+  if (officialsStr) {
+    // Split on commas but reattach suffix tokens (Jr., Sr., III, CESO III, etc.) to the previous name
+    const SUFFIX_RE =
+      /^(jr\.?|sr\.?|i{2,}|iv|vi*|ceso\s*\w*|ph\.?d\.?|dpa|rn|cpa|md|lpt|msn|bsn|edd|lld)$/i;
+    const parts = officialsStr
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    for (const part of parts) {
+      if (SUFFIX_RE.test(part) && officialNames.length > 0) {
+        officialNames[officialNames.length - 1] += ", " + part;
+      } else {
+        officialNames.push(part);
+      }
     }
-    const officials = officialNames.length
-        ? `<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials">${escapeHtml(officialNames.join(', '))}</div>`
-        : '<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials" style="color:rgba(11,28,59,0.4)">None listed</div>';
+  }
+  const officials = officialNames.length
+    ? `<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials">${escapeHtml(officialNames.join(", "))}</div>`
+    : '<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials" style="color:rgba(11,28,59,0.4)">None listed</div>';
 
-    tooltip.innerHTML = `
-        <div class="agenda-ta-tooltip-title">${escapeHtml(row.ta_number || '-')}</div>
+  tooltip.innerHTML = `
+        <div class="agenda-ta-tooltip-title">${escapeHtml(row.ta_number || "-")}</div>
         <div class="agenda-ta-tooltip-row">
             <div class="agenda-ta-tooltip-label">Destination</div>
-            <div class="agenda-ta-tooltip-value">${escapeHtml(row.destination || '—')}</div>
+            <div class="agenda-ta-tooltip-value">${escapeHtml(row.destination || "—")}</div>
         </div>
         <div class="agenda-ta-tooltip-row">
             <div class="agenda-ta-tooltip-label">Purpose</div>
-            <div class="agenda-ta-tooltip-value">${escapeHtml(row.purpose || '—')}</div>
+            <div class="agenda-ta-tooltip-value">${escapeHtml(row.purpose || "—")}</div>
         </div>
         <div class="agenda-ta-tooltip-row">
             <div class="agenda-ta-tooltip-label">Officials</div>
@@ -874,251 +969,277 @@ const showAgendaTooltip = (btn, row) => {
         </div>
     `;
 
-    // Position: prefer below button, flip if near bottom
-    const rect = btn.getBoundingClientRect();
-    const ttW = 280;
-    const ttH = tooltip.offsetHeight || 160;
-    let left = rect.left;
-    let top = rect.bottom + 8;
+  // Position: prefer below button, flip if near bottom
+  const rect = btn.getBoundingClientRect();
+  const ttW = 280;
+  const ttH = tooltip.offsetHeight || 160;
+  let left = rect.left;
+  let top = rect.bottom + 8;
 
-    if (left + ttW > window.innerWidth - 12) left = window.innerWidth - ttW - 12;
-    if (top + ttH > window.innerHeight - 12) top = rect.top - ttH - 8;
+  if (left + ttW > window.innerWidth - 12) left = window.innerWidth - ttW - 12;
+  if (top + ttH > window.innerHeight - 12) top = rect.top - ttH - 8;
 
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${top}px`;
-    tooltip.style.minWidth = `${ttW}px`;
-    tooltip.classList.add('is-visible');
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+  tooltip.style.minWidth = `${ttW}px`;
+  tooltip.classList.add("is-visible");
 
-    agendaTooltipCloseHandler = (e) => {
-        if (!tooltip.contains(e.target) && e.target !== btn) {
-            hideAgendaTooltip();
-        }
-    };
-    setTimeout(() => document.addEventListener('click', agendaTooltipCloseHandler), 0);
+  agendaTooltipCloseHandler = (e) => {
+    if (!tooltip.contains(e.target) && e.target !== btn) {
+      hideAgendaTooltip();
+    }
+  };
+  setTimeout(
+    () => document.addEventListener("click", agendaTooltipCloseHandler),
+    0,
+  );
 };
 
 const buildAgendaInfoBtn = (row) => {
-    return `<button type="button" class="agenda-info-btn" data-ta-key="${escapeHtml(row.ta_number || '')}" aria-label="Info for ${escapeHtml(row.ta_number || 'TA')}">i</button>`;
+  return `<button type="button" class="agenda-info-btn" data-ta-key="${escapeHtml(row.ta_number || "")}" aria-label="Info for ${escapeHtml(row.ta_number || "TA")}">i</button>`;
 };
 
 const attachAgendaInfoBtnListeners = (container) => {
-    container.querySelectorAll('.agenda-info-btn').forEach((btn) => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const taKey = btn.getAttribute('data-ta-key');
-            const row = taRows.find((r) => r.ta_number === taKey);
-            if (!row) return;
-            if (agendaTooltipEl && agendaTooltipEl.classList.contains('is-visible') && agendaTooltipEl.dataset.openFor === taKey) {
-                hideAgendaTooltip();
-                return;
-            }
-            agendaTooltipEl && (agendaTooltipEl.dataset.openFor = taKey);
-            showAgendaTooltip(btn, row);
-        });
+  container.querySelectorAll(".agenda-info-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const taKey = btn.getAttribute("data-ta-key");
+      const row = taRows.find((r) => r.ta_number === taKey);
+      if (!row) return;
+      if (
+        agendaTooltipEl &&
+        agendaTooltipEl.classList.contains("is-visible") &&
+        agendaTooltipEl.dataset.openFor === taKey
+      ) {
+        hideAgendaTooltip();
+        return;
+      }
+      agendaTooltipEl && (agendaTooltipEl.dataset.openFor = taKey);
+      showAgendaTooltip(btn, row);
     });
+  });
 };
 
 const toIsoDateLocal = (date) => {
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 const parseIsoDateLocal = (isoDate) => {
-    if (!isoDate || typeof isoDate !== 'string') return null;
-    const parts = isoDate.split('-').map(Number);
-    if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
-    return new Date(parts[0], parts[1] - 1, parts[2]);
+  if (!isoDate || typeof isoDate !== "string") return null;
+  const parts = isoDate.split("-").map(Number);
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2]);
 };
 
-const getMonthStartDate = (date) => new Date(date.getFullYear(), date.getMonth(), 1);
+const getMonthStartDate = (date) =>
+  new Date(date.getFullYear(), date.getMonth(), 1);
 
 const formatAgendaDateLabel = (isoDate) => {
-    const parsed = parseIsoDateLocal(isoDate);
-    if (!parsed) return 'No date selected';
-    return parsed.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric'
-    });
+  const parsed = parseIsoDateLocal(isoDate);
+  if (!parsed) return "No date selected";
+  return parsed.toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 };
 
 const formatTaDateRange = (row) => {
-    if (!row || !row.travel_date) return 'No travel date';
-    const start = formatAgendaDateLabel(row.travel_date);
-    if (!row.travel_until || row.travel_until === row.travel_date) return start;
-    const end = formatAgendaDateLabel(row.travel_until);
-    return `${start} – ${end}`;
+  if (!row || !row.travel_date) return "No travel date";
+  const start = formatAgendaDateLabel(row.travel_date);
+  if (!row.travel_until || row.travel_until === row.travel_date) return start;
+  const end = formatAgendaDateLabel(row.travel_until);
+  return `${start} – ${end}`;
 };
 
 const todayLocalDate = new Date();
 const agendaState = {
-    selectedDateIso: toIsoDateLocal(todayLocalDate),
-    activeTab: 'today'
+  selectedDateIso: toIsoDateLocal(todayLocalDate),
+  activeTab: "today",
 };
 
 const recordOccursOnIsoDate = (record, isoDate) => {
-    if (!record || !record.travel_date || !isoDate) return false;
-    const startDate = record.travel_date;
-    const endDate = record.travel_until || record.travel_date;
-    return startDate <= isoDate && endDate >= isoDate;
+  if (!record || !record.travel_date || !isoDate) return false;
+  const startDate = record.travel_date;
+  const endDate = record.travel_until || record.travel_date;
+  return startDate <= isoDate && endDate >= isoDate;
 };
 
 const getAgendaRowsForDate = (isoDate) => {
-    return taRows
-        .filter((row) => recordOccursOnIsoDate(row, isoDate))
-        .sort((a, b) => (a.travel_date || '').localeCompare(b.travel_date || ''));
+  return taRows
+    .filter((row) => recordOccursOnIsoDate(row, isoDate))
+    .sort((a, b) => (a.travel_date || "").localeCompare(b.travel_date || ""));
 };
 
 const buildUpcomingAgendaBuckets = () => {
-    const MS_PER_DAY = 24 * 60 * 60 * 1000;
-    const MAX_RANGE_DAYS = 370;
-    const todayIso = toIsoDateLocal(new Date());
-    const tomorrowDate = parseIsoDateLocal(todayIso);
-    if (!tomorrowDate) return [];
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-    const tomorrowIso = toIsoDateLocal(tomorrowDate);
+  const MS_PER_DAY = 24 * 60 * 60 * 1000;
+  const MAX_RANGE_DAYS = 370;
+  const todayIso = toIsoDateLocal(new Date());
+  const tomorrowDate = parseIsoDateLocal(todayIso);
+  if (!tomorrowDate) return [];
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowIso = toIsoDateLocal(tomorrowDate);
 
-    const dateToRowsMap = new Map();
+  const dateToRowsMap = new Map();
 
-    taRows.forEach((row) => {
-        if (!row || !row.travel_date) return;
+  taRows.forEach((row) => {
+    if (!row || !row.travel_date) return;
 
-        const startDate = parseIsoDateLocal(row.travel_date);
-        const endDate = parseIsoDateLocal(row.travel_until || row.travel_date);
-        if (!startDate || !endDate) return;
+    const startDate = parseIsoDateLocal(row.travel_date);
+    const endDate = parseIsoDateLocal(row.travel_until || row.travel_date);
+    if (!startDate || !endDate) return;
 
-        const normalizedStart = startDate <= endDate ? startDate : endDate;
-        const normalizedEnd = startDate <= endDate ? endDate : startDate;
+    const normalizedStart = startDate <= endDate ? startDate : endDate;
+    const normalizedEnd = startDate <= endDate ? endDate : startDate;
 
-        const effectiveStart = normalizedStart < tomorrowDate ? tomorrowDate : normalizedStart;
-        if (effectiveStart > normalizedEnd) return;
+    const effectiveStart =
+      normalizedStart < tomorrowDate ? tomorrowDate : normalizedStart;
+    if (effectiveStart > normalizedEnd) return;
 
-        const maxEndBySafety = new Date(effectiveStart.getTime() + (MAX_RANGE_DAYS * MS_PER_DAY));
-        const effectiveEnd = normalizedEnd > maxEndBySafety ? maxEndBySafety : normalizedEnd;
+    const maxEndBySafety = new Date(
+      effectiveStart.getTime() + MAX_RANGE_DAYS * MS_PER_DAY,
+    );
+    const effectiveEnd =
+      normalizedEnd > maxEndBySafety ? maxEndBySafety : normalizedEnd;
 
-        const cursor = new Date(effectiveStart.getTime());
-        while (cursor <= effectiveEnd) {
-            const isoDate = toIsoDateLocal(cursor);
-            if (!dateToRowsMap.has(isoDate)) {
-                dateToRowsMap.set(isoDate, []);
-            }
-            dateToRowsMap.get(isoDate).push(row);
-            cursor.setDate(cursor.getDate() + 1);
-        }
-    });
+    const cursor = new Date(effectiveStart.getTime());
+    while (cursor <= effectiveEnd) {
+      const isoDate = toIsoDateLocal(cursor);
+      if (!dateToRowsMap.has(isoDate)) {
+        dateToRowsMap.set(isoDate, []);
+      }
+      dateToRowsMap.get(isoDate).push(row);
+      cursor.setDate(cursor.getDate() + 1);
+    }
+  });
 
-    return Array.from(dateToRowsMap.entries())
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .map(([isoDate, rows]) => ({
-            isoDate,
-            rows: rows.sort((a, b) => (a.travel_date || '').localeCompare(b.travel_date || ''))
-        }));
+  return Array.from(dateToRowsMap.entries())
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .map(([isoDate, rows]) => ({
+      isoDate,
+      rows: rows.sort((a, b) =>
+        (a.travel_date || "").localeCompare(b.travel_date || ""),
+      ),
+    }));
 };
 
 const scrollToUpcomingDateGroup = (isoDate) => {
-    if (!isoDate) return;
-    const target = document.querySelector(`[data-upcoming-date-group="${isoDate}"]`);
-    if (!target) return;
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  if (!isoDate) return;
+  const target = document.querySelector(
+    `[data-upcoming-date-group="${isoDate}"]`,
+  );
+  if (!target) return;
+  target.scrollIntoView({ behavior: "smooth", block: "start" });
 };
 
 const renderAgendaTabs = () => {
-    document.querySelectorAll('.agenda-tab-btn').forEach((btn) => {
-        const isActive = btn.getAttribute('data-agenda-tab') === agendaState.activeTab;
-        btn.classList.toggle('active', isActive);
-        btn.setAttribute('aria-selected', isActive ? 'true' : 'false');
-    });
+  document.querySelectorAll(".agenda-tab-btn").forEach((btn) => {
+    const isActive =
+      btn.getAttribute("data-agenda-tab") === agendaState.activeTab;
+    btn.classList.toggle("active", isActive);
+    btn.setAttribute("aria-selected", isActive ? "true" : "false");
+  });
 };
 
 const updateFcBadgesAndSummary = () => {
-    const calEl = document.getElementById('agenda-fc-calendar');
-    if (!calEl) return;
+  const calEl = document.getElementById("agenda-fc-calendar");
+  if (!calEl) return;
 
-    calEl.querySelectorAll('.fc-daygrid-day').forEach((dayEl) => {
-        const isoDate = dayEl.getAttribute('data-date');
-        if (!isoDate) return;
+  calEl.querySelectorAll(".fc-daygrid-day").forEach((dayEl) => {
+    const isoDate = dayEl.getAttribute("data-date");
+    if (!isoDate) return;
 
-        // Remove old badge and class
-        dayEl.querySelectorAll('.fc-ta-badge').forEach((b) => b.remove());
-        dayEl.classList.remove('has-ta-events');
+    // Remove old badge and class
+    dayEl.querySelectorAll(".fc-ta-badge").forEach((b) => b.remove());
+    dayEl.classList.remove("has-ta-events");
 
-        const count = getAgendaRowsForDate(isoDate).length;
-        if (count > 0) {
-            dayEl.classList.add('has-ta-events');
-            const frame = dayEl.querySelector('.fc-daygrid-day-frame');
-            if (frame) {
-                const badge = document.createElement('span');
-                badge.className = 'fc-ta-badge';
-                badge.textContent = count;
-                badge.setAttribute('aria-hidden', 'true');
-                frame.appendChild(badge);
-            }
-        }
-    });
+    const count = getAgendaRowsForDate(isoDate).length;
+    if (count > 0) {
+      dayEl.classList.add("has-ta-events");
+      const frame = dayEl.querySelector(".fc-daygrid-day-frame");
+      if (frame) {
+        const badge = document.createElement("span");
+        badge.className = "fc-ta-badge";
+        badge.textContent = count;
+        badge.setAttribute("aria-hidden", "true");
+        frame.appendChild(badge);
+      }
+    }
+  });
 };
 
 const renderAgendaList = () => {
-    const agendaList = document.getElementById('agenda-ta-list');
-    const agendaTargetDate = document.getElementById('agenda-target-date');
-    if (!agendaList || !agendaTargetDate) return;
+  const agendaList = document.getElementById("agenda-ta-list");
+  const agendaTargetDate = document.getElementById("agenda-target-date");
+  if (!agendaList || !agendaTargetDate) return;
 
-    if (agendaState.activeTab === 'today') {
-        const viewIso = agendaState.selectedDateIso || toIsoDateLocal(new Date());
-        const rows = getAgendaRowsForDate(viewIso);
-        const isActualToday = viewIso === toIsoDateLocal(new Date());
+  if (agendaState.activeTab === "today") {
+    const viewIso = agendaState.selectedDateIso || toIsoDateLocal(new Date());
+    const rows = getAgendaRowsForDate(viewIso);
+    const isActualToday = viewIso === toIsoDateLocal(new Date());
 
-        agendaTargetDate.textContent = isActualToday
-            ? `Today: ${formatAgendaDateLabel(viewIso)}`
-            : formatAgendaDateLabel(viewIso);
+    agendaTargetDate.textContent = isActualToday
+      ? `Today: ${formatAgendaDateLabel(viewIso)}`
+      : formatAgendaDateLabel(viewIso);
 
-        if (!rows.length) {
-            agendaList.innerHTML = '<div class="agenda-empty">No travel authorities scheduled for this date.</div>';
-            return;
-        }
+    if (!rows.length) {
+      agendaList.innerHTML =
+        '<div class="agenda-empty">No travel authorities scheduled for this date.</div>';
+      return;
+    }
 
-        agendaList.innerHTML = rows.map((row, index) => {
-            const dateLabel = formatTaDateRange(row);
+    agendaList.innerHTML = rows
+      .map((row, index) => {
+        const dateLabel = formatTaDateRange(row);
 
-            return `
+        return `
                 <div class="agenda-item">
                     <span class="agenda-item-index">${index + 1}.</span>
-                    <span class="agenda-item-ta">${escapeHtml(row.ta_number || '-')}</span>
+                    <span class="agenda-item-ta">${escapeHtml(row.ta_number || "-")}</span>
                     ${buildAgendaInfoBtn(row)}
                     <span class="agenda-item-date">${escapeHtml(dateLabel)}</span>
                 </div>
             `;
-        }).join('');
-        attachAgendaInfoBtnListeners(agendaList);
-        return;
-    }
+      })
+      .join("");
+    attachAgendaInfoBtnListeners(agendaList);
+    return;
+  }
 
-    const upcomingBuckets = buildUpcomingAgendaBuckets();
-    const tomorrowDate = new Date();
-    tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-    const tomorrowIso = toIsoDateLocal(tomorrowDate);
+  const upcomingBuckets = buildUpcomingAgendaBuckets();
+  const tomorrowDate = new Date();
+  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+  const tomorrowIso = toIsoDateLocal(tomorrowDate);
 
-    agendaTargetDate.textContent = `Upcoming from: ${formatAgendaDateLabel(tomorrowIso)}`;
+  agendaTargetDate.textContent = `Upcoming from: ${formatAgendaDateLabel(tomorrowIso)}`;
 
-    if (!upcomingBuckets.length) {
-        agendaList.innerHTML = '<div class="agenda-empty">No upcoming travel authorities found.</div>';
-        return;
-    }
+  if (!upcomingBuckets.length) {
+    agendaList.innerHTML =
+      '<div class="agenda-empty">No upcoming travel authorities found.</div>';
+    return;
+  }
 
-    agendaList.innerHTML = upcomingBuckets.map((bucket) => {
-        const headerLabel = formatAgendaDateLabel(bucket.isoDate);
-        const items = bucket.rows.map((row, index) => `
+  agendaList.innerHTML = upcomingBuckets
+    .map((bucket) => {
+      const headerLabel = formatAgendaDateLabel(bucket.isoDate);
+      const items = bucket.rows
+        .map(
+          (row, index) => `
             <div class="agenda-item agenda-item--upcoming">
                 <span class="agenda-item-index">${index + 1}.</span>
-                <span class="agenda-item-ta">${escapeHtml(row.ta_number || '-')}</span>
+                <span class="agenda-item-ta">${escapeHtml(row.ta_number || "-")}</span>
                 ${buildAgendaInfoBtn(row)}
-                <span class="agenda-item-date">${escapeHtml(row.travel_date ? formatTaDateRange(row) : 'No travel date')}</span>
+                <span class="agenda-item-date">${escapeHtml(row.travel_date ? formatTaDateRange(row) : "No travel date")}</span>
             </div>
-        `).join('');
+        `,
+        )
+        .join("");
 
-        return `
+      return `
             <section class="agenda-date-group" data-upcoming-date-group="${bucket.isoDate}">
                 <header class="agenda-date-group-header">
                     <span>${escapeHtml(headerLabel)}</span>
@@ -1126,415 +1247,499 @@ const renderAgendaList = () => {
                 ${items}
             </section>
         `;
-    }).join('');
+    })
+    .join("");
 
-    if (agendaState.selectedDateIso && agendaState.selectedDateIso > toIsoDateLocal(new Date())) {
-        scrollToUpcomingDateGroup(agendaState.selectedDateIso);
-    }
-    attachAgendaInfoBtnListeners(agendaList);
+  if (
+    agendaState.selectedDateIso &&
+    agendaState.selectedDateIso > toIsoDateLocal(new Date())
+  ) {
+    scrollToUpcomingDateGroup(agendaState.selectedDateIso);
+  }
+  attachAgendaInfoBtnListeners(agendaList);
 };
 
 const renderAgendaTracker = () => {
-    if (!agendaTrackerInitialized) return;
-    renderAgendaTabs();
-    updateFcBadgesAndSummary();
-    renderAgendaList();
-    queueInsightsLayoutSync();
+  if (!agendaTrackerInitialized) return;
+  renderAgendaTabs();
+  updateFcBadgesAndSummary();
+  renderAgendaList();
+  queueAgendaCalendarLayoutSync();
+  queueInsightsLayoutSync();
+};
+
+const syncAgendaCalendarLayout = () => {
+  if (!fcCalendar) return;
+
+  const insightsPane = document.getElementById("tab-insights");
+  const fcContainer = document.getElementById("agenda-fc-calendar");
+  if (
+    !insightsPane ||
+    !insightsPane.classList.contains("active") ||
+    !fcContainer
+  ) {
+    return;
+  }
+
+  const { width, height } = fcContainer.getBoundingClientRect();
+  if (width <= 0 || height <= 0) {
+    return;
+  }
+
+  fcCalendar.updateSize();
+};
+
+const queueAgendaCalendarLayoutSync = () => {
+  if (agendaCalendarSyncFrame !== null) return;
+  agendaCalendarSyncFrame = window.requestAnimationFrame(() => {
+    agendaCalendarSyncFrame = null;
+    syncAgendaCalendarLayout();
+  });
+};
+
+const scheduleAgendaCalendarLayoutSync = () => {
+  queueAgendaCalendarLayoutSync();
+
+  if (agendaCalendarResizeTimeout !== null) {
+    window.clearTimeout(agendaCalendarResizeTimeout);
+  }
+  if (agendaCalendarViewportSettleTimeout !== null) {
+    window.clearTimeout(agendaCalendarViewportSettleTimeout);
+  }
+
+  agendaCalendarResizeTimeout = window.setTimeout(() => {
+    agendaCalendarResizeTimeout = null;
+    queueAgendaCalendarLayoutSync();
+  }, 180);
+
+  agendaCalendarViewportSettleTimeout = window.setTimeout(() => {
+    agendaCalendarViewportSettleTimeout = null;
+    queueAgendaCalendarLayoutSync();
+  }, 420);
 };
 
 const initAgendaTracker = () => {
-    if (agendaTrackerInitialized) {
-        renderAgendaTracker();
-        return;
-    }
+  if (agendaTrackerInitialized) {
+    renderAgendaTracker();
+    return;
+  }
 
-    const fcContainer = document.getElementById('agenda-fc-calendar');
-    if (!fcContainer) return;
+  const fcContainer = document.getElementById("agenda-fc-calendar");
+  if (!fcContainer) return;
 
-    agendaTrackerInitialized = true;
+  agendaTrackerInitialized = true;
 
-    fcCalendar = new FullCalendar.Calendar(fcContainer, {
-        initialView: 'dayGridMonth',
-        headerToolbar: {
-            left: 'title',
-            center: '',
-            right: 'prev,next'
-        },
-        height: 'auto',
-        fixedWeekCount: true,
-        showNonCurrentDates: true,
-        events: [],
-        datesSet: () => {
-            updateFcBadgesAndSummary();
-        },
-        dateClick: (info) => {
-            document.querySelectorAll('#agenda-fc-calendar .fc-day-selected')
-                .forEach((el) => el.classList.remove('fc-day-selected'));
-            info.dayEl.classList.add('fc-day-selected');
-            agendaState.selectedDateIso = info.dateStr;
-            agendaState.activeTab = 'today';
-            renderAgendaTabs();
-            renderAgendaList();
-            queueInsightsLayoutSync();
-        }
+  fcCalendar = new FullCalendar.Calendar(fcContainer, {
+    initialView: "dayGridMonth",
+    headerToolbar: {
+      left: "title",
+      center: "",
+      right: "prev,next",
+    },
+    height: "auto",
+    fixedWeekCount: true,
+    showNonCurrentDates: true,
+    events: [],
+    datesSet: () => {
+      updateFcBadgesAndSummary();
+    },
+    dateClick: (info) => {
+      document
+        .querySelectorAll("#agenda-fc-calendar .fc-day-selected")
+        .forEach((el) => el.classList.remove("fc-day-selected"));
+      info.dayEl.classList.add("fc-day-selected");
+      agendaState.selectedDateIso = info.dateStr;
+      agendaState.activeTab = "today";
+      renderAgendaTabs();
+      renderAgendaList();
+      queueInsightsLayoutSync();
+    },
+  });
+
+  fcCalendar.render();
+  scheduleAgendaCalendarLayoutSync();
+
+  // Mark today as selected on init
+  const todayEl = fcContainer.querySelector(".fc-day-today");
+  if (todayEl) todayEl.classList.add("fc-day-selected");
+
+  document.querySelectorAll(".agenda-tab-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tabName = btn.getAttribute("data-agenda-tab");
+      if (!tabName) return;
+      agendaState.activeTab = tabName;
+      if (tabName === "today") {
+        agendaState.selectedDateIso = toIsoDateLocal(new Date());
+        fcCalendar.today();
+        // Highlight today
+        document
+          .querySelectorAll("#agenda-fc-calendar .fc-day-selected")
+          .forEach((el) => el.classList.remove("fc-day-selected"));
+        const todayDayEl = fcContainer.querySelector(".fc-day-today");
+        if (todayDayEl) todayDayEl.classList.add("fc-day-selected");
+      }
+      renderAgendaTabs();
+      renderAgendaList();
     });
+  });
 
-    fcCalendar.render();
-
-    // Mark today as selected on init
-    const todayEl = fcContainer.querySelector('.fc-day-today');
-    if (todayEl) todayEl.classList.add('fc-day-selected');
-
-    document.querySelectorAll('.agenda-tab-btn').forEach((btn) => {
-        btn.addEventListener('click', () => {
-            const tabName = btn.getAttribute('data-agenda-tab');
-            if (!tabName) return;
-            agendaState.activeTab = tabName;
-            if (tabName === 'today') {
-                agendaState.selectedDateIso = toIsoDateLocal(new Date());
-                fcCalendar.today();
-                // Highlight today
-                document.querySelectorAll('#agenda-fc-calendar .fc-day-selected')
-                    .forEach((el) => el.classList.remove('fc-day-selected'));
-                const todayDayEl = fcContainer.querySelector('.fc-day-today');
-                if (todayDayEl) todayDayEl.classList.add('fc-day-selected');
-            }
-            renderAgendaTabs();
-            renderAgendaList();
-        });
-    });
-
-    renderAgendaList();
+  renderAgendaList();
 };
 
 const syncInsightsLayout = () => {
-    const leftColumn = document.querySelector('.insights-left-col');
-    const officialsCard = document.querySelector('.insight-card-os');
-    const officialsListWrap = officialsCard?.querySelector('.os-list-wrap');
-    const officialsHeading = officialsCard?.querySelector('.insight-card-heading');
-    const insightsPane = document.getElementById('tab-insights');
-    if (!leftColumn || !officialsCard) return;
+  const leftColumn = document.querySelector(".insights-left-col");
+  const officialsCard = document.querySelector(".insight-card-os");
+  const officialsListWrap = officialsCard?.querySelector(".os-list-wrap");
+  const officialsHeading = officialsCard?.querySelector(
+    ".insight-card-heading",
+  );
+  const insightsPane = document.getElementById("tab-insights");
+  if (!leftColumn || !officialsCard) return;
 
-    if (window.matchMedia('(max-width: 950px)').matches) {
-        officialsCard.style.height = '';
-        if (officialsListWrap) {
-            officialsListWrap.style.height = '';
-            officialsListWrap.style.maxHeight = '';
-        }
-        return;
+  if (window.matchMedia("(max-width: 950px)").matches) {
+    officialsCard.style.height = "";
+    if (officialsListWrap) {
+      officialsListWrap.style.height = "";
+      officialsListWrap.style.maxHeight = "";
     }
+    return;
+  }
 
-    if (!insightsPane || !insightsPane.classList.contains('active')) {
-        return;
+  if (!insightsPane || !insightsPane.classList.contains("active")) {
+    return;
+  }
+
+  const leftCards = leftColumn.querySelectorAll(".insight-card");
+  const leftStyles = window.getComputedStyle(leftColumn);
+  const leftGap = parseFloat(leftStyles.rowGap || leftStyles.gap) || 0;
+  const naturalLeftHeight = leftCards.length
+    ? Array.from(leftCards).reduce(
+        (total, card) => total + Math.ceil(card.getBoundingClientRect().height),
+        0,
+      ) +
+      Math.max(0, leftCards.length - 1) * leftGap
+    : Math.ceil(leftColumn.getBoundingClientRect().height);
+
+  if (naturalLeftHeight > 0) {
+    const cardHeight = naturalLeftHeight;
+    officialsCard.style.height = `${cardHeight}px`;
+
+    if (officialsListWrap) {
+      const cardStyles = window.getComputedStyle(officialsCard);
+      const paddingTop = parseFloat(cardStyles.paddingTop) || 0;
+      const paddingBottom = parseFloat(cardStyles.paddingBottom) || 0;
+      const headingHeight = officialsHeading
+        ? Math.ceil(officialsHeading.getBoundingClientRect().height)
+        : 0;
+      const reservedSpace = Math.ceil(
+        paddingTop + paddingBottom + headingHeight + 12,
+      );
+      const desktopListHeight = Math.max(140, cardHeight - reservedSpace);
+      officialsListWrap.style.height = `${desktopListHeight}px`;
+      officialsListWrap.style.maxHeight = `${desktopListHeight}px`;
     }
-
-    const leftCards = leftColumn.querySelectorAll('.insight-card');
-    const leftStyles = window.getComputedStyle(leftColumn);
-    const leftGap = parseFloat(leftStyles.rowGap || leftStyles.gap) || 0;
-    const naturalLeftHeight = leftCards.length
-        ? Array.from(leftCards).reduce((total, card) => total + Math.ceil(card.getBoundingClientRect().height), 0)
-            + Math.max(0, leftCards.length - 1) * leftGap
-        : Math.ceil(leftColumn.getBoundingClientRect().height);
-
-    if (naturalLeftHeight > 0) {
-        const cardHeight = naturalLeftHeight;
-        officialsCard.style.height = `${cardHeight}px`;
-
-        if (officialsListWrap) {
-            const cardStyles = window.getComputedStyle(officialsCard);
-            const paddingTop = parseFloat(cardStyles.paddingTop) || 0;
-            const paddingBottom = parseFloat(cardStyles.paddingBottom) || 0;
-            const headingHeight = officialsHeading
-                ? Math.ceil(officialsHeading.getBoundingClientRect().height)
-                : 0;
-            const reservedSpace = Math.ceil(paddingTop + paddingBottom + headingHeight + 12);
-            const desktopListHeight = Math.max(140, cardHeight - reservedSpace);
-            officialsListWrap.style.height = `${desktopListHeight}px`;
-            officialsListWrap.style.maxHeight = `${desktopListHeight}px`;
-        }
-    }
+  }
 };
 
 const queueInsightsLayoutSync = () => {
-    if (insightsHeightFrame !== null) return;
-    insightsHeightFrame = window.requestAnimationFrame(() => {
-        insightsHeightFrame = null;
-        syncInsightsLayout();
-    });
+  if (insightsHeightFrame !== null) return;
+  insightsHeightFrame = window.requestAnimationFrame(() => {
+    insightsHeightFrame = null;
+    syncInsightsLayout();
+  });
 };
 
 const scheduleInsightsLayoutSync = () => {
+  queueInsightsLayoutSync();
+  queueAgendaCalendarLayoutSync();
+
+  if (insightsResizeTimeout !== null) {
+    window.clearTimeout(insightsResizeTimeout);
+  }
+  if (insightsViewportSettleTimeout !== null) {
+    window.clearTimeout(insightsViewportSettleTimeout);
+  }
+
+  insightsResizeTimeout = window.setTimeout(() => {
+    insightsResizeTimeout = null;
     queueInsightsLayoutSync();
+    queueAgendaCalendarLayoutSync();
+  }, 180);
 
-    if (insightsResizeTimeout !== null) {
-        window.clearTimeout(insightsResizeTimeout);
-    }
-    if (insightsViewportSettleTimeout !== null) {
-        window.clearTimeout(insightsViewportSettleTimeout);
-    }
-
-    insightsResizeTimeout = window.setTimeout(() => {
-        insightsResizeTimeout = null;
-        queueInsightsLayoutSync();
-    }, 180);
-
-    insightsViewportSettleTimeout = window.setTimeout(() => {
-        insightsViewportSettleTimeout = null;
-        queueInsightsLayoutSync();
-    }, 420);
+  insightsViewportSettleTimeout = window.setTimeout(() => {
+    insightsViewportSettleTimeout = null;
+    queueInsightsLayoutSync();
+    queueAgendaCalendarLayoutSync();
+  }, 420);
 };
 
 const initInsightsLayoutSync = () => {
-    const leftColumn = document.querySelector('.insights-left-col');
-    if (!leftColumn) return;
+  const leftColumn = document.querySelector(".insights-left-col");
+  if (!leftColumn) return;
 
-    if (insightsHeightObserver) {
-        insightsHeightObserver.disconnect();
-    }
+  if (insightsHeightObserver) {
+    insightsHeightObserver.disconnect();
+  }
 
-    if ('ResizeObserver' in window) {
-        insightsHeightObserver = new ResizeObserver(() => {
-            queueInsightsLayoutSync();
-        });
-        insightsHeightObserver.observe(leftColumn);
-    }
+  if ("ResizeObserver" in window) {
+    insightsHeightObserver = new ResizeObserver(() => {
+      queueInsightsLayoutSync();
+    });
+    insightsHeightObserver.observe(leftColumn);
+  }
 
-    insightsBreakpointQuery = window.matchMedia('(max-width: 950px)');
-    if (typeof insightsBreakpointQuery.addEventListener === 'function') {
-        insightsBreakpointQuery.addEventListener('change', scheduleInsightsLayoutSync);
-    } else if (typeof insightsBreakpointQuery.addListener === 'function') {
-        insightsBreakpointQuery.addListener(scheduleInsightsLayoutSync);
-    }
+  insightsBreakpointQuery = window.matchMedia("(max-width: 950px)");
+  if (typeof insightsBreakpointQuery.addEventListener === "function") {
+    insightsBreakpointQuery.addEventListener(
+      "change",
+      scheduleInsightsLayoutSync,
+    );
+  } else if (typeof insightsBreakpointQuery.addListener === "function") {
+    insightsBreakpointQuery.addListener(scheduleInsightsLayoutSync);
+  }
 
-    window.addEventListener('resize', scheduleInsightsLayoutSync);
-    window.addEventListener('load', queueInsightsLayoutSync);
-    queueInsightsLayoutSync();
+  window.addEventListener("resize", scheduleInsightsLayoutSync);
+  window.addEventListener("load", queueInsightsLayoutSync);
+  queueInsightsLayoutSync();
 };
 
 // Helper functions for localStorage persistence
 const saveFiltersToStorage = () => {
-    localStorage.setItem('dashboardFilters', JSON.stringify(activeFilters));
+  localStorage.setItem("dashboardFilters", JSON.stringify(activeFilters));
 };
 
 const loadFiltersFromStorage = () => {
-    const saved = localStorage.getItem('dashboardFilters');
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            activeFilters = { ...activeFilters, ...parsed };
-        } catch (e) {
-            console.error('Failed to parse saved filters:', e);
-        }
+  const saved = localStorage.getItem("dashboardFilters");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      activeFilters = { ...activeFilters, ...parsed };
+    } catch (e) {
+      console.error("Failed to parse saved filters:", e);
     }
+  }
 };
 
 const saveSortToStorage = () => {
-    localStorage.setItem('dashboardSort', JSON.stringify(activeSort));
+  localStorage.setItem("dashboardSort", JSON.stringify(activeSort));
 };
 
 const loadSortFromStorage = () => {
-    const saved = localStorage.getItem('dashboardSort');
-    if (saved) {
-        try {
-            const parsed = JSON.parse(saved);
-            activeSort = { ...activeSort, ...parsed };
-        } catch (e) {
-            console.error('Failed to parse saved sort:', e);
-        }
+  const saved = localStorage.getItem("dashboardSort");
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      activeSort = { ...activeSort, ...parsed };
+    } catch (e) {
+      console.error("Failed to parse saved sort:", e);
     }
+  }
 };
 
 const updateButtonStates = () => {
-    const filterToggleBtn = document.getElementById("filter-toggle-btn");
-    const sortToggleBtn = document.getElementById("sort-toggle-btn");
-    
-    // Check if filters are active (not default)
-    const isFilterActive = activeFilters.taNumber || 
-        activeFilters.employee || 
-        (activeFilters.year && activeFilters.year !== new Date().getFullYear().toString()) || 
-        activeFilters.travelDate ||
-        activeFilters.matchAll === false;
-    
-    // Check if sort is active
-    const isSortActive = activeSort.by !== "";
-    
-    if (filterToggleBtn) {
-        if (isFilterActive) {
-            filterToggleBtn.classList.add('active');
-        } else {
-            filterToggleBtn.classList.remove('active');
-        }
+  const filterToggleBtn = document.getElementById("filter-toggle-btn");
+  const sortToggleBtn = document.getElementById("sort-toggle-btn");
+
+  // Check if filters are active (not default)
+  const isFilterActive =
+    activeFilters.taNumber ||
+    activeFilters.employee ||
+    (activeFilters.year &&
+      activeFilters.year !== new Date().getFullYear().toString()) ||
+    activeFilters.travelDate ||
+    activeFilters.matchAll === false;
+
+  // Check if sort is active
+  const isSortActive = activeSort.by !== "";
+
+  if (filterToggleBtn) {
+    if (isFilterActive) {
+      filterToggleBtn.classList.add("active");
+    } else {
+      filterToggleBtn.classList.remove("active");
     }
-    
-    if (sortToggleBtn) {
-        if (isSortActive) {
-            sortToggleBtn.classList.add('active');
-        } else {
-            sortToggleBtn.classList.remove('active');
-        }
+  }
+
+  if (sortToggleBtn) {
+    if (isSortActive) {
+      sortToggleBtn.classList.add("active");
+    } else {
+      sortToggleBtn.classList.remove("active");
     }
+  }
 };
 
 const toast = document.getElementById("toast");
 let toastTimer = null;
-const showToast = (message, type = 'info', duration = 3500) => {
-    if (!toast) return;
-    toast.textContent = message;
-    toast.classList.remove('toast--success', 'toast--info', 'toast--warning', 'toast--error');
-    toast.classList.add(`toast--${type}`, 'show');
-    if (toastTimer) clearTimeout(toastTimer);
-    if (duration > 0) toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+const showToast = (message, type = "info", duration = 3500) => {
+  if (!toast) return;
+  toast.textContent = message;
+  toast.classList.remove(
+    "toast--success",
+    "toast--info",
+    "toast--warning",
+    "toast--error",
+  );
+  toast.classList.add(`toast--${type}`, "show");
+  if (toastTimer) clearTimeout(toastTimer);
+  if (duration > 0)
+    toastTimer = setTimeout(() => toast.classList.remove("show"), duration);
 };
 
 const escapeHtml = (str) => {
-    if (str === null || str === undefined) return '';
-    return String(str)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;');
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;");
 };
 
 const safeUrl = (url) => {
-    if (!url) return '#';
-    try {
-        const parsed = new URL(url);
-        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
-            return url;
-        }
-    } catch (e) {}
-    return '#';
+  if (!url) return "#";
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return url;
+    }
+  } catch (e) {}
+  return "#";
 };
 
 const formatFileSize = (bytes) => {
-    if (!Number.isFinite(bytes) || bytes < 0) return 'File size: -';
-    if (bytes < 1024) return `File size: ${bytes} B`;
-    if (bytes < 1024 * 1024) return `File size: ${(bytes / 1024).toFixed(1)} KB`;
-    return `File size: ${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  if (!Number.isFinite(bytes) || bytes < 0) return "File size: -";
+  if (bytes < 1024) return `File size: ${bytes} B`;
+  if (bytes < 1024 * 1024) return `File size: ${(bytes / 1024).toFixed(1)} KB`;
+  return `File size: ${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 };
 
 const fileSizeCache = new Map();
 
 const fetchFileSizeBytes = async (url) => {
-    if (!url || url === '#') return null;
-    if (fileSizeCache.has(url)) return fileSizeCache.get(url);
+  if (!url || url === "#") return null;
+  if (fileSizeCache.has(url)) return fileSizeCache.get(url);
 
-    try {
-        const headResponse = await fetch(url, { method: 'HEAD', cache: 'no-store' });
-        const contentLength = headResponse.headers.get('content-length');
-        const headSize = Number(contentLength);
-        if (headResponse.ok && Number.isFinite(headSize) && headSize > 0) {
-            fileSizeCache.set(url, headSize);
-            return headSize;
-        }
-    } catch (error) {
-        console.warn('HEAD size lookup failed:', error);
+  try {
+    const headResponse = await fetch(url, {
+      method: "HEAD",
+      cache: "no-store",
+    });
+    const contentLength = headResponse.headers.get("content-length");
+    const headSize = Number(contentLength);
+    if (headResponse.ok && Number.isFinite(headSize) && headSize > 0) {
+      fileSizeCache.set(url, headSize);
+      return headSize;
     }
+  } catch (error) {
+    console.warn("HEAD size lookup failed:", error);
+  }
 
-    try {
-        const response = await fetch(url, { cache: 'no-store' });
-        if (!response.ok) return null;
-        const blob = await response.blob();
-        const size = blob.size;
-        if (Number.isFinite(size) && size > 0) {
-            fileSizeCache.set(url, size);
-            return size;
-        }
-    } catch (error) {
-        console.warn('Blob size lookup failed:', error);
+  try {
+    const response = await fetch(url, { cache: "no-store" });
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    const size = blob.size;
+    if (Number.isFinite(size) && size > 0) {
+      fileSizeCache.set(url, size);
+      return size;
     }
+  } catch (error) {
+    console.warn("Blob size lookup failed:", error);
+  }
 
-    return null;
+  return null;
 };
 
 const formatFileLabel = (_value) => "Download";
 
 const isGzipFileLink = (fileUrl, fileName = "") => {
-    const fromUrl = /\.gz(?:$|[?#])/i.test(String(fileUrl || ""));
-    const fromName = /\.gz$/i.test(String(fileName || ""));
-    return fromUrl || fromName;
+  const fromUrl = /\.gz(?:$|[?#])/i.test(String(fileUrl || ""));
+  const fromName = /\.gz$/i.test(String(fileName || ""));
+  return fromUrl || fromName;
 };
 
 const getReconstructedMimeType = (fileName = "") => {
-    const lower = String(fileName).toLowerCase().replace(/\.gz$/, "");
-    if (lower.endsWith('.pdf')) return 'application/pdf';
-    if (lower.endsWith('.png')) return 'image/png';
-    if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) return 'image/jpeg';
-    return 'application/octet-stream';
+  const lower = String(fileName).toLowerCase().replace(/\.gz$/, "");
+  if (lower.endsWith(".pdf")) return "application/pdf";
+  if (lower.endsWith(".png")) return "image/png";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
+  return "application/octet-stream";
 };
 
 const setFileLinkLoading = (linkEl, loading) => {
-    if (!(linkEl instanceof HTMLElement)) return;
+  if (!(linkEl instanceof HTMLElement)) return;
 
-    if (loading) {
-        if (linkEl.dataset.loading === 'true') return;
-        linkEl.dataset.loading = 'true';
-        linkEl.dataset.originalLabel = linkEl.innerHTML;
-        linkEl.dataset.originalWidth = linkEl.style.width || '';
-        linkEl.dataset.originalHeight = linkEl.style.height || '';
-        linkEl.style.width = `${linkEl.offsetWidth}px`;
-        linkEl.style.height = `${linkEl.offsetHeight}px`;
-        linkEl.classList.add('is-loading');
-        linkEl.setAttribute('aria-busy', 'true');
-        linkEl.innerHTML = '<dotlottie-wc class="file-link-lottie" src="../assets/load.lottie" autoplay loop></dotlottie-wc>';
-        return;
-    }
+  if (loading) {
+    if (linkEl.dataset.loading === "true") return;
+    linkEl.dataset.loading = "true";
+    linkEl.dataset.originalLabel = linkEl.innerHTML;
+    linkEl.dataset.originalWidth = linkEl.style.width || "";
+    linkEl.dataset.originalHeight = linkEl.style.height || "";
+    linkEl.style.width = `${linkEl.offsetWidth}px`;
+    linkEl.style.height = `${linkEl.offsetHeight}px`;
+    linkEl.classList.add("is-loading");
+    linkEl.setAttribute("aria-busy", "true");
+    linkEl.innerHTML =
+      '<dotlottie-wc class="file-link-lottie" src="../assets/load.lottie" autoplay loop></dotlottie-wc>';
+    return;
+  }
 
-    if (linkEl.dataset.loading !== 'true') return;
-    linkEl.classList.remove('is-loading');
-    linkEl.removeAttribute('aria-busy');
-    linkEl.innerHTML = linkEl.dataset.originalLabel || 'Download';
-    linkEl.style.width = linkEl.dataset.originalWidth || '';
-    linkEl.style.height = linkEl.dataset.originalHeight || '';
-    delete linkEl.dataset.loading;
-    delete linkEl.dataset.originalLabel;
-    delete linkEl.dataset.originalWidth;
-    delete linkEl.dataset.originalHeight;
+  if (linkEl.dataset.loading !== "true") return;
+  linkEl.classList.remove("is-loading");
+  linkEl.removeAttribute("aria-busy");
+  linkEl.innerHTML = linkEl.dataset.originalLabel || "Download";
+  linkEl.style.width = linkEl.dataset.originalWidth || "";
+  linkEl.style.height = linkEl.dataset.originalHeight || "";
+  delete linkEl.dataset.loading;
+  delete linkEl.dataset.originalLabel;
+  delete linkEl.dataset.originalWidth;
+  delete linkEl.dataset.originalHeight;
 };
 
 const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
-    const safeFileUrl = safeUrl(fileUrl);
-    if (safeFileUrl === '#') return;
+  const safeFileUrl = safeUrl(fileUrl);
+  if (safeFileUrl === "#") return;
 
-    setFileLinkLoading(triggerEl, true);
+  setFileLinkLoading(triggerEl, true);
 
-    try {
+  try {
+    // Check if browser supports DecompressionStream (most modern desktop browsers)
+    const supportsDecompression = typeof DecompressionStream === "function";
+    const isCompressed = isGzipFileLink(safeFileUrl, fileName);
 
-        // Check if browser supports DecompressionStream (most modern desktop browsers)
-        const supportsDecompression = typeof DecompressionStream === 'function';
-        const isCompressed = isGzipFileLink(safeFileUrl, fileName);
-
-        // If compressed and browser supports decompression, decompress before opening
-        if (isCompressed && supportsDecompression) {
-            try {
-                const response = await fetch(safeFileUrl, { cache: 'no-store' });
-                if (!response.ok || !response.body) {
-                    throw new Error(`Download failed (${response.status})`);
-                }
-
-                const decompressedStream = response.body.pipeThrough(new DecompressionStream('gzip'));
-                const decompressedBlob = await new Response(decompressedStream).blob();
-                const mimeType = getReconstructedMimeType(fileName);
-                const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
-
-                const objectUrl = URL.createObjectURL(rebuiltBlob);
-                window.open(objectUrl, '_blank', 'noopener');
-
-                setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
-                return;
-            } catch (error) {
-                console.error('Failed to decompress file:', error);
-                // Fall through to opening the URL directly
-            }
+    // If compressed and browser supports decompression, decompress before opening
+    if (isCompressed && supportsDecompression) {
+      try {
+        const response = await fetch(safeFileUrl, { cache: "no-store" });
+        if (!response.ok || !response.body) {
+          throw new Error(`Download failed (${response.status})`);
         }
 
-        // For non-compressed files or when decompression not supported/failed:
-        // Open the file URL in a new tab
-        window.open(safeFileUrl, '_blank', 'noopener');
-    } finally {
-        setFileLinkLoading(triggerEl, false);
+        const decompressedStream = response.body.pipeThrough(
+          new DecompressionStream("gzip"),
+        );
+        const decompressedBlob = await new Response(decompressedStream).blob();
+        const mimeType = getReconstructedMimeType(fileName);
+        const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+
+        const objectUrl = URL.createObjectURL(rebuiltBlob);
+        window.open(objectUrl, "_blank", "noopener");
+
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
+        return;
+      } catch (error) {
+        console.error("Failed to decompress file:", error);
+        // Fall through to opening the URL directly
+      }
     }
+
+    // For non-compressed files or when decompression not supported/failed:
+    // Open the file URL in a new tab
+    window.open(safeFileUrl, "_blank", "noopener");
+  } finally {
+    setFileLinkLoading(triggerEl, false);
+  }
 };
 const viewModal = document.getElementById("view-modal");
 const closeViewBtn = document.getElementById("close-view");
@@ -1553,127 +1758,154 @@ const viewFileLink = document.getElementById("view-file-link");
 const viewFileSize = document.getElementById("view-file-size");
 
 const updateViewFileSize = async (fileUrl) => {
-    if (!viewFileSize) return;
-    if (!fileUrl || fileUrl === '#') {
-        viewFileSize.textContent = 'File size: -';
-        return;
-    }
+  if (!viewFileSize) return;
+  if (!fileUrl || fileUrl === "#") {
+    viewFileSize.textContent = "File size: -";
+    return;
+  }
 
-    viewFileSize.textContent = 'File size: Loading...';
-    const expectedUrl = fileUrl;
-    const size = await fetchFileSizeBytes(fileUrl);
+  viewFileSize.textContent = "File size: Loading...";
+  const expectedUrl = fileUrl;
+  const size = await fetchFileSizeBytes(fileUrl);
 
-    if ((viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '') !== expectedUrl) {
-        return;
-    }
+  if (
+    (viewFileLink.dataset.fileUrl ||
+      viewFileLink.getAttribute("href") ||
+      "") !== expectedUrl
+  ) {
+    return;
+  }
 
-    viewFileSize.textContent = size ? formatFileSize(size) : 'File size: Unavailable';
+  viewFileSize.textContent = size
+    ? formatFileSize(size)
+    : "File size: Unavailable";
 };
 
 const applyClientFilters = (rows) => {
-    // If no filters are active, return all rows
-    if (!activeFilters.taNumber && !activeFilters.employee && !activeFilters.year && !activeFilters.travelDate) {
-        return rows;
+  // If no filters are active, return all rows
+  if (
+    !activeFilters.taNumber &&
+    !activeFilters.employee &&
+    !activeFilters.year &&
+    !activeFilters.travelDate
+  ) {
+    return rows;
+  }
+
+  return rows.filter((row) => {
+    const checks = [];
+
+    // Check TA Number filter
+    if (activeFilters.taNumber) {
+      const matchesTa =
+        row.ta_number &&
+        row.ta_number
+          .toLowerCase()
+          .includes(activeFilters.taNumber.toLowerCase());
+      checks.push(matchesTa);
     }
 
-    return rows.filter(row => {
-        const checks = [];
+    // Check Employee filter (contains match for comma-separated values)
+    if (activeFilters.employee) {
+      const matchesEmployee =
+        row.employees &&
+        row.employees
+          .toLowerCase()
+          .includes(activeFilters.employee.toLowerCase());
+      checks.push(matchesEmployee);
+    }
 
-        // Check TA Number filter
-        if (activeFilters.taNumber) {
-            const matchesTa = row.ta_number && row.ta_number.toLowerCase().includes(activeFilters.taNumber.toLowerCase());
-            checks.push(matchesTa);
-        }
+    // Check Year filter
+    if (activeFilters.year) {
+      const matchesYear =
+        row.travel_date && row.travel_date.startsWith(activeFilters.year);
+      checks.push(matchesYear);
+    }
 
-        // Check Employee filter (contains match for comma-separated values)
-        if (activeFilters.employee) {
-            const matchesEmployee = row.employees && row.employees.toLowerCase().includes(activeFilters.employee.toLowerCase());
-            checks.push(matchesEmployee);
-        }
+    // Check Travel Date filter
+    if (activeFilters.travelDate) {
+      const matchesDate =
+        row.travel_date && row.travel_date === activeFilters.travelDate;
+      checks.push(matchesDate);
+    }
 
-        // Check Year filter
-        if (activeFilters.year) {
-            const matchesYear = row.travel_date && row.travel_date.startsWith(activeFilters.year);
-            checks.push(matchesYear);
-        }
-
-        // Check Travel Date filter
-        if (activeFilters.travelDate) {
-            const matchesDate = row.travel_date && row.travel_date === activeFilters.travelDate;
-            checks.push(matchesDate);
-        }
-
-        // Return based on match mode (AND or OR)
-        if (activeFilters.matchAll) {
-            // AND: all filters must match
-            return checks.every(check => check === true);
-        } else {
-            // OR: at least one filter must match
-            return checks.some(check => check === true);
-        }
-    });
+    // Return based on match mode (AND or OR)
+    if (activeFilters.matchAll) {
+      // AND: all filters must match
+      return checks.every((check) => check === true);
+    } else {
+      // OR: at least one filter must match
+      return checks.some((check) => check === true);
+    }
+  });
 };
 
 const applyClientSorting = (rows) => {
-    if (!activeSort.by) {
-        return rows;
+  if (!activeSort.by) {
+    return rows;
+  }
+
+  const sorted = [...rows].sort((a, b) => {
+    let aVal, bVal;
+
+    if (activeSort.by === "ta") {
+      aVal = a.ta_number || "";
+      bVal = b.ta_number || "";
+    } else if (activeSort.by === "travel-date") {
+      aVal = a.travel_date || "";
+      bVal = b.travel_date || "";
     }
 
-    const sorted = [...rows].sort((a, b) => {
-        let aVal, bVal;
+    if (activeSort.order === "asc") {
+      return aVal.localeCompare(bVal);
+    } else {
+      return bVal.localeCompare(aVal);
+    }
+  });
 
-        if (activeSort.by === 'ta') {
-            aVal = a.ta_number || '';
-            bVal = b.ta_number || '';
-        } else if (activeSort.by === 'travel-date') {
-            aVal = a.travel_date || '';
-            bVal = b.travel_date || '';
-        }
-
-        if (activeSort.order === 'asc') {
-            return aVal.localeCompare(bVal);
-        } else {
-            return bVal.localeCompare(aVal);
-        }
-    });
-
-    return sorted;
+  return sorted;
 };
 
 const renderRows = (rows) => {
-    const filteredRows = applyClientFilters(rows);
-    const sortedRows = applyClientSorting(filteredRows);
-    const shouldAnimateRows =
-        dashboardUserRole === "user" &&
-        window.matchMedia("(prefers-reduced-motion: no-preference)").matches;
-    
-    if (!sortedRows.length) {
-        taBody.innerHTML = "<tr><td colspan=\"8\">No records match the current filters.</td></tr>";
-        return;
-    }
+  const filteredRows = applyClientFilters(rows);
+  const sortedRows = applyClientSorting(filteredRows);
+  const shouldAnimateRows =
+    dashboardUserRole === "user" &&
+    window.matchMedia("(prefers-reduced-motion: no-preference)").matches;
 
-    taBody.innerHTML = sortedRows.map((row, index) => {
-        const dateText = row.travel_date ? new Date(row.travel_date).toLocaleDateString() : "-";
-        const untilText = row.travel_until ? new Date(row.travel_until).toLocaleDateString() : "-";
-        const fileUrl = safeUrl(row.file_url);
-        const safeName = row.file_name || "Download";
-        const displayName = formatFileLabel(safeName);
-        const hasFile = !!row.file_url;
-        
-        // Truncate employees to show max 2
-        let employeesText = row.employees || "-";
-        if (employeesText !== "-") {
-            const employeeArray = employeesText.split(",").map(e => e.trim());
-            if (employeeArray.length > 2) {
-                employeesText = employeeArray.slice(0, 2).join(", ") + "...";
-            }
+  if (!sortedRows.length) {
+    taBody.innerHTML =
+      '<tr><td colspan="8">No records match the current filters.</td></tr>';
+    return;
+  }
+
+  taBody.innerHTML = sortedRows
+    .map((row, index) => {
+      const dateText = row.travel_date
+        ? new Date(row.travel_date).toLocaleDateString()
+        : "-";
+      const untilText = row.travel_until
+        ? new Date(row.travel_until).toLocaleDateString()
+        : "-";
+      const fileUrl = safeUrl(row.file_url);
+      const safeName = row.file_name || "Download";
+      const displayName = formatFileLabel(safeName);
+      const hasFile = !!row.file_url;
+
+      // Truncate employees to show max 2
+      let employeesText = row.employees || "-";
+      if (employeesText !== "-") {
+        const employeeArray = employeesText.split(",").map((e) => e.trim());
+        if (employeeArray.length > 2) {
+          employeesText = employeeArray.slice(0, 2).join(", ") + "...";
         }
+      }
 
-        const rowAnimationAttrs = shouldAnimateRows
-            ? ` class="row-enter" style="--row-enter-delay:${Math.min(index * 22, 220)}ms;"`
-            : "";
+      const rowAnimationAttrs = shouldAnimateRows
+        ? ` class="row-enter" style="--row-enter-delay:${Math.min(index * 22, 220)}ms;"`
+        : "";
 
-        return `
+      return `
             <tr${rowAnimationAttrs}>
                 <td>
                     <button class="view-btn icon-btn" data-index="${index}" aria-label="View details">
@@ -1689,149 +1921,174 @@ const renderRows = (rows) => {
                 <td>${dateText}</td>
                 <td>${untilText}</td>
                 <td>
-                    ${hasFile
+                    ${
+                      hasFile
                         ? `<a class="file-link row-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>`
                         : `<span class="file-not-ready">Unavailable</span>`
                     }
                 </td>
             </tr>
         `;
-    }).join("");
+    })
+    .join("");
 
-    document.querySelectorAll('.row-file-link').forEach((link) => {
-        link.addEventListener('click', async (e) => {
-            e.preventDefault();
-            const fileUrl = link.getAttribute('data-file-url') || link.getAttribute('href') || '';
-            const fileName = link.getAttribute('data-file-name') || link.textContent || 'Open file';
-            if (!fileUrl || fileUrl === '#') return;
-            await openStoredFile(fileUrl, fileName, link);
-        });
+  document.querySelectorAll(".row-file-link").forEach((link) => {
+    link.addEventListener("click", async (e) => {
+      e.preventDefault();
+      const fileUrl =
+        link.getAttribute("data-file-url") || link.getAttribute("href") || "";
+      const fileName =
+        link.getAttribute("data-file-name") || link.textContent || "Open file";
+      if (!fileUrl || fileUrl === "#") return;
+      await openStoredFile(fileUrl, fileName, link);
     });
+  });
 
-    document.querySelectorAll(".view-btn").forEach((btn) => {
-        btn.addEventListener("click", (e) => {
-            const index = Number(e.currentTarget.getAttribute("data-index"));
-            const record = sortedRows[index];
-            if (!record) return;
+  document.querySelectorAll(".view-btn").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      const index = Number(e.currentTarget.getAttribute("data-index"));
+      const record = sortedRows[index];
+      if (!record) return;
 
-            viewTaNumber.textContent = record.ta_number || "-";
-            viewPurpose.textContent = record.purpose || "-";
-            viewDestination.textContent = record.destination || "-";
-            viewEmployees.textContent = record.employees || "-";
-            viewTravelDate.textContent = record.travel_date
-                ? new Date(record.travel_date).toLocaleDateString()
-                : "-";
-            viewTravelUntil.textContent = record.travel_until
-                ? new Date(record.travel_until).toLocaleDateString()
-                : "-";
+      viewTaNumber.textContent = record.ta_number || "-";
+      viewPurpose.textContent = record.purpose || "-";
+      viewDestination.textContent = record.destination || "-";
+      viewEmployees.textContent = record.employees || "-";
+      viewTravelDate.textContent = record.travel_date
+        ? new Date(record.travel_date).toLocaleDateString()
+        : "-";
+      viewTravelUntil.textContent = record.travel_until
+        ? new Date(record.travel_until).toLocaleDateString()
+        : "-";
 
-            if (record.file_url) {
-                const safeFileUrl = safeUrl(record.file_url);
-                viewFileLink.href = safeFileUrl;
-                viewFileLink.dataset.fileUrl = safeFileUrl;
-                viewFileLink.dataset.fileName = record.file_name || 'Open file';
-                viewFileLink.textContent = record.file_name || "Open file";
-                updateViewFileSize(safeFileUrl);
-            } else {
-                viewFileLink.href = "#";
-                viewFileLink.dataset.fileUrl = '';
-                viewFileLink.dataset.fileName = '';
-                viewFileLink.textContent = "No file";
-                if (viewFileSize) viewFileSize.textContent = 'File size: -';
-            }
+      if (record.file_url) {
+        const safeFileUrl = safeUrl(record.file_url);
+        viewFileLink.href = safeFileUrl;
+        viewFileLink.dataset.fileUrl = safeFileUrl;
+        viewFileLink.dataset.fileName = record.file_name || "Open file";
+        viewFileLink.textContent = record.file_name || "Open file";
+        updateViewFileSize(safeFileUrl);
+      } else {
+        viewFileLink.href = "#";
+        viewFileLink.dataset.fileUrl = "";
+        viewFileLink.dataset.fileName = "";
+        viewFileLink.textContent = "No file";
+        if (viewFileSize) viewFileSize.textContent = "File size: -";
+      }
 
-            viewModal.classList.add("show");
-            document.body.style.overflow = 'hidden';
-        });
+      viewModal.classList.add("show");
+      document.body.style.overflow = "hidden";
     });
+  });
 };
 
 const updateTaFooter = () => {
-    const filteredCount = applyClientFilters(taRows).length;
-    const hasActiveFilters = activeFilters.taNumber || activeFilters.employee || activeFilters.year || activeFilters.travelDate;
-    
-    if (!taRows.length) {
-        taStatus.textContent = "No records yet.";
-    } else if (hasActiveFilters) {
-        taStatus.textContent = `Showing ${filteredCount} of ${taRows.length} record${taRows.length === 1 ? "" : "s"} (filtered).`;
-    } else {
-        taStatus.textContent = `Loaded ${taRows.length} record${taRows.length === 1 ? "" : "s"}.`;
-    }
+  const filteredCount = applyClientFilters(taRows).length;
+  const hasActiveFilters =
+    activeFilters.taNumber ||
+    activeFilters.employee ||
+    activeFilters.year ||
+    activeFilters.travelDate;
+
+  if (!taRows.length) {
+    taStatus.textContent = "No records yet.";
+  } else if (hasActiveFilters) {
+    taStatus.textContent = `Showing ${filteredCount} of ${taRows.length} record${taRows.length === 1 ? "" : "s"} (filtered).`;
+  } else {
+    taStatus.textContent = `Loaded ${taRows.length} record${taRows.length === 1 ? "" : "s"}.`;
+  }
 };
 
 const loadTravelAuthorities = async (reset = false) => {
-    if (reset) {
-        taRows = [];
-        taBody.innerHTML = "<tr><td colspan=\"7\">Loading records...</td></tr>";
+  if (reset) {
+    taRows = [];
+    taBody.innerHTML = '<tr><td colspan="7">Loading records...</td></tr>';
+  }
+
+  taStatus.textContent = "Fetching travel authorities.";
+  try {
+    const { data, error } = await supabase
+      .from("travel_authorities")
+      .select(
+        "ta_number, purpose, destination, employees, travel_date, travel_until, file_name, file_url, created_at, is_demo",
+      )
+      .eq("is_demo", false)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw error;
     }
 
-    taStatus.textContent = "Fetching travel authorities.";
-    try {
-        const { data, error } = await supabase
-            .from("travel_authorities")
-            .select("ta_number, purpose, destination, employees, travel_date, travel_until, file_name, file_url, created_at, is_demo")
-            .eq("is_demo", false)
-            .order("created_at", { ascending: false });
-
-        if (error) {
-            throw error;
-        }
-
-        taRows = data || [];
-        latestKnownTimestamp = taRows[0]?.created_at || latestKnownTimestamp;
-        if (taLastUpdated && latestKnownTimestamp) {
-            const diff = Date.now() - new Date(latestKnownTimestamp).getTime();
-            const mins = Math.floor(diff / 60000);
-            const hrs = Math.floor(diff / 3600000);
-            const days = Math.floor(diff / 86400000);
-            const rel = mins < 1 ? 'just now' : mins < 60 ? `${mins}m ago` : hrs < 24 ? `${hrs}h ago` : days === 1 ? 'yesterday' : `${days} days ago`;
-            taLastUpdated.textContent = `Last record added ${rel}`;
-        }
-        renderRows(taRows);
-        renderAgendaTracker();
-        updateTaFooter();
-        await populateYearFilter();
-    } catch (error) {
-        console.error("Dashboard load error:", error);
-        taBody.innerHTML = "<tr><td colspan=\"7\">Unable to load records.</td></tr>";
-        taStatus.textContent = "Failed to load travel authorities.";
+    taRows = data || [];
+    latestKnownTimestamp = taRows[0]?.created_at || latestKnownTimestamp;
+    if (taLastUpdated && latestKnownTimestamp) {
+      const diff = Date.now() - new Date(latestKnownTimestamp).getTime();
+      const mins = Math.floor(diff / 60000);
+      const hrs = Math.floor(diff / 3600000);
+      const days = Math.floor(diff / 86400000);
+      const rel =
+        mins < 1
+          ? "just now"
+          : mins < 60
+            ? `${mins}m ago`
+            : hrs < 24
+              ? `${hrs}h ago`
+              : days === 1
+                ? "yesterday"
+                : `${days} days ago`;
+      taLastUpdated.textContent = `Last record added ${rel}`;
     }
+    renderRows(taRows);
+    renderAgendaTracker();
+    updateTaFooter();
+    await populateYearFilter();
+  } catch (error) {
+    console.error("Dashboard load error:", error);
+    taBody.innerHTML = '<tr><td colspan="7">Unable to load records.</td></tr>';
+    taStatus.textContent = "Failed to load travel authorities.";
+  }
 };
 // Hide load more button since we load all records now
 if (taMoreBtn) {
-    taMoreBtn.style.display = 'none';
+  taMoreBtn.style.display = "none";
 }
 
 // Fade scrollbar in on scroll, fade out after idle
 (function () {
-    const wrap = document.querySelector('#ta-panel .table-wrap');
-    if (!wrap) return;
-    let fadeTimer;
-    wrap.addEventListener('scroll', () => {
-        wrap.classList.add('is-scrolling');
-        clearTimeout(fadeTimer);
-        fadeTimer = setTimeout(() => wrap.classList.remove('is-scrolling'), 1000);
-    }, { passive: true });
+  const wrap = document.querySelector("#ta-panel .table-wrap");
+  if (!wrap) return;
+  let fadeTimer;
+  wrap.addEventListener(
+    "scroll",
+    () => {
+      wrap.classList.add("is-scrolling");
+      clearTimeout(fadeTimer);
+      fadeTimer = setTimeout(() => wrap.classList.remove("is-scrolling"), 1000);
+    },
+    { passive: true },
+  );
 })();
 
 closeViewBtn.addEventListener("click", () => {
-    viewModal.classList.remove("show");
-    document.body.style.overflow = '';
+  viewModal.classList.remove("show");
+  document.body.style.overflow = "";
 });
 
 viewModal.addEventListener("click", (e) => {
-    if (e.target === viewModal) {
-        viewModal.classList.remove("show");
-        document.body.style.overflow = '';
-    }
+  if (e.target === viewModal) {
+    viewModal.classList.remove("show");
+    document.body.style.overflow = "";
+  }
 });
 
-viewFileLink.addEventListener('click', async (e) => {
-    e.preventDefault();
-    const fileUrl = viewFileLink.dataset.fileUrl || viewFileLink.getAttribute('href') || '';
-    const fileName = viewFileLink.dataset.fileName || viewFileLink.textContent || 'Open file';
-    if (!fileUrl || fileUrl === '#') return;
-    await openStoredFile(fileUrl, fileName, viewFileLink);
+viewFileLink.addEventListener("click", async (e) => {
+  e.preventDefault();
+  const fileUrl =
+    viewFileLink.dataset.fileUrl || viewFileLink.getAttribute("href") || "";
+  const fileName =
+    viewFileLink.dataset.fileName || viewFileLink.textContent || "Open file";
+  if (!fileUrl || fileUrl === "#") return;
+  await openStoredFile(fileUrl, fileName, viewFileLink);
 });
 
 // Filter panel functionality
@@ -1848,257 +2105,293 @@ const filterMatchAllCheckbox = document.getElementById("filter-match-all");
 
 // Refresh table manually
 if (refreshTableBtn) {
-    refreshTableBtn.addEventListener("click", () => {
-        refreshTableBtn.classList.remove("has-new-data");
-        if (toastTimer) clearTimeout(toastTimer);
-        toast.classList.remove('show');
-        loadTravelAuthorities(true);
-    });
+  refreshTableBtn.addEventListener("click", () => {
+    refreshTableBtn.classList.remove("has-new-data");
+    if (toastTimer) clearTimeout(toastTimer);
+    toast.classList.remove("show");
+    loadTravelAuthorities(true);
+  });
 }
 
 // Load employees for filter
 const loadEmployeesForFilter = async () => {
-    try {
-        const { data, error } = await supabase
-            .from("employee_list")
-            .select("name, is_active")
-            .order("is_active", { ascending: false })
-            .order("name", { ascending: true });
+  try {
+    const { data, error } = await supabase
+      .from("employee_list")
+      .select("name, is_active")
+      .order("is_active", { ascending: false })
+      .order("name", { ascending: true });
 
-        if (error) throw error;
-        employeesListForFilter = data ? data : [];
-    } catch (error) {
-        console.error("Failed to load employees for filter:", error);
-        employeesListForFilter = [];
-    }
+    if (error) throw error;
+    employeesListForFilter = data ? data : [];
+  } catch (error) {
+    console.error("Failed to load employees for filter:", error);
+    employeesListForFilter = [];
+  }
 };
 
 // Realtime subscription for employee_list changes in dashboard
 let dashboardEmployeeRealtimeChannel = null;
 const setupDashboardEmployeeRealtimeSubscription = () => {
-    // Clean up existing subscription if any
-    if (dashboardEmployeeRealtimeChannel) {
-        supabase.removeChannel(dashboardEmployeeRealtimeChannel);
-    }
+  // Clean up existing subscription if any
+  if (dashboardEmployeeRealtimeChannel) {
+    supabase.removeChannel(dashboardEmployeeRealtimeChannel);
+  }
 
-    // Subscribe to changes on employee_list table
-    dashboardEmployeeRealtimeChannel = supabase
-        .channel('employee_list_dashboard_changes')
-        .on(
-            'postgres_changes',
-            {
-                event: '*', // Listen to all events
-                schema: 'public',
-                table: 'employee_list'
-            },
-            (payload) => {
-                // Silently refresh the employee filter dropdown
-                loadEmployeesForFilter();
-            }
-        )
-        .subscribe((status) => {});
+  // Subscribe to changes on employee_list table
+  dashboardEmployeeRealtimeChannel = supabase
+    .channel("employee_list_dashboard_changes")
+    .on(
+      "postgres_changes",
+      {
+        event: "*", // Listen to all events
+        schema: "public",
+        table: "employee_list",
+      },
+      (payload) => {
+        // Silently refresh the employee filter dropdown
+        loadEmployeesForFilter();
+      },
+    )
+    .subscribe((status) => {});
 };
 
 // Initialize employee realtime subscription
 setupDashboardEmployeeRealtimeSubscription();
 
 // Filter official autocomplete
-const filterEmployeeDropdown = document.getElementById("filter-employee-autocomplete");
+const filterEmployeeDropdown = document.getElementById(
+  "filter-employee-autocomplete",
+);
 
 const setFilterEmpDropdownVisible = (visible) => {
-    if (filterEmployeeDropdown) filterEmployeeDropdown.style.display = visible ? 'block' : 'none';
+  if (filterEmployeeDropdown)
+    filterEmployeeDropdown.style.display = visible ? "block" : "none";
 };
 
 const showFilterEmpSuggestions = (inputValue) => {
-    if (!filterEmployeeDropdown) return;
-    const trimmed = inputValue.toLowerCase().trim();
-    if (!trimmed) { setFilterEmpDropdownVisible(false); return; }
+  if (!filterEmployeeDropdown) return;
+  const trimmed = inputValue.toLowerCase().trim();
+  if (!trimmed) {
+    setFilterEmpDropdownVisible(false);
+    return;
+  }
 
-    const matches = employeesListForFilter
-        .filter(emp => emp.name.toLowerCase().includes(trimmed))
-        .slice(0, 10);
+  const matches = employeesListForFilter
+    .filter((emp) => emp.name.toLowerCase().includes(trimmed))
+    .slice(0, 10);
 
-    if (matches.length === 0) {
-        filterEmployeeDropdown.innerHTML = '<div class="autocomplete-no-options">No officials found</div>';
-        setFilterEmpDropdownVisible(true);
-        return;
-    }
-
-    filterEmployeeDropdown.innerHTML = matches.map((emp, i) => {
-        const badge = emp.is_active === false ? ' <span class="inactive-badge">Inactive</span>' : '';
-        return `<div class="autocomplete-item" data-value="${escapeHtml(emp.name)}" data-index="${i}">${escapeHtml(emp.name)}${badge}</div>`;
-    }).join('');
+  if (matches.length === 0) {
+    filterEmployeeDropdown.innerHTML =
+      '<div class="autocomplete-no-options">No officials found</div>';
     setFilterEmpDropdownVisible(true);
+    return;
+  }
 
-    filterEmployeeDropdown.querySelectorAll('.autocomplete-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.stopPropagation();
-            filterEmployeeInput.value = item.getAttribute('data-value');
-            setFilterEmpDropdownVisible(false);
-        });
-        item.addEventListener('mouseenter', () => {
-            filterEmployeeDropdown.querySelectorAll('.autocomplete-item').forEach(i => i.classList.remove('highlighted'));
-            item.classList.add('highlighted');
-        });
+  filterEmployeeDropdown.innerHTML = matches
+    .map((emp, i) => {
+      const badge =
+        emp.is_active === false
+          ? ' <span class="inactive-badge">Inactive</span>'
+          : "";
+      return `<div class="autocomplete-item" data-value="${escapeHtml(emp.name)}" data-index="${i}">${escapeHtml(emp.name)}${badge}</div>`;
+    })
+    .join("");
+  setFilterEmpDropdownVisible(true);
+
+  filterEmployeeDropdown
+    .querySelectorAll(".autocomplete-item")
+    .forEach((item) => {
+      item.addEventListener("click", (e) => {
+        e.stopPropagation();
+        filterEmployeeInput.value = item.getAttribute("data-value");
+        setFilterEmpDropdownVisible(false);
+      });
+      item.addEventListener("mouseenter", () => {
+        filterEmployeeDropdown
+          .querySelectorAll(".autocomplete-item")
+          .forEach((i) => i.classList.remove("highlighted"));
+        item.classList.add("highlighted");
+      });
     });
 };
 
 if (filterEmployeeInput) {
-    filterEmployeeInput.addEventListener('input', () => showFilterEmpSuggestions(filterEmployeeInput.value));
-    filterEmployeeInput.addEventListener('focus', () => {
-        if (filterEmployeeInput.value.length > 0) showFilterEmpSuggestions(filterEmployeeInput.value);
-    });
-    filterEmployeeInput.addEventListener('keydown', (e) => {
-        const items = filterEmployeeDropdown ? filterEmployeeDropdown.querySelectorAll('.autocomplete-item') : [];
-        if (!items.length) return;
-        const highlighted = filterEmployeeDropdown.querySelector('.autocomplete-item.highlighted');
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (!highlighted) { items[0].classList.add('highlighted'); }
-            else {
-                const next = Array.from(items).indexOf(highlighted) + 1;
-                if (next < items.length) { highlighted.classList.remove('highlighted'); items[next].classList.add('highlighted'); }
-            }
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (highlighted) {
-                const prev = Array.from(items).indexOf(highlighted) - 1;
-                highlighted.classList.remove('highlighted');
-                if (prev >= 0) items[prev].classList.add('highlighted');
-            }
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            if (highlighted) {
-                filterEmployeeInput.value = highlighted.getAttribute('data-value');
-                setFilterEmpDropdownVisible(false);
-            }
-        } else if (e.key === 'Escape') {
-            setFilterEmpDropdownVisible(false);
+  filterEmployeeInput.addEventListener("input", () =>
+    showFilterEmpSuggestions(filterEmployeeInput.value),
+  );
+  filterEmployeeInput.addEventListener("focus", () => {
+    if (filterEmployeeInput.value.length > 0)
+      showFilterEmpSuggestions(filterEmployeeInput.value);
+  });
+  filterEmployeeInput.addEventListener("keydown", (e) => {
+    const items = filterEmployeeDropdown
+      ? filterEmployeeDropdown.querySelectorAll(".autocomplete-item")
+      : [];
+    if (!items.length) return;
+    const highlighted = filterEmployeeDropdown.querySelector(
+      ".autocomplete-item.highlighted",
+    );
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!highlighted) {
+        items[0].classList.add("highlighted");
+      } else {
+        const next = Array.from(items).indexOf(highlighted) + 1;
+        if (next < items.length) {
+          highlighted.classList.remove("highlighted");
+          items[next].classList.add("highlighted");
         }
-    });
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (highlighted) {
+        const prev = Array.from(items).indexOf(highlighted) - 1;
+        highlighted.classList.remove("highlighted");
+        if (prev >= 0) items[prev].classList.add("highlighted");
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (highlighted) {
+        filterEmployeeInput.value = highlighted.getAttribute("data-value");
+        setFilterEmpDropdownVisible(false);
+      }
+    } else if (e.key === "Escape") {
+      setFilterEmpDropdownVisible(false);
+    }
+  });
 }
 
-document.addEventListener('click', (e) => {
-    if (
-        filterEmployeeDropdown &&
-        !filterEmployeeDropdown.contains(e.target) &&
-        e.target !== filterEmployeeInput
-    ) {
-        setFilterEmpDropdownVisible(false);
-    }
+document.addEventListener("click", (e) => {
+  if (
+    filterEmployeeDropdown &&
+    !filterEmployeeDropdown.contains(e.target) &&
+    e.target !== filterEmployeeInput
+  ) {
+    setFilterEmpDropdownVisible(false);
+  }
 });
 
 // Populate year filter from available data
 const populateYearFilter = async () => {
-    try {
-        // Get all unique years from database
-        const { data, error } = await supabase
-            .from('travel_authorities')
-            .select('travel_date');
-            
-        if (error) throw error;
-        
-        const years = new Set();
-        data.forEach(row => {
-            if (row.travel_date) {
-                const year = row.travel_date.substring(0, 4);
-                if (year && year.length === 4) {
-                    years.add(year);
-                }
-            }
-        });
-        
-        const sortedYears = Array.from(years).sort((a, b) => b - a);
-        filterYearSelect.innerHTML = '<option value="">All Years</option>' +
-            sortedYears.map(year => `<option value="${escapeHtml(year)}"${year === currentYear ? ' selected' : ''}>${escapeHtml(year)}</option>`).join('');
-    } catch (error) {
-        console.error('Error populating year filter:', error);
-    }
+  try {
+    // Get all unique years from database
+    const { data, error } = await supabase
+      .from("travel_authorities")
+      .select("travel_date");
+
+    if (error) throw error;
+
+    const years = new Set();
+    data.forEach((row) => {
+      if (row.travel_date) {
+        const year = row.travel_date.substring(0, 4);
+        if (year && year.length === 4) {
+          years.add(year);
+        }
+      }
+    });
+
+    const sortedYears = Array.from(years).sort((a, b) => b - a);
+    filterYearSelect.innerHTML =
+      '<option value="">All Years</option>' +
+      sortedYears
+        .map(
+          (year) =>
+            `<option value="${escapeHtml(year)}"${year === currentYear ? " selected" : ""}>${escapeHtml(year)}</option>`,
+        )
+        .join("");
+  } catch (error) {
+    console.error("Error populating year filter:", error);
+  }
 };
 
 // Auto-dash formatting for TA Number filter
 const formatTaNumber = (value) => {
-    const digits = value.replace(/\D/g, "").slice(0, 10);
-    const part1 = digits.slice(0, 4);
-    const part2 = digits.slice(4, 6);
-    const part3 = digits.slice(6, 10);
-    if (digits.length <= 4) return part1;
-    if (digits.length <= 6) return `${part1}-${part2}`;
-    return `${part1}-${part2}-${part3}`;
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+  const part1 = digits.slice(0, 4);
+  const part2 = digits.slice(4, 6);
+  const part3 = digits.slice(6, 10);
+  if (digits.length <= 4) return part1;
+  if (digits.length <= 6) return `${part1}-${part2}`;
+  return `${part1}-${part2}-${part3}`;
 };
 
 filterTaNumberInput.addEventListener("input", () => {
-    const formatted = formatTaNumber(filterTaNumberInput.value);
-    filterTaNumberInput.value = formatted;
-    const isComplete = /^\d{4}-\d{2}-\d{4}$/.test(formatted);
-    if (!isComplete && formatted !== "") return; // partial — wait for more digits
-    if (formatted === (activeFilters.taNumber || "")) return; // no effective change
-    filterTaNumberInput.classList.toggle("is-matched", isComplete);
-    activeFilters.taNumber = formatted;
-    saveFiltersToStorage();
-    renderRows(taRows);
-    updateTaFooter();
-    updateButtonStates();
+  const formatted = formatTaNumber(filterTaNumberInput.value);
+  filterTaNumberInput.value = formatted;
+  const isComplete = /^\d{4}-\d{2}-\d{4}$/.test(formatted);
+  if (!isComplete && formatted !== "") return; // partial — wait for more digits
+  if (formatted === (activeFilters.taNumber || "")) return; // no effective change
+  filterTaNumberInput.classList.toggle("is-matched", isComplete);
+  activeFilters.taNumber = formatted;
+  saveFiltersToStorage();
+  renderRows(taRows);
+  updateTaFooter();
+  updateButtonStates();
 });
 
 // Initialize flatpickr for date filter
 window.flatpickr(filterTravelDateInput, {
-    dateFormat: "Y-m-d",
-    allowInput: true,
-    disableMobile: true,
-    static: false,
-    monthSelectorType: 'static',
-    position: 'auto center',
-    onChange: function(selectedDates, dateStr) {
-        // Auto-sync year filter when date is selected
-        if (dateStr && dateStr.length >= 4) {
-            const selectedYear = dateStr.substring(0, 4);
-            // Check if this year exists in the dropdown
-            const yearOption = Array.from(filterYearSelect.options).find(opt => opt.value === selectedYear);
-            if (yearOption) {
-                filterYearSelect.value = selectedYear;
-            } else {
-                // Year not available in records, set to "No selection"
-                filterYearSelect.value = "";
-            }
-        }
+  dateFormat: "Y-m-d",
+  allowInput: true,
+  disableMobile: true,
+  static: false,
+  monthSelectorType: "static",
+  position: "auto center",
+  onChange: function (selectedDates, dateStr) {
+    // Auto-sync year filter when date is selected
+    if (dateStr && dateStr.length >= 4) {
+      const selectedYear = dateStr.substring(0, 4);
+      // Check if this year exists in the dropdown
+      const yearOption = Array.from(filterYearSelect.options).find(
+        (opt) => opt.value === selectedYear,
+      );
+      if (yearOption) {
+        filterYearSelect.value = selectedYear;
+      } else {
+        // Year not available in records, set to "No selection"
+        filterYearSelect.value = "";
+      }
     }
+  },
 });
 
 filterToggleBtn.addEventListener("click", () => {
-    filterPanel.classList.toggle("show");
-    if (!filterPanel.classList.contains("show")) setFilterEmpDropdownVisible(false);
+  filterPanel.classList.toggle("show");
+  if (!filterPanel.classList.contains("show"))
+    setFilterEmpDropdownVisible(false);
 });
 
 applyFilterBtn.addEventListener("click", () => {
-    activeFilters.employee = filterEmployeeInput.value.trim();
-    activeFilters.year = filterYearSelect.value;
-    activeFilters.travelDate = filterTravelDateInput.value;
-    activeFilters.matchAll = filterMatchAllCheckbox.checked;
-    saveFiltersToStorage();
-    updateButtonStates();
-    renderRows(taRows);
-    updateTaFooter();
-    filterPanel.classList.remove("show");
+  activeFilters.employee = filterEmployeeInput.value.trim();
+  activeFilters.year = filterYearSelect.value;
+  activeFilters.travelDate = filterTravelDateInput.value;
+  activeFilters.matchAll = filterMatchAllCheckbox.checked;
+  saveFiltersToStorage();
+  updateButtonStates();
+  renderRows(taRows);
+  updateTaFooter();
+  filterPanel.classList.remove("show");
 });
 
 clearFilterBtn.addEventListener("click", () => {
-    activeFilters.taNumber = "";
-    activeFilters.employee = "";
-    activeFilters.year = "";
-    activeFilters.travelDate = "";
-    activeFilters.matchAll = true;
-    filterTaNumberInput.value = "";
-    filterTaNumberInput.classList.remove("is-matched");
-    filterEmployeeInput.value = "";
-    setFilterEmpDropdownVisible(false);
-    filterYearSelect.value = "";
-    filterTravelDateInput.value = "";
-    filterMatchAllCheckbox.checked = true;
-    saveFiltersToStorage();
-    updateButtonStates();
-    renderRows(taRows);
-    updateTaFooter();
+  activeFilters.taNumber = "";
+  activeFilters.employee = "";
+  activeFilters.year = "";
+  activeFilters.travelDate = "";
+  activeFilters.matchAll = true;
+  filterTaNumberInput.value = "";
+  filterTaNumberInput.classList.remove("is-matched");
+  filterEmployeeInput.value = "";
+  setFilterEmpDropdownVisible(false);
+  filterYearSelect.value = "";
+  filterTravelDateInput.value = "";
+  filterMatchAllCheckbox.checked = true;
+  saveFiltersToStorage();
+  updateButtonStates();
+  renderRows(taRows);
+  updateTaFooter();
 });
 
 // Sort panel functionality
@@ -2110,535 +2403,868 @@ const sortBySelect = document.getElementById("sort-by");
 const sortOrderSelect = document.getElementById("sort-order");
 
 sortToggleBtn.addEventListener("click", () => {
-    sortPanel.classList.toggle("show");
+  sortPanel.classList.toggle("show");
 });
 
 applySortBtn.addEventListener("click", () => {
-    activeSort.by = sortBySelect.value;
-    activeSort.order = sortOrderSelect.value;
-    saveSortToStorage();
-    updateButtonStates();
-    renderRows(taRows);
-    updateTaFooter();
-    sortPanel.classList.remove("show");
+  activeSort.by = sortBySelect.value;
+  activeSort.order = sortOrderSelect.value;
+  saveSortToStorage();
+  updateButtonStates();
+  renderRows(taRows);
+  updateTaFooter();
+  sortPanel.classList.remove("show");
 });
 
 clearSortBtn.addEventListener("click", () => {
-    activeSort.by = "";
-    activeSort.order = "asc";
-    sortBySelect.value = "ta";
-    sortOrderSelect.value = "asc";
-    saveSortToStorage();
-    updateButtonStates();
-    renderRows(taRows);
-    updateTaFooter();
+  activeSort.by = "";
+  activeSort.order = "asc";
+  sortBySelect.value = "ta";
+  sortOrderSelect.value = "asc";
+  saveSortToStorage();
+  updateButtonStates();
+  renderRows(taRows);
+  updateTaFooter();
 });
 
 // Close filter and sort panels when clicking outside
 document.addEventListener("click", (e) => {
-    if (!filterPanel.contains(e.target) && !filterToggleBtn.contains(e.target) && filterPanel.classList.contains("show")) {
-        filterPanel.classList.remove("show");
-    }
-    if (!sortPanel.contains(e.target) && !sortToggleBtn.contains(e.target) && sortPanel.classList.contains("show")) {
-        sortPanel.classList.remove("show");
-    }
+  if (
+    !filterPanel.contains(e.target) &&
+    !filterToggleBtn.contains(e.target) &&
+    filterPanel.classList.contains("show")
+  ) {
+    filterPanel.classList.remove("show");
+  }
+  if (
+    !sortPanel.contains(e.target) &&
+    !sortToggleBtn.contains(e.target) &&
+    sortPanel.classList.contains("show")
+  ) {
+    sortPanel.classList.remove("show");
+  }
 });
 
 const init = async () => {
-    await requireUser();
+  await requireUser();
 
-    // Set up realtime subscription now that the session is confirmed
-    setupRealtimeSubscription();
-    
-    // Load saved filters and sort from localStorage
-    loadFiltersFromStorage();
-    loadSortFromStorage();
-    
-    // Restore UI state from loaded filters/sort
-    if (filterTaNumberInput) {
-        filterTaNumberInput.value = activeFilters.taNumber || "";
-        filterTaNumberInput.classList.toggle("is-matched", /^\d{4}-\d{2}-\d{4}$/.test(activeFilters.taNumber || ""));
+  // Set up realtime subscription now that the session is confirmed
+  setupRealtimeSubscription();
+
+  // Load saved filters and sort from localStorage
+  loadFiltersFromStorage();
+  loadSortFromStorage();
+
+  // Restore UI state from loaded filters/sort
+  if (filterTaNumberInput) {
+    filterTaNumberInput.value = activeFilters.taNumber || "";
+    filterTaNumberInput.classList.toggle(
+      "is-matched",
+      /^\d{4}-\d{2}-\d{4}$/.test(activeFilters.taNumber || ""),
+    );
+  }
+  if (filterEmployeeInput)
+    filterEmployeeInput.value = activeFilters.employee || "";
+  if (filterYearSelect) filterYearSelect.value = activeFilters.year || "";
+  if (filterTravelDateInput)
+    filterTravelDateInput.value = activeFilters.travelDate || "";
+  if (filterMatchAllCheckbox)
+    filterMatchAllCheckbox.checked =
+      activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;
+
+  if (sortBySelect) sortBySelect.value = activeSort.by || "ta";
+  if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "asc";
+
+  await loadEmployeesForFilter();
+  await loadTravelAuthorities(true);
+  initAgendaTracker();
+
+  // Update button states after loading data
+  updateButtonStates();
+
+  // Initialize Travel Frequency chart
+  void initTravelFrequencyYears();
+
+  // Initialize Officials Summary chart
+  void initOfficialsSummaryChart();
+
+  // Initialize Destinations chart
+  void initDestinationsChart();
+
+  initInsightsLayoutSync();
+  queueInsightsLayoutSync();
+
+  // Start activity-driven heartbeat to track online status
+  // This avoids marking idle users as online just because their tab is open.
+  const HEARTBEAT_THROTTLE_MS = 30000;
+  let lastHeartbeatAt = 0;
+
+  const updateHeartbeat = async (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastHeartbeatAt < HEARTBEAT_THROTTLE_MS) {
+      return;
     }
-    if (filterEmployeeInput) filterEmployeeInput.value = activeFilters.employee || "";
-    if (filterYearSelect) filterYearSelect.value = activeFilters.year || "";
-    if (filterTravelDateInput) filterTravelDateInput.value = activeFilters.travelDate || "";
-    if (filterMatchAllCheckbox) filterMatchAllCheckbox.checked = activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;
-    
-    if (sortBySelect) sortBySelect.value = activeSort.by || "ta";
-    if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "asc";
-    
-    await loadEmployeesForFilter();
-    await loadTravelAuthorities(true);
-    initAgendaTracker();
-    
-    // Update button states after loading data
-    updateButtonStates();
 
-    // Initialize Travel Frequency chart
-    void initTravelFrequencyYears();
+    lastHeartbeatAt = now;
 
-    // Initialize Officials Summary chart
-    void initOfficialsSummaryChart();
+    try {
+      const { data, error } = await supabase.rpc("update_last_seen");
+      if (error) {
+        console.warn("Heartbeat error:", error.message);
+      }
+    } catch (error) {
+      // Silently fail - user might not have the function yet
+    }
+  };
 
-    // Initialize Destinations chart
-    void initDestinationsChart();
+  const activityEvents = [
+    "click",
+    "keydown",
+    "touchstart",
+    "wheel",
+    "scroll",
+    "mousedown",
+  ];
+  const onActivity = () => {
+    if (document.visibilityState !== "visible") {
+      return;
+    }
+    updateHeartbeat();
+  };
 
-    initInsightsLayoutSync();
-    queueInsightsLayoutSync();
-    
-    // Start activity-driven heartbeat to track online status
-    // This avoids marking idle users as online just because their tab is open.
-    const HEARTBEAT_THROTTLE_MS = 30000;
-    let lastHeartbeatAt = 0;
+  activityEvents.forEach((eventName) => {
+    document.addEventListener(eventName, onActivity, { passive: true });
+  });
 
-    const updateHeartbeat = async (force = false) => {
-        const now = Date.now();
-        if (!force && now - lastHeartbeatAt < HEARTBEAT_THROTTLE_MS) {
-            return;
-        }
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      updateHeartbeat(true);
+    }
+  });
 
-        lastHeartbeatAt = now;
-
-        try {
-            const { data, error } = await supabase.rpc('update_last_seen');
-            if (error) {
-                console.warn('Heartbeat error:', error.message);
-            }
-        } catch (error) {
-            // Silently fail - user might not have the function yet
-        }
-    };
-
-    const activityEvents = ['click', 'keydown', 'touchstart', 'wheel', 'scroll', 'mousedown'];
-    const onActivity = () => {
-        if (document.visibilityState !== 'visible') {
-            return;
-        }
-        updateHeartbeat();
-    };
-
-    activityEvents.forEach((eventName) => {
-        document.addEventListener(eventName, onActivity, { passive: true });
-    });
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            updateHeartbeat(true);
-        }
-    });
-
-    window.addEventListener('focus', () => {
-        updateHeartbeat(true);
-    });
-
-    // Initial heartbeat on page load
+  window.addEventListener("focus", () => {
     updateHeartbeat(true);
+  });
+
+  // Initial heartbeat on page load
+  updateHeartbeat(true);
 };
 
 // === Travel Frequency Chart ===
 let travelFrequencyChart = null;
 
 const loadTravelFrequencyChart = async (year) => {
-    const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    const counts = new Array(12).fill(0);
+  const monthLabels = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+  const counts = new Array(12).fill(0);
 
-    try {
-        const { data, error } = await supabase
-            .from('travel_authorities')
-            .select('travel_date')
-            .eq('is_demo', false)
-            .gte('travel_date', `${year}-01-01`)
-            .lte('travel_date', `${year}-12-31`);
+  try {
+    const { data, error } = await supabase
+      .from("travel_authorities")
+      .select("travel_date")
+      .eq("is_demo", false)
+      .gte("travel_date", `${year}-01-01`)
+      .lte("travel_date", `${year}-12-31`);
 
-        if (!error && data) {
-            data.forEach(row => {
-                if (row.travel_date) {
-                    const month = parseInt(row.travel_date.substring(5, 7), 10) - 1;
-                    if (month >= 0 && month < 12) counts[month]++;
-                }
-            });
+    if (!error && data) {
+      data.forEach((row) => {
+        if (row.travel_date) {
+          const month = parseInt(row.travel_date.substring(5, 7), 10) - 1;
+          if (month >= 0 && month < 12) counts[month]++;
         }
-    } catch (e) {
-        console.error('Travel frequency chart error:', e);
+      });
     }
+  } catch (e) {
+    console.error("Travel frequency chart error:", e);
+  }
 
-    const canvas = document.getElementById('tf-chart');
-    if (!canvas) return;
-    const displayCounts = counts.map((count) => (count === 0 ? null : count));
-    const maxCount = Math.max(...counts, 0);
-    const targetYAxisLevels = 8;
-    const yStepSize = maxCount <= targetYAxisLevels - 1
-        ? 1
-        : Math.ceil(maxCount / (targetYAxisLevels - 1));
-    const yAxisMax = maxCount === 0
-        ? 1
-        : yStepSize * Math.ceil(maxCount / yStepSize);
+  const canvas = document.getElementById("tf-chart");
+  if (!canvas) return;
+  const displayCounts = counts.map((count) => (count === 0 ? null : count));
+  const maxCount = Math.max(...counts, 0);
+  const targetYAxisLevels = 8;
+  const yStepSize =
+    maxCount <= targetYAxisLevels - 1
+      ? 1
+      : Math.ceil(maxCount / (targetYAxisLevels - 1));
+  const yAxisMax =
+    maxCount === 0 ? 1 : yStepSize * Math.ceil(maxCount / yStepSize);
 
-    if (travelFrequencyChart) {
-        travelFrequencyChart.data.datasets[0].data = displayCounts;
-        travelFrequencyChart.options.scales.y.max = yAxisMax;
-        travelFrequencyChart.options.scales.y.ticks.stepSize = yStepSize;
-        travelFrequencyChart.update();
-        queueInsightsLayoutSync();
-        return;
-    }
-
-    travelFrequencyChart = new Chart(canvas, {
-        type: 'bar',
-        data: {
-            labels: monthLabels,
-            datasets: [{
-                label: 'TAs Filed',
-                data: displayCounts,
-                backgroundColor: '#2f6fe4',
-                borderColor: '#2f6fe4',
-                borderWidth: 0,
-                borderRadius: 6,
-                borderSkipped: false,
-                minBarLength: 12,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => ` ${ctx.parsed.y} TA${ctx.parsed.y !== 1 ? 's' : ''}`
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    grid: { display: false },
-                    border: { display: false },
-                    ticks: { color: 'rgba(11,28,59,0.45)', font: { size: 11 } }
-                },
-                y: {
-                    beginAtZero: true,
-                    max: yAxisMax,
-                    grid: { color: 'rgba(69,122,231,0.07)' },
-                    border: { display: false },
-                    ticks: {
-                        color: 'rgba(11,28,59,0.45)',
-                        font: { size: 11 },
-                        precision: 0,
-                        stepSize: yStepSize
-                    }
-                }
-            }
-        }
-    });
-
+  if (travelFrequencyChart) {
+    travelFrequencyChart.data.datasets[0].data = displayCounts;
+    travelFrequencyChart.options.scales.y.max = yAxisMax;
+    travelFrequencyChart.options.scales.y.ticks.stepSize = yStepSize;
+    travelFrequencyChart.update();
     queueInsightsLayoutSync();
+    return;
+  }
+
+  travelFrequencyChart = new Chart(canvas, {
+    type: "bar",
+    data: {
+      labels: monthLabels,
+      datasets: [
+        {
+          label: "TAs Filed",
+          data: displayCounts,
+          backgroundColor: "#2f6fe4",
+          borderColor: "#2f6fe4",
+          borderWidth: 0,
+          borderRadius: 6,
+          borderSkipped: false,
+          minBarLength: 12,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) =>
+              ` ${ctx.parsed.y} TA${ctx.parsed.y !== 1 ? "s" : ""}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: { color: "rgba(11,28,59,0.45)", font: { size: 11 } },
+        },
+        y: {
+          beginAtZero: true,
+          max: yAxisMax,
+          grid: { color: "rgba(69,122,231,0.07)" },
+          border: { display: false },
+          ticks: {
+            color: "rgba(11,28,59,0.45)",
+            font: { size: 11 },
+            precision: 0,
+            stepSize: yStepSize,
+          },
+        },
+      },
+    },
+  });
+
+  queueInsightsLayoutSync();
 };
 
 const initTravelFrequencyYears = async () => {
-    const select = document.getElementById('tf-year-select');
-    if (!select) return;
+  const select = document.getElementById("tf-year-select");
+  if (!select) return;
 
-    try {
-        const { data, error } = await supabase
-            .from('travel_authorities')
-            .select('travel_date')
-            .eq('is_demo', false);
+  try {
+    const { data, error } = await supabase
+      .from("travel_authorities")
+      .select("travel_date")
+      .eq("is_demo", false);
 
-        if (!error && data) {
-            const years = [...new Set(
-                data.filter(r => r.travel_date).map(r => r.travel_date.substring(0, 4))
-            )].sort((a, b) => b - a);
+    if (!error && data) {
+      const years = [
+        ...new Set(
+          data
+            .filter((r) => r.travel_date)
+            .map((r) => r.travel_date.substring(0, 4)),
+        ),
+      ].sort((a, b) => b - a);
 
-            select.innerHTML = years.length
-                ? years.map(y => `<option value="${escapeHtml(y)}"${y === currentYear ? ' selected' : ''}>${escapeHtml(y)}</option>`).join('')
-                : '<option value="">No data</option>';
+      select.innerHTML = years.length
+        ? years
+            .map(
+              (y) =>
+                `<option value="${escapeHtml(y)}"${y === currentYear ? " selected" : ""}>${escapeHtml(y)}</option>`,
+            )
+            .join("")
+        : '<option value="">No data</option>';
 
-            const selectedYear = select.value || years[0];
-            if (selectedYear) await loadTravelFrequencyChart(selectedYear);
-        }
-    } catch (e) {
-        console.error('Failed to init travel frequency years:', e);
+      const selectedYear = select.value || years[0];
+      if (selectedYear) await loadTravelFrequencyChart(selectedYear);
     }
+  } catch (e) {
+    console.error("Failed to init travel frequency years:", e);
+  }
 
-    select.addEventListener('change', () => {
-        if (select.value) loadTravelFrequencyChart(select.value);
-    });
+  select.addEventListener("change", () => {
+    if (select.value) loadTravelFrequencyChart(select.value);
+  });
 };
 // === End Travel Frequency Chart ===
 
 // === Officials Summary List ===
 const initOfficialsSummaryChart = async () => {
-    const list = document.getElementById('os-list');
-    if (!list) return;
+  const list = document.getElementById("os-list");
+  if (!list) return;
 
-    try {
-        const { data: employees, error: empError } = await supabase
-            .from('employee_list')
-            .select('name, position')
-            .eq('is_active', true);
+  try {
+    const { data: employees, error: empError } = await supabase
+      .from("employee_list")
+      .select("name, position")
+      .eq("is_active", true);
 
-        if (empError) throw empError;
+    if (empError) throw empError;
 
-        const validEmployees = (employees || []).filter(
-            e => e.position && e.position.trim().toLowerCase() !== 'officials'
-        );
+    const validEmployees = (employees || []).filter(
+      (e) => e.position && e.position.trim().toLowerCase() !== "officials",
+    );
 
-        if (!validEmployees.length) {
-            list.innerHTML = '<div class="insight-chart-placeholder" style="height:120px"><span>No officials found</span></div>';
-            queueInsightsLayoutSync();
-            return;
-        }
+    if (!validEmployees.length) {
+      list.innerHTML =
+        '<div class="insight-chart-placeholder" style="height:120px"><span>No officials found</span></div>';
+      queueInsightsLayoutSync();
+      return;
+    }
 
-        const { data: tas, error: taError } = await supabase
-            .from('travel_authorities')
-            .select('employees')
-            .eq('is_demo', false);
+    const { data: tas, error: taError } = await supabase
+      .from("travel_authorities")
+      .select("employees")
+      .eq("is_demo", false);
 
-        if (taError) throw taError;
+    if (taError) throw taError;
 
-        const counts = {};
-        validEmployees.forEach(e => { counts[e.name] = 0; });
-        (tas || []).forEach(ta => {
-            if (!ta.employees) return;
-            ta.employees.split(',').map(n => n.trim()).forEach(name => {
-                if (name in counts) counts[name]++;
-            });
+    const counts = {};
+    validEmployees.forEach((e) => {
+      counts[e.name] = 0;
+    });
+    (tas || []).forEach((ta) => {
+      if (!ta.employees) return;
+      ta.employees
+        .split(",")
+        .map((n) => n.trim())
+        .forEach((name) => {
+          if (name in counts) counts[name]++;
         });
+    });
 
-        const ranked = validEmployees
-            .filter(e => counts[e.name] >= 1)
-            .sort((a, b) => counts[b.name] - counts[a.name]);
+    const ranked = validEmployees
+      .filter((e) => counts[e.name] >= 1)
+      .sort((a, b) => counts[b.name] - counts[a.name]);
 
-        if (!ranked.length) {
-            list.innerHTML = '<div class="insight-chart-placeholder" style="height:120px"><span>No travel records yet</span></div>';
-            queueInsightsLayoutSync();
-            return;
-        }
+    if (!ranked.length) {
+      list.innerHTML =
+        '<div class="insight-chart-placeholder" style="height:120px"><span>No travel records yet</span></div>';
+      queueInsightsLayoutSync();
+      return;
+    }
 
-        list.innerHTML = ranked.map(e => `
+    list.innerHTML = ranked
+      .map(
+        (e) => `
             <div class="os-official-row">
                 <span class="os-official-name">${e.name}</span>
                 <span class="os-official-count">${counts[e.name]}</span>
             </div>
-        `).join('');
-        queueInsightsLayoutSync();
-    } catch (e) {
-        console.error('Officials summary error:', e);
-    }
+        `,
+      )
+      .join("");
+    queueInsightsLayoutSync();
+  } catch (e) {
+    console.error("Officials summary error:", e);
+  }
 };
 // === End Officials Summary List ===
 
 // === Destinations Chart ===
 const initDestinationsChart = async () => {
-    const canvas = document.getElementById('dest-chart');
-    const title = document.getElementById('dest-card-title');
-    const subtitle = document.getElementById('dest-card-subtitle');
-    if (!canvas) return;
+  const canvas = document.getElementById("dest-chart");
+  const title = document.getElementById("dest-card-title");
+  const subtitle = document.getElementById("dest-card-subtitle");
+  if (!canvas) return;
 
-    const DESTINATION_TITLES = {
-        region: 'Travel Destinations by Region',
-        calabarzon: 'Travel Destinations by CALABARZON Province'
-    };
-    const DESTINATION_SUBTITLES = {
-        region: 'Groups destination records by Philippine region.',
-        calabarzon: 'Groups CALABARZON trips by province based on each destination entry.'
-    };
+  const DESTINATION_TITLES = {
+    region: "Travel Destinations by Region",
+    calabarzon: "Travel Destinations by CALABARZON Province",
+  };
+  const DESTINATION_SUBTITLES = {
+    region: "Groups destination records by Philippine region.",
+    calabarzon:
+      "Groups CALABARZON trips by province based on each destination entry.",
+  };
 
-    // Fallback entries used when PSGC API is unavailable.
-    // Ordered: more specific keywords before broader ones to avoid false matches.
-    const FALLBACK_REGION_ENTRIES = [
-        ['NCR',         ['metro manila', 'national capital', 'quezon city', 'makati', 'pasig', 'taguig', 'marikina', 'caloocan', 'las piñas', 'las pinas', 'malabon', 'mandaluyong', 'muntinlupa', 'navotas', 'parañaque', 'paranaque', 'pasay', 'pateros', 'valenzuela', 'manila']],
-        ['CAR',         ['cordillera', 'baguio', 'benguet', 'ifugao', 'kalinga', 'apayao', 'abra', 'mountain province', 'tabuk']],
-        ['Region I',    ['ilocos norte', 'ilocos sur', 'la union', 'pangasinan', 'vigan', 'laoag', 'dagupan', 'urdaneta']],
-        ['Region II',   ['cagayan valley', 'batanes', 'isabela', 'nueva vizcaya', 'quirino', 'tuguegarao', 'bayombong', 'santiago city']],
-        ['Region III',  ['bulacan', 'pampanga', 'tarlac', 'nueva ecija', 'zambales', 'bataan', 'malolos', 'cabanatuan', 'clark', 'olongapo', 'subic', 'angeles']],
-        ['CALABARZON',  ['cavite', 'laguna', 'batangas', 'antipolo', 'calamba', 'santa rosa', 'bacoor', 'dasmariñas', 'dasmarinas', 'imus', 'tagaytay', 'lucena', 'cainta', 'taytay', 'biñan', 'binan', 'san pablo', 'cabuyao', 'lipa']],
-        ['MIMAROPA',    ['palawan', 'mindoro', 'romblon', 'marinduque', 'puerto princesa']],
-        ['Region V',    ['albay', 'camarines', 'catanduanes', 'sorsogon', 'naga', 'legazpi', 'bicol']],
-        ['Region VI',   ['iloilo', 'capiz', 'aklan', 'antique', 'guimaras', 'negros occidental', 'bacolod', 'kalibo', 'western visayas']],
-        ['Region VII',  ['cebu', 'bohol', 'negros oriental', 'siquijor', 'mandaue', 'lapu-lapu', 'tagbilaran', 'dumaguete', 'central visayas']],
-        ['Region VIII', ['leyte', 'samar', 'biliran', 'tacloban', 'ormoc', 'catbalogan', 'eastern visayas']],
-        ['Region IX',   ['zamboanga', 'dipolog', 'pagadian']],
-        ['Region X',    ['misamis oriental', 'misamis occidental', 'bukidnon', 'camiguin', 'lanao del norte', 'cagayan de oro', 'iligan', 'malaybalay', 'northern mindanao']],
-        ['Region XI',   ['davao', 'tagum', 'digos', 'compostela valley', 'mati']],
-        ['Region XII',  ['south cotabato', 'north cotabato', 'sultan kudarat', 'sarangani', 'general santos', 'koronadal', 'kidapawan']],
-        ['Region XIII', ['agusan', 'surigao', 'dinagat', 'butuan', 'caraga']],
-        ['BARMM',       ['cotabato city', 'maguindanao', 'lanao del sur', 'basilan', 'sulu', 'tawi-tawi', 'marawi', 'bangsamoro']],
-    ];
+  // Fallback entries used when PSGC API is unavailable.
+  // Ordered: more specific keywords before broader ones to avoid false matches.
+  const FALLBACK_REGION_ENTRIES = [
+    [
+      "NCR",
+      [
+        "metro manila",
+        "national capital",
+        "quezon city",
+        "makati",
+        "pasig",
+        "taguig",
+        "marikina",
+        "caloocan",
+        "las piñas",
+        "las pinas",
+        "malabon",
+        "mandaluyong",
+        "muntinlupa",
+        "navotas",
+        "parañaque",
+        "paranaque",
+        "pasay",
+        "pateros",
+        "valenzuela",
+        "manila",
+      ],
+    ],
+    [
+      "CAR",
+      [
+        "cordillera",
+        "baguio",
+        "benguet",
+        "ifugao",
+        "kalinga",
+        "apayao",
+        "abra",
+        "mountain province",
+        "tabuk",
+      ],
+    ],
+    [
+      "Region I",
+      [
+        "ilocos norte",
+        "ilocos sur",
+        "la union",
+        "pangasinan",
+        "vigan",
+        "laoag",
+        "dagupan",
+        "urdaneta",
+      ],
+    ],
+    [
+      "Region II",
+      [
+        "cagayan valley",
+        "batanes",
+        "isabela",
+        "nueva vizcaya",
+        "quirino",
+        "tuguegarao",
+        "bayombong",
+        "santiago city",
+      ],
+    ],
+    [
+      "Region III",
+      [
+        "bulacan",
+        "pampanga",
+        "tarlac",
+        "nueva ecija",
+        "zambales",
+        "bataan",
+        "malolos",
+        "cabanatuan",
+        "clark",
+        "olongapo",
+        "subic",
+        "angeles",
+      ],
+    ],
+    [
+      "CALABARZON",
+      [
+        "cavite",
+        "laguna",
+        "batangas",
+        "antipolo",
+        "calamba",
+        "santa rosa",
+        "bacoor",
+        "dasmariñas",
+        "dasmarinas",
+        "imus",
+        "tagaytay",
+        "lucena",
+        "cainta",
+        "taytay",
+        "biñan",
+        "binan",
+        "san pablo",
+        "cabuyao",
+        "lipa",
+      ],
+    ],
+    [
+      "MIMAROPA",
+      ["palawan", "mindoro", "romblon", "marinduque", "puerto princesa"],
+    ],
+    [
+      "Region V",
+      [
+        "albay",
+        "camarines",
+        "catanduanes",
+        "sorsogon",
+        "naga",
+        "legazpi",
+        "bicol",
+      ],
+    ],
+    [
+      "Region VI",
+      [
+        "iloilo",
+        "capiz",
+        "aklan",
+        "antique",
+        "guimaras",
+        "negros occidental",
+        "bacolod",
+        "kalibo",
+        "western visayas",
+      ],
+    ],
+    [
+      "Region VII",
+      [
+        "cebu",
+        "bohol",
+        "negros oriental",
+        "siquijor",
+        "mandaue",
+        "lapu-lapu",
+        "tagbilaran",
+        "dumaguete",
+        "central visayas",
+      ],
+    ],
+    [
+      "Region VIII",
+      [
+        "leyte",
+        "samar",
+        "biliran",
+        "tacloban",
+        "ormoc",
+        "catbalogan",
+        "eastern visayas",
+      ],
+    ],
+    ["Region IX", ["zamboanga", "dipolog", "pagadian"]],
+    [
+      "Region X",
+      [
+        "misamis oriental",
+        "misamis occidental",
+        "bukidnon",
+        "camiguin",
+        "lanao del norte",
+        "cagayan de oro",
+        "iligan",
+        "malaybalay",
+        "northern mindanao",
+      ],
+    ],
+    ["Region XI", ["davao", "tagum", "digos", "compostela valley", "mati"]],
+    [
+      "Region XII",
+      [
+        "south cotabato",
+        "north cotabato",
+        "sultan kudarat",
+        "sarangani",
+        "general santos",
+        "koronadal",
+        "kidapawan",
+      ],
+    ],
+    ["Region XIII", ["agusan", "surigao", "dinagat", "butuan", "caraga"]],
+    [
+      "BARMM",
+      [
+        "cotabato city",
+        "maguindanao",
+        "lanao del sur",
+        "basilan",
+        "sulu",
+        "tawi-tawi",
+        "marawi",
+        "bangsamoro",
+      ],
+    ],
+  ];
 
-    const FALLBACK_CALABARZON_ENTRIES = [
-        ['Cavite',   ['cavite', 'bacoor', 'dasmariñas', 'dasmarinas', 'imus', 'tagaytay', 'general trias', 'trece martires', 'tanza', 'silang']],
-        ['Laguna',   ['laguna', 'calamba', 'santa rosa', 'biñan', 'binan', 'los baños', 'los banos', 'san pedro', 'cabuyao', 'pagsanjan', 'san pablo']],
-        ['Batangas', ['batangas', 'lipa', 'tanauan', 'nasugbu', 'lemery', 'bauan']],
-        ['Rizal',    ['antipolo', 'cainta', 'taytay', 'angono', 'binangonan', 'pililla', 'cardona']],
-        ['Quezon',   ['lucena', 'tayabas', 'quezon province', 'sariaya', 'tiaong', 'gumaca', 'infanta']],
-    ];
+  const FALLBACK_CALABARZON_ENTRIES = [
+    [
+      "Cavite",
+      [
+        "cavite",
+        "bacoor",
+        "dasmariñas",
+        "dasmarinas",
+        "imus",
+        "tagaytay",
+        "general trias",
+        "trece martires",
+        "tanza",
+        "silang",
+      ],
+    ],
+    [
+      "Laguna",
+      [
+        "laguna",
+        "calamba",
+        "santa rosa",
+        "biñan",
+        "binan",
+        "los baños",
+        "los banos",
+        "san pedro",
+        "cabuyao",
+        "pagsanjan",
+        "san pablo",
+      ],
+    ],
+    ["Batangas", ["batangas", "lipa", "tanauan", "nasugbu", "lemery", "bauan"]],
+    [
+      "Rizal",
+      [
+        "antipolo",
+        "cainta",
+        "taytay",
+        "angono",
+        "binangonan",
+        "pililla",
+        "cardona",
+      ],
+    ],
+    [
+      "Quezon",
+      [
+        "lucena",
+        "tayabas",
+        "quezon province",
+        "sariaya",
+        "tiaong",
+        "gumaca",
+        "infanta",
+      ],
+    ],
+  ];
 
-    // PSGC API: fetches official province and city/municipality names per region.
-    // Results are merged with fallback keywords so existing matches are never lost.
-    // Responses are cached in sessionStorage (refreshed daily).
-    const PSGC_BASE = 'https://psgc.rootscratch.com';
-    // v3: dropped broken /province?id= city-fetch for CALABARZON drill-down
-    const PSGC_CACHE_KEY = 'psgc_geo_v3';
-    const PSGC_CACHE_DATE_KEY = 'psgc_geo_date_v3';
+  // PSGC API: fetches official province and city/municipality names per region.
+  // Results are merged with fallback keywords so existing matches are never lost.
+  // Responses are cached in sessionStorage (refreshed daily).
+  const PSGC_BASE = "https://psgc.rootscratch.com";
+  // v3: dropped broken /province?id= city-fetch for CALABARZON drill-down
+  const PSGC_CACHE_KEY = "psgc_geo_v3";
+  const PSGC_CACHE_DATE_KEY = "psgc_geo_date_v3";
 
-    const psgcFetch = (url) => {
-        const ctrl = new AbortController();
-        const tid = setTimeout(() => ctrl.abort(), 8000);
-        return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
-    };
+  const psgcFetch = (url) => {
+    const ctrl = new AbortController();
+    const tid = setTimeout(() => ctrl.abort(), 8000);
+    return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
+  };
 
-    const psgcDeriveLabel = (name) => {
-        const u = name.toUpperCase();
-        if (u.includes('NATIONAL CAPITAL')) return 'NCR';
-        if (u.includes('CORDILLERA')) return 'CAR';
-        if (u.includes('BANGSAMORO') || u.includes('BARMM')) return 'BARMM';
-        if (u.includes('CALABARZON')) return 'CALABARZON';
-        if (u.includes('MIMAROPA')) return 'MIMAROPA';
-        if (u.includes('NEGROS ISLAND')) return 'NIR';
-        const m = name.match(/Region\s+([\w\-]+)/i);
-        if (m) return `Region ${m[1].toUpperCase()}`;
-        return name;
-    };
+  const psgcDeriveLabel = (name) => {
+    const u = name.toUpperCase();
+    if (u.includes("NATIONAL CAPITAL")) return "NCR";
+    if (u.includes("CORDILLERA")) return "CAR";
+    if (u.includes("BANGSAMORO") || u.includes("BARMM")) return "BARMM";
+    if (u.includes("CALABARZON")) return "CALABARZON";
+    if (u.includes("MIMAROPA")) return "MIMAROPA";
+    if (u.includes("NEGROS ISLAND")) return "NIR";
+    const m = name.match(/Region\s+([\w\-]+)/i);
+    if (m) return `Region ${m[1].toUpperCase()}`;
+    return name;
+  };
 
-    const loadPsgcEntries = async () => {
-        try {
-            const today = new Date().toISOString().slice(0, 10);
-            if (sessionStorage.getItem(PSGC_CACHE_DATE_KEY) === today) {
-                const cached = sessionStorage.getItem(PSGC_CACHE_KEY);
-                if (cached) return JSON.parse(cached);
-            }
-        } catch (_) {}
-
-        // Fetch all regions and all provinces in parallel — 2 calls.
-        // Avoids /region?id= which returns the region record itself, not its provinces.
-        const [regRes, provRes] = await Promise.all([
-            psgcFetch(`${PSGC_BASE}/region`),
-            psgcFetch(`${PSGC_BASE}/province`)
-        ]);
-        if (!regRes.ok || !provRes.ok) throw new Error('PSGC fetch failed');
-        const regions = await regRes.json();
-        const allProvinces = await provRes.json();
-
-        // PSGC IDs are hierarchical: the first 2 digits identify the region.
-        // Province IDs share the same 2-digit prefix as their parent region.
-        const regionPrefixMap = new Map(); // e.g. "04" → "CALABARZON"
-        regions.forEach(r => {
-            regionPrefixMap.set(r.psgc_id.substring(0, 2), psgcDeriveLabel(r.name));
-        });
-
-        // Group province names under their region label
-        const regionProvincesMap = new Map();
-        allProvinces.forEach(p => {
-            const label = regionPrefixMap.get(p.psgc_id.substring(0, 2));
-            if (!label) return;
-            if (!regionProvincesMap.has(label)) regionProvincesMap.set(label, []);
-            regionProvincesMap.get(label).push(p.name.toLowerCase().trim());
-        });
-
-        // Merge province names into fallback region entries
-        const regionEntries = FALLBACK_REGION_ENTRIES.map(([label, fbKws]) => {
-            const apiKws = regionProvincesMap.get(label) || [];
-            return [label, [...new Set([...apiKws, ...fbKws])]];
-        });
-        for (const [label, kws] of regionProvincesMap) {
-            if (!regionEntries.find(([l]) => l === label) && kws.length) {
-                regionEntries.push([label, kws]);
-            }
-        }
-
-        // CALABARZON drill-down: the PSGC API's /municipal-city endpoint is
-        // currently non-functional (returns empty), so city/municipality-level
-        // enrichment is not possible. Use the static fallback keywords which
-        // already cover the main cities and municipalities per province.
-        const calabarzonEntries = FALLBACK_CALABARZON_ENTRIES;
-
-        const result = { regionEntries, calabarzonEntries };
-        try {
-            sessionStorage.setItem(PSGC_CACHE_KEY, JSON.stringify(result));
-            sessionStorage.setItem(PSGC_CACHE_DATE_KEY, new Date().toISOString().slice(0, 10));
-        } catch (_) {}
-        return result;
-    };
-
-    const classifyDest = (dest, entries) => {
-        if (!dest) return 'Others';
-        const d = dest.toLowerCase();
-        for (const [label, keywords] of entries) {
-            for (const kw of keywords) {
-                if (d.includes(kw)) return label;
-            }
-        }
-        return 'Others';
-    };
-
-    const REGION_PALETTE = [
-        '#2563eb','#0891b2','#059669','#d97706','#dc2626',
-        '#7c3aed','#db2777','#0284c7','#16a34a','#ca8a04',
-        '#b91c1c','#0d9488','#4f46e5','#be185d','#15803d',
-        '#b45309','#6366f1','#64748b',
-    ];
-    const CALABARZON_PALETTE = ['#2563eb','#0891b2','#059669','#d97706','#dc2626'];
-
+  const loadPsgcEntries = async () => {
     try {
-        // Fetch travel authorities and PSGC geographic data in parallel
-        const [{ data: tas, error: taError }, psgcEntries] = await Promise.all([
-            supabase.from('travel_authorities').select('destination').eq('is_demo', false),
-            loadPsgcEntries().catch(err => {
-                console.warn('PSGC API unavailable, using local classification data:', err);
-                return null;
-            })
-        ]);
+      const today = new Date().toISOString().slice(0, 10);
+      if (sessionStorage.getItem(PSGC_CACHE_DATE_KEY) === today) {
+        const cached = sessionStorage.getItem(PSGC_CACHE_KEY);
+        if (cached) return JSON.parse(cached);
+      }
+    } catch (_) {}
 
-        if (taError) throw taError;
+    // Fetch all regions and all provinces in parallel — 2 calls.
+    // Avoids /region?id= which returns the region record itself, not its provinces.
+    const [regRes, provRes] = await Promise.all([
+      psgcFetch(`${PSGC_BASE}/region`),
+      psgcFetch(`${PSGC_BASE}/province`),
+    ]);
+    if (!regRes.ok || !provRes.ok) throw new Error("PSGC fetch failed");
+    const regions = await regRes.json();
+    const allProvinces = await provRes.json();
 
-        const REGION_ENTRIES = psgcEntries ? psgcEntries.regionEntries : FALLBACK_REGION_ENTRIES;
-        const CALABARZON_ENTRIES = psgcEntries ? psgcEntries.calabarzonEntries : FALLBACK_CALABARZON_ENTRIES;
+    // PSGC IDs are hierarchical: the first 2 digits identify the region.
+    // Province IDs share the same 2-digit prefix as their parent region.
+    const regionPrefixMap = new Map(); // e.g. "04" → "CALABARZON"
+    regions.forEach((r) => {
+      regionPrefixMap.set(r.psgc_id.substring(0, 2), psgcDeriveLabel(r.name));
+    });
 
-        const dataBadge = document.getElementById('dest-data-badge');
-        const usedPsgc = !!psgcEntries;
-        const updateBadge = (view) => {
-            if (!dataBadge) return;
-            if (view !== 'region' || !usedPsgc) {
-                dataBadge.hidden = true;
-                return;
-            }
-            dataBadge.textContent = 'PSGC API';
-            dataBadge.className = 'dest-data-badge dest-data-badge--api';
-            dataBadge.href = 'https://psgc.rootscratch.com/';
-            dataBadge.hidden = false;
-        };
+    // Group province names under their region label
+    const regionProvincesMap = new Map();
+    allProvinces.forEach((p) => {
+      const label = regionPrefixMap.get(p.psgc_id.substring(0, 2));
+      if (!label) return;
+      if (!regionProvincesMap.has(label)) regionProvincesMap.set(label, []);
+      regionProvincesMap.get(label).push(p.name.toLowerCase().trim());
+    });
 
-        let destChart = null;
+    // Merge province names into fallback region entries
+    const regionEntries = FALLBACK_REGION_ENTRIES.map(([label, fbKws]) => {
+      const apiKws = regionProvincesMap.get(label) || [];
+      return [label, [...new Set([...apiKws, ...fbKws])]];
+    });
+    for (const [label, kws] of regionProvincesMap) {
+      if (!regionEntries.find(([l]) => l === label) && kws.length) {
+        regionEntries.push([label, kws]);
+      }
+    }
 
-        const centerLabelPlugin = {
-            id: 'destCenterLabel',
-            afterDraw(chart) {
-                const { ctx, chartArea: { top, bottom, left, right } } = chart;
-                const cx = (left + right) / 2;
-                const cy = (top + bottom) / 2;
-                const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                ctx.save();
-                ctx.font = '700 22px Inter, sans-serif';
-                ctx.fillStyle = '#0b1c3b';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(total, cx, cy - 9);
-                ctx.font = '500 10px Inter, sans-serif';
-                ctx.fillStyle = 'rgba(11,28,59,0.4)';
-                ctx.fillText('travels', cx, cy + 10);
-                ctx.restore();
-            }
-        };
+    // CALABARZON drill-down: the PSGC API's /municipal-city endpoint is
+    // currently non-functional (returns empty), so city/municipality-level
+    // enrichment is not possible. Use the static fallback keywords which
+    // already cover the main cities and municipalities per province.
+    const calabarzonEntries = FALLBACK_CALABARZON_ENTRIES;
 
-        const renderLegend = (labels, data, colors) => {
-            const legend = document.getElementById('dest-legend');
-            if (!legend) return;
-            const total = data.reduce((a, b) => a + b, 0);
-            legend.innerHTML = labels.map((label, i) => {
-                const pct = total > 0 ? ((data[i] / total) * 100).toFixed(1) : '0.0';
-                return `<div class="dest-legend-item">
+    const result = { regionEntries, calabarzonEntries };
+    try {
+      sessionStorage.setItem(PSGC_CACHE_KEY, JSON.stringify(result));
+      sessionStorage.setItem(
+        PSGC_CACHE_DATE_KEY,
+        new Date().toISOString().slice(0, 10),
+      );
+    } catch (_) {}
+    return result;
+  };
+
+  const classifyDest = (dest, entries) => {
+    if (!dest) return "Others";
+    const d = dest.toLowerCase();
+    for (const [label, keywords] of entries) {
+      for (const kw of keywords) {
+        if (d.includes(kw)) return label;
+      }
+    }
+    return "Others";
+  };
+
+  const REGION_PALETTE = [
+    "#2563eb",
+    "#0891b2",
+    "#059669",
+    "#d97706",
+    "#dc2626",
+    "#7c3aed",
+    "#db2777",
+    "#0284c7",
+    "#16a34a",
+    "#ca8a04",
+    "#b91c1c",
+    "#0d9488",
+    "#4f46e5",
+    "#be185d",
+    "#15803d",
+    "#b45309",
+    "#6366f1",
+    "#64748b",
+  ];
+  const CALABARZON_PALETTE = [
+    "#2563eb",
+    "#0891b2",
+    "#059669",
+    "#d97706",
+    "#dc2626",
+  ];
+
+  try {
+    // Fetch travel authorities and PSGC geographic data in parallel
+    const [{ data: tas, error: taError }, psgcEntries] = await Promise.all([
+      supabase
+        .from("travel_authorities")
+        .select("destination")
+        .eq("is_demo", false),
+      loadPsgcEntries().catch((err) => {
+        console.warn(
+          "PSGC API unavailable, using local classification data:",
+          err,
+        );
+        return null;
+      }),
+    ]);
+
+    if (taError) throw taError;
+
+    const REGION_ENTRIES = psgcEntries
+      ? psgcEntries.regionEntries
+      : FALLBACK_REGION_ENTRIES;
+    const CALABARZON_ENTRIES = psgcEntries
+      ? psgcEntries.calabarzonEntries
+      : FALLBACK_CALABARZON_ENTRIES;
+
+    const dataBadge = document.getElementById("dest-data-badge");
+    const usedPsgc = !!psgcEntries;
+    const updateBadge = (view) => {
+      if (!dataBadge) return;
+      if (view !== "region" || !usedPsgc) {
+        dataBadge.hidden = true;
+        return;
+      }
+      dataBadge.textContent = "PSGC API";
+      dataBadge.className = "dest-data-badge dest-data-badge--api";
+      dataBadge.href = "https://psgc.rootscratch.com/";
+      dataBadge.hidden = false;
+    };
+
+    let destChart = null;
+
+    const centerLabelPlugin = {
+      id: "destCenterLabel",
+      afterDraw(chart) {
+        const {
+          ctx,
+          chartArea: { top, bottom, left, right },
+        } = chart;
+        const cx = (left + right) / 2;
+        const cy = (top + bottom) / 2;
+        const total = chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+        ctx.save();
+        ctx.font = "700 22px Inter, sans-serif";
+        ctx.fillStyle = "#0b1c3b";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(total, cx, cy - 9);
+        ctx.font = "500 10px Inter, sans-serif";
+        ctx.fillStyle = "rgba(11,28,59,0.4)";
+        ctx.fillText("travels", cx, cy + 10);
+        ctx.restore();
+      },
+    };
+
+    const renderLegend = (labels, data, colors) => {
+      const legend = document.getElementById("dest-legend");
+      if (!legend) return;
+      const total = data.reduce((a, b) => a + b, 0);
+      legend.innerHTML = labels
+        .map((label, i) => {
+          const pct = total > 0 ? ((data[i] / total) * 100).toFixed(1) : "0.0";
+          return `<div class="dest-legend-item">
                     <span class="dest-legend-dot" style="background:${colors[i]}"></span>
                     <span class="dest-legend-label">${label}</span>
                     <span class="dest-legend-meta">
@@ -2646,102 +3272,110 @@ const initDestinationsChart = async () => {
                         <span class="dest-legend-pct">${pct}%</span>
                     </span>
                 </div>`;
-            }).join('');
-        };
+        })
+        .join("");
+    };
 
-        const buildData = (entries, palette) => {
-            const counts = {};
-            (tas || []).forEach(ta => {
-                const label = classifyDest(ta.destination, entries);
-                counts[label] = (counts[label] || 0) + 1;
-            });
-            const sorted = Object.entries(counts)
-                .filter(([k]) => k !== 'Others')
-                .sort((a, b) => b[1] - a[1]);
-            if (counts['Others']) sorted.push(['Others', counts['Others']]);
-            const labels = sorted.map(e => e[0]);
-            const data = sorted.map(e => e[1]);
-            const colors = labels.map((l, i) =>
-                l === 'Others' ? '#94a3b8' : palette[i % palette.length]
-            );
-            return { labels, data, colors };
-        };
+    const buildData = (entries, palette) => {
+      const counts = {};
+      (tas || []).forEach((ta) => {
+        const label = classifyDest(ta.destination, entries);
+        counts[label] = (counts[label] || 0) + 1;
+      });
+      const sorted = Object.entries(counts)
+        .filter(([k]) => k !== "Others")
+        .sort((a, b) => b[1] - a[1]);
+      if (counts["Others"]) sorted.push(["Others", counts["Others"]]);
+      const labels = sorted.map((e) => e[0]);
+      const data = sorted.map((e) => e[1]);
+      const colors = labels.map((l, i) =>
+        l === "Others" ? "#94a3b8" : palette[i % palette.length],
+      );
+      return { labels, data, colors };
+    };
 
-        const renderChart = (view) => {
-            if (title) {
-                title.textContent = DESTINATION_TITLES[view] || DESTINATION_TITLES.region;
-            }
-            if (subtitle) {
-                subtitle.textContent = DESTINATION_SUBTITLES[view] || DESTINATION_SUBTITLES.region;
-            }
-            updateBadge(view);
+    const renderChart = (view) => {
+      if (title) {
+        title.textContent =
+          DESTINATION_TITLES[view] || DESTINATION_TITLES.region;
+      }
+      if (subtitle) {
+        subtitle.textContent =
+          DESTINATION_SUBTITLES[view] || DESTINATION_SUBTITLES.region;
+      }
+      updateBadge(view);
 
-            const entries = view === 'region' ? REGION_ENTRIES : CALABARZON_ENTRIES;
-            const palette = view === 'region' ? REGION_PALETTE : CALABARZON_PALETTE;
-            const { labels, data, colors } = buildData(entries, palette);
+      const entries = view === "region" ? REGION_ENTRIES : CALABARZON_ENTRIES;
+      const palette = view === "region" ? REGION_PALETTE : CALABARZON_PALETTE;
+      const { labels, data, colors } = buildData(entries, palette);
 
-            if (!labels.length) {
-                canvas.parentElement.innerHTML = '<div class="insight-chart-placeholder" style="height:220px"><span>No destination data yet</span></div>';
-                queueInsightsLayoutSync();
-                return;
-            }
+      if (!labels.length) {
+        canvas.parentElement.innerHTML =
+          '<div class="insight-chart-placeholder" style="height:220px"><span>No destination data yet</span></div>';
+        queueInsightsLayoutSync();
+        return;
+      }
 
-            renderLegend(labels, data, colors);
+      renderLegend(labels, data, colors);
 
-            if (destChart) {
-                destChart.data.labels = labels;
-                destChart.data.datasets[0].data = data;
-                destChart.data.datasets[0].backgroundColor = colors;
-                destChart.update();
-            } else {
-                destChart = new Chart(canvas, {
-                    type: 'doughnut',
-                    data: {
-                        labels,
-                        datasets: [{
-                            data,
-                            backgroundColor: colors,
-                            borderWidth: 2,
-                            borderColor: 'rgba(255,255,255,0.85)',
-                            hoverOffset: 6,
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        cutout: '60%',
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: {
-                                callbacks: {
-                                    label: ctx => {
-                                        const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
-                                        const pct = ((ctx.parsed / total) * 100).toFixed(1);
-                                        return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    plugins: [centerLabelPlugin]
-                });
-            }
-
-            queueInsightsLayoutSync();
-        };
-
-        renderChart('calabarzon');
-
-        document.querySelectorAll('.dest-switch-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.dest-switch-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                renderChart(btn.dataset.view);
-            });
+      if (destChart) {
+        destChart.data.labels = labels;
+        destChart.data.datasets[0].data = data;
+        destChart.data.datasets[0].backgroundColor = colors;
+        destChart.update();
+      } else {
+        destChart = new Chart(canvas, {
+          type: "doughnut",
+          data: {
+            labels,
+            datasets: [
+              {
+                data,
+                backgroundColor: colors,
+                borderWidth: 2,
+                borderColor: "rgba(255,255,255,0.85)",
+                hoverOffset: 6,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: "60%",
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => {
+                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                    const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                    return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                  },
+                },
+              },
+            },
+          },
+          plugins: [centerLabelPlugin],
         });
-    } catch (e) {
-        console.error('Destinations chart error:', e);
-    }
+      }
+
+      queueInsightsLayoutSync();
+    };
+
+    renderChart("calabarzon");
+
+    document.querySelectorAll(".dest-switch-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document
+          .querySelectorAll(".dest-switch-btn")
+          .forEach((b) => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderChart(btn.dataset.view);
+      });
+    });
+  } catch (e) {
+    console.error("Destinations chart error:", e);
+  }
 };
 // === End Destinations Chart ===
 
@@ -2750,143 +3384,149 @@ init();
 // Realtime subscription for travel_authorities changes
 let realtimeChannel = null;
 const setupRealtimeSubscription = () => {
-    // Clean up existing subscription if any
-    if (realtimeChannel) {
-        supabase.removeChannel(realtimeChannel);
-    }
+  // Clean up existing subscription if any
+  if (realtimeChannel) {
+    supabase.removeChannel(realtimeChannel);
+  }
 
-    // Subscribe to all changes (INSERT, UPDATE, DELETE) on travel_authorities table
-    realtimeChannel = supabase
-        .channel('travel_authorities_dashboard_changes')
-        .on(
-            'postgres_changes',
-            {
-                event: '*', // Listen to all events
-                schema: 'public',
-                table: 'travel_authorities'
-            },
-            (payload) => {
-                // Check if this is a demo file - suppress toast for regular users
-                let isDemo = false;
-                let changedToDemo = false;
-                
-                if (payload.eventType === 'INSERT') {
-                    isDemo = payload.new?.is_demo === true;
-                } else if (payload.eventType === 'UPDATE') {
-                    isDemo = payload.new?.is_demo === true;
-                    // Check if file was just changed to demo (wasn't demo before, is demo now)
-                    changedToDemo = !payload.old?.is_demo && payload.new?.is_demo === true;
-                } else if (payload.eventType === 'DELETE') {
-                    isDemo = payload.old?.is_demo === true;
-                }
-                
-                // Don't show toast for demo files on dashboard (regular users)
-                // EXCEPT when a file was just updated to demo status (admin forgot to mark it initially)
-                if (isDemo && !changedToDemo) {
-                    return;
-                }
-                
-                // Show notification with flashing refresh button
-                let message = '';
-                switch(payload.eventType) {
-                    case 'INSERT':
-                        message = 'New record added';
-                        break;
-                    case 'UPDATE':
-                        message = 'Record updated';
-                        break;
-                    case 'DELETE':
-                        message = 'Record deleted';
-                        break;
-                }
-                
-                if (refreshTableBtn) {
-                    refreshTableBtn.classList.add("has-new-data");
-                }
-                
-                showToast(`${message} - Click Reload to refresh`, 'info', 30000);
-            }
-        )
-        .subscribe((status) => {});
+  // Subscribe to all changes (INSERT, UPDATE, DELETE) on travel_authorities table
+  realtimeChannel = supabase
+    .channel("travel_authorities_dashboard_changes")
+    .on(
+      "postgres_changes",
+      {
+        event: "*", // Listen to all events
+        schema: "public",
+        table: "travel_authorities",
+      },
+      (payload) => {
+        // Check if this is a demo file - suppress toast for regular users
+        let isDemo = false;
+        let changedToDemo = false;
+
+        if (payload.eventType === "INSERT") {
+          isDemo = payload.new?.is_demo === true;
+        } else if (payload.eventType === "UPDATE") {
+          isDemo = payload.new?.is_demo === true;
+          // Check if file was just changed to demo (wasn't demo before, is demo now)
+          changedToDemo =
+            !payload.old?.is_demo && payload.new?.is_demo === true;
+        } else if (payload.eventType === "DELETE") {
+          isDemo = payload.old?.is_demo === true;
+        }
+
+        // Don't show toast for demo files on dashboard (regular users)
+        // EXCEPT when a file was just updated to demo status (admin forgot to mark it initially)
+        if (isDemo && !changedToDemo) {
+          return;
+        }
+
+        // Show notification with flashing refresh button
+        let message = "";
+        switch (payload.eventType) {
+          case "INSERT":
+            message = "New record added";
+            break;
+          case "UPDATE":
+            message = "Record updated";
+            break;
+          case "DELETE":
+            message = "Record deleted";
+            break;
+        }
+
+        if (refreshTableBtn) {
+          refreshTableBtn.classList.add("has-new-data");
+        }
+
+        showToast(`${message} - Click Reload to refresh`, "info", 30000);
+      },
+    )
+    .subscribe((status) => {});
 };
 
 // Prevent browser back/forward navigation
 // This prevents users from accidentally navigating back to login or other pages
 history.pushState(null, null, location.href);
-window.addEventListener('popstate', () => {
-    history.pushState(null, null, location.href);
+window.addEventListener("popstate", () => {
+  history.pushState(null, null, location.href);
 });
 
 // Force page reload if loaded from cache (back/forward button)
-window.addEventListener('pageshow', (event) => {
-    if (event.persisted) {
-        window.location.reload();
-    }
+window.addEventListener("pageshow", (event) => {
+  if (event.persisted) {
+    window.location.reload();
+  }
 });
 
 // Initialize header buttons after everything is defined
 if (window.headerLoaded) {
-    window.initHeaderButtons();
+  window.initHeaderButtons();
 }
 
-document.getElementById('close-settings').addEventListener('click', () => {
-    document.getElementById('settings-modal').classList.remove('show');
+document.getElementById("close-settings").addEventListener("click", () => {
+  document.getElementById("settings-modal").classList.remove("show");
 });
 
-document.getElementById('settings-modal').addEventListener('click', (e) => {
-    if (e.target === document.getElementById('settings-modal')) {
-        document.getElementById('settings-modal').classList.remove('show');
-    }
+document.getElementById("settings-modal").addEventListener("click", (e) => {
+  if (e.target === document.getElementById("settings-modal")) {
+    document.getElementById("settings-modal").classList.remove("show");
+  }
 });
 
 // Sidebar collapse toggle
-const dashSidebar = document.getElementById('dash-sidebar');
-const dashSidebarToggle = document.getElementById('dash-sidebar-toggle');
+const dashSidebar = document.getElementById("dash-sidebar");
+const dashSidebarToggle = document.getElementById("dash-sidebar-toggle");
 
 // Restore saved collapse state
-const dashWrapper = document.getElementById('dashboard-wrapper');
-const savedSidebarCollapsed = localStorage.getItem('dashSidebarCollapsed') === 'true';
+const dashWrapper = document.getElementById("dashboard-wrapper");
+const savedSidebarCollapsed =
+  localStorage.getItem("dashSidebarCollapsed") === "true";
 if (dashSidebar && savedSidebarCollapsed) {
-    dashSidebar.classList.add('collapsed');
-    if (dashWrapper) dashWrapper.classList.add('sidebar-collapsed');
+  dashSidebar.classList.add("collapsed");
+  if (dashWrapper) dashWrapper.classList.add("sidebar-collapsed");
 }
 
 if (dashSidebar && dashSidebarToggle) {
-    dashSidebarToggle.addEventListener('click', () => {
-        const isNowCollapsed = dashSidebar.classList.toggle('collapsed');
-        if (dashWrapper) dashWrapper.classList.toggle('sidebar-collapsed', isNowCollapsed);
-        localStorage.setItem('dashSidebarCollapsed', isNowCollapsed);
-        scheduleInsightsLayoutSync();
-    });
+  dashSidebarToggle.addEventListener("click", () => {
+    const isNowCollapsed = dashSidebar.classList.toggle("collapsed");
+    if (dashWrapper)
+      dashWrapper.classList.toggle("sidebar-collapsed", isNowCollapsed);
+    localStorage.setItem("dashSidebarCollapsed", isNowCollapsed);
+    scheduleInsightsLayoutSync();
+  });
 }
 
 // Sidebar tab switching
 const switchDashTab = (target) => {
-    document.querySelectorAll('.dash-sidebar-tab').forEach(t => {
-        const isTarget = t.getAttribute('data-tab') === target;
-        t.classList.toggle('active', isTarget);
-        t.setAttribute('aria-selected', isTarget ? 'true' : 'false');
-    });
-    document.querySelectorAll('.dash-tab-pane').forEach(p => p.classList.remove('active'));
-    const pane = document.getElementById(`tab-${target}`);
-    if (pane) pane.classList.add('active');
-    if (target === 'insights') {
-        renderAgendaTracker();
-        scheduleInsightsLayoutSync();
-    }
-    if (target === 'draft-ta' && window.initDraftTaPanel) {
-        window.initDraftTaPanel(supabase);
-    }
-    localStorage.setItem('dashActiveTab', target);
+  document.querySelectorAll(".dash-sidebar-tab").forEach((t) => {
+    const isTarget = t.getAttribute("data-tab") === target;
+    t.classList.toggle("active", isTarget);
+    t.setAttribute("aria-selected", isTarget ? "true" : "false");
+  });
+  document
+    .querySelectorAll(".dash-tab-pane")
+    .forEach((p) => p.classList.remove("active"));
+  const pane = document.getElementById(`tab-${target}`);
+  if (pane) pane.classList.add("active");
+  if (target === "insights") {
+    renderAgendaTracker();
+    scheduleAgendaCalendarLayoutSync();
+    scheduleInsightsLayoutSync();
+  }
+  if (target === "draft-ta" && window.initDraftTaPanel) {
+    window.initDraftTaPanel(supabase);
+  }
+  localStorage.setItem("dashActiveTab", target);
 };
 
-document.querySelectorAll('.dash-sidebar-tab').forEach(tab => {
-    if (!tab.dataset.tab) return; // skip action-type buttons (e.g. Draft TA)
-    tab.addEventListener('click', () => {
-        switchDashTab(tab.getAttribute('data-tab'));
-    });
+document.querySelectorAll(".dash-sidebar-tab").forEach((tab) => {
+  if (!tab.dataset.tab) return; // skip action-type buttons (e.g. Draft TA)
+  tab.addEventListener("click", () => {
+    switchDashTab(tab.getAttribute("data-tab"));
+  });
 });
 
 // Restore last active tab on load
-const savedDashTab = localStorage.getItem('dashActiveTab');
+const savedDashTab = localStorage.getItem("dashActiveTab");
 if (savedDashTab) switchDashTab(savedDashTab);
