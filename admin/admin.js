@@ -443,6 +443,7 @@ window.initHeaderButtons = () => {
 
   const userMenuBtn = document.getElementById("user-menu-btn");
   const headerPopup = document.getElementById("header-popup-panel");
+  const noticePanel = document.getElementById("header-notice-panel");
   const draftTaOption = document.getElementById("header-draft-ta-option");
   const settingsOption = document.getElementById("header-settings-option");
   const logoutOption = document.getElementById("header-logout-option");
@@ -484,6 +485,19 @@ window.initHeaderButtons = () => {
   const draftTaOfficialsOptions = document.getElementById(
     "header-draft-ta-officials-options",
   );
+  const messagesBtn = document.getElementById("header-messages-btn");
+  const noticeCreateBtn = document.getElementById("header-notice-create-btn");
+  const noticeActions = document.getElementById("header-notice-actions");
+  const noticeEmpty = document.getElementById("header-notice-empty");
+  const noticeDivider = document.getElementById("header-notice-divider");
+  const noticeList = document.getElementById("header-notice-list");
+  const noticeListItems = document.getElementById("header-notice-list-items");
+  const noticeListEmpty = document.getElementById("header-notice-list-empty");
+  const noticeCompose = document.getElementById("header-notice-compose");
+  const noticeComposeText = document.getElementById("header-notice-compose-text");
+  const noticeComposeSend = document.getElementById("header-notice-compose-send");
+  const noticeComposeCount = document.getElementById("header-notice-compose-count");
+  const noticeComposeCancel = document.getElementById("header-notice-compose-cancel");
   const userEmailElement = document.getElementById("header-user-email");
   const userNameElement = document.getElementById("header-user-name");
   const headerDraftSelectedEmployees = [];
@@ -532,6 +546,147 @@ window.initHeaderButtons = () => {
     }
     window.__headerNameResizeHandler = renderName;
     window.addEventListener("resize", window.__headerNameResizeHandler);
+  };
+
+  const setMessagesButtonVisibility = (role) => {
+    if (!messagesBtn) return;
+
+    const normalizedRole = String(role || "").toLowerCase();
+    const canViewMessages =
+      normalizedRole === "user" ||
+      normalizedRole === "admin" ||
+      normalizedRole === "super";
+    messagesBtn.toggleAttribute("hidden", !canViewMessages);
+    const isSuper = normalizedRole === "super";
+    noticeCreateBtn?.toggleAttribute("hidden", !isSuper);
+    noticeActions?.toggleAttribute("hidden", !isSuper);
+  };
+
+  let noticeSenderName = "";
+
+  const escapeHtml = (value) =>
+    String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const renderNoticePanel = async () => {
+    const isSuper = window.adminCurrentRole === "super";
+    let query = supabase
+      .from("notices")
+      .select("id, message, sender, created_at, receiver")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (!isSuper) {
+      query = query.or("receiver.eq.admins,receiver.eq.both");
+    }
+
+    const { data: notices, error } = await query;
+
+    const items = error ? [] : (notices || []);
+    const hasNotices = items.length > 0;
+
+    noticeEmpty?.toggleAttribute("hidden", hasNotices);
+    noticeDivider?.toggleAttribute("hidden", !isSuper || !hasNotices);
+    noticeList?.toggleAttribute("hidden", !hasNotices);
+
+    if (!noticeListItems) {
+      return;
+    }
+
+    if (!hasNotices) {
+      noticeListItems.innerHTML = "";
+      noticeListEmpty?.toggleAttribute("hidden", false);
+      return;
+    }
+
+    noticeListEmpty?.toggleAttribute("hidden", true);
+    noticeListItems.innerHTML = items
+      .map((notice) => {
+        const createdAt = notice.created_at
+          ? new Date(notice.created_at).toLocaleString()
+          : "Recently";
+        const receiverLabel = notice.receiver === "both" ? "Everyone" : notice.receiver === "admins" ? "Admins" : "Users";
+        const actionBtns = isSuper ? `
+          <div class="header-notice-item-actions">
+            <button class="header-notice-item-btn notice-edit-receiver-btn" data-id="${escapeHtml(String(notice.id))}" title="Edit receiver" aria-label="Edit receiver">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z"/></svg>
+            </button>
+            <button class="header-notice-item-btn danger notice-delete-btn" data-id="${escapeHtml(String(notice.id))}" title="Delete notice" aria-label="Delete notice">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/></svg>
+            </button>
+          </div>` : "";
+        const receiverEditRow = isSuper ? `
+          <div class="header-notice-receiver-edit" hidden>
+            <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="users" ${notice.receiver === "users" || notice.receiver === "both" ? "checked" : ""}> Users</label>
+            <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="admins" ${notice.receiver === "admins" || notice.receiver === "both" ? "checked" : ""}> Admins</label>
+            <button class="header-notice-receiver-save">Save</button>
+            <button class="header-notice-receiver-cancel">Cancel</button>
+          </div>` : "";
+        return `<li class="header-notice-list-item" data-id="${escapeHtml(String(notice.id))}">
+          <div class="header-notice-item-body">
+            <div class="header-notice-item-text-wrap">
+              <p class="header-notice-list-item-text">${escapeHtml(notice.message || "")}</p>
+              <p class="header-notice-list-item-time">${escapeHtml(notice.sender || "")} · ${escapeHtml(createdAt)}</p>
+              ${isSuper ? `<span class="header-notice-item-receiver">${escapeHtml(receiverLabel)}</span>` : ""}
+            </div>
+            ${actionBtns}
+          </div>
+          ${receiverEditRow}
+        </li>`;
+      })
+      .join("");
+
+    if (isSuper) {
+      noticeListItems.querySelectorAll(".notice-delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-id");
+          if (!confirm("Delete this notice?")) return;
+          const { error: delError } = await supabase.from("notices").delete().eq("id", id);
+          if (delError) { console.error(delError); return; }
+          void renderNoticePanel();
+        });
+      });
+
+      noticeListItems.querySelectorAll(".notice-edit-receiver-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const li = btn.closest(".header-notice-list-item");
+          const editRow = li?.querySelector(".header-notice-receiver-edit");
+          if (!editRow) return;
+          const isOpen = !editRow.hasAttribute("hidden");
+          editRow.toggleAttribute("hidden", isOpen);
+        });
+      });
+
+      noticeListItems.querySelectorAll(".header-notice-receiver-cancel").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const editRow = btn.closest(".header-notice-receiver-edit");
+          editRow?.toggleAttribute("hidden", true);
+        });
+      });
+
+      noticeListItems.querySelectorAll(".header-notice-receiver-save").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const li = btn.closest(".header-notice-list-item");
+          const id = li?.getAttribute("data-id");
+          const checked = Array.from(li.querySelectorAll(".notice-receiver-cb:checked")).map((cb) => cb.value);
+          if (checked.length === 0) { alert("Select at least one receiver."); return; }
+          const newReceiver = checked.length === 2 ? "both" : checked[0];
+          btn.disabled = true;
+          const { error: updError } = await supabase.from("notices").update({ receiver: newReceiver }).eq("id", id);
+          btn.disabled = false;
+          if (updError) { console.error(updError); return; }
+          void renderNoticePanel();
+        });
+      });
+    }
   };
 
   const getTodayLocalISO = () => {
@@ -823,6 +978,8 @@ window.initHeaderButtons = () => {
   };
 
   // Fetch and display user email and name
+  setMessagesButtonVisibility(window.adminCurrentRole || "");
+
   if (userEmailElement || userNameElement) {
     supabase.auth
       .getSession()
@@ -836,24 +993,28 @@ window.initHeaderButtons = () => {
           try {
             const { data: profile, error } = await supabase
               .from("profiles")
-              .select("FName, LName")
+              .select("FName, LName, role")
               .eq("id", session.user.id)
               .maybeSingle();
 
             if (!error && profile) {
+              noticeSenderName = `${capitalizeWords(profile.FName || "")} ${capitalizeWords(profile.LName || "")}`.trim();
               setResponsiveHeaderName(
                 profile.FName,
                 profile.LName,
                 session.user.email.split("@")[0],
               );
+              setMessagesButtonVisibility(profile.role);
             } else if (userNameElement) {
               setResponsiveHeaderName("", "", session.user.email.split("@")[0]);
+              setMessagesButtonVisibility(window.adminCurrentRole || "");
             }
           } catch (err) {
             console.error("Error fetching user name:", err);
             if (userNameElement) {
               setResponsiveHeaderName("", "", session.user.email.split("@")[0]);
             }
+            setMessagesButtonVisibility(window.adminCurrentRole || "");
           }
         } else {
           if (userEmailElement) {
@@ -862,6 +1023,7 @@ window.initHeaderButtons = () => {
           if (userNameElement) {
             setResponsiveHeaderName("", "", "User");
           }
+          setMessagesButtonVisibility(window.adminCurrentRole || "");
         }
       })
       .catch(() => {
@@ -871,14 +1033,123 @@ window.initHeaderButtons = () => {
         if (userNameElement) {
           setResponsiveHeaderName("", "", "User");
         }
+        setMessagesButtonVisibility(window.adminCurrentRole || "");
       });
   }
 
   // Toggle popup when user menu button is clicked
   userMenuBtn.addEventListener("click", (e) => {
     e.stopPropagation();
+    noticePanel?.classList.remove("show");
     headerPopup.classList.toggle("show");
   });
+
+  if (messagesBtn && noticePanel) {
+    messagesBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      headerPopup.classList.remove("show");
+      noticePanel.classList.toggle("show");
+      if (noticePanel.classList.contains("show")) {
+        void renderNoticePanel();
+      }
+    });
+  }
+
+  const openNoticeCompose = () => {
+    noticeCompose?.removeAttribute("hidden");
+    noticeActions?.toggleAttribute("hidden", true);
+    noticeComposeText?.focus();
+  };
+
+  const closeNoticeCompose = () => {
+    noticeCompose?.toggleAttribute("hidden", true);
+    noticeActions?.toggleAttribute("hidden", false);
+    if (noticeComposeText) noticeComposeText.value = "";
+    if (noticeComposeSend) noticeComposeSend.disabled = false;
+    if (noticeComposeCount) {
+      noticeComposeCount.textContent = "0";
+      noticeComposeCount.closest(".header-notice-compose-counter")?.classList.remove("over");
+    }
+    const checkboxes = noticeCompose?.querySelectorAll("input[name='notice-receiver']");
+    checkboxes?.forEach((cb) => { cb.checked = cb.value === "users"; });
+  };
+
+  if (noticeCreateBtn) {
+    noticeCreateBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openNoticeCompose();
+    });
+  }
+
+  if (noticeComposeCancel) {
+    noticeComposeCancel.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeNoticeCompose();
+    });
+  }
+
+  if (noticeComposeText && noticeComposeCount) {
+    noticeComposeText.addEventListener("input", () => {
+      const len = noticeComposeText.value.length;
+      noticeComposeCount.textContent = len;
+      const counter = noticeComposeCount.closest(".header-notice-compose-counter");
+      counter?.classList.toggle("over", len > 1000);
+      if (noticeComposeSend) noticeComposeSend.disabled = len > 1000;
+    });
+  }
+
+  if (noticeComposeSend) {
+    noticeComposeSend.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const text = noticeComposeText?.value.trim();
+      if (!text || noticeComposeText.value.length > 1000) {
+        noticeComposeText?.focus();
+        return;
+      }
+
+      const checkedReceivers = Array.from(
+        noticeCompose?.querySelectorAll("input[name='notice-receiver']:checked") || []
+      ).map((cb) => cb.value);
+
+      if (checkedReceivers.length === 0) {
+        alert("Please select at least one receiver.");
+        noticeComposeSend.disabled = false;
+        return;
+      }
+
+      noticeComposeSend.disabled = true;
+
+      const receiverValue = checkedReceivers.length === 2 ? "both" : checkedReceivers[0];
+      const rows = [{
+        message: text,
+        sender: noticeSenderName || "Super User",
+        receiver: receiverValue,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      }];
+
+      const { error } = await supabase.from("notices").insert(rows);
+
+      if (error) {
+        console.error("Notice insert error:", error);
+        alert(`Notice error: ${error.message || error.code || JSON.stringify(error)}`);
+        noticeComposeSend.disabled = false;
+        return;
+      }
+
+      closeNoticeCompose();
+      void renderNoticePanel();
+    });
+  }
+
+  void renderNoticePanel();
+
+  supabase
+    .channel("notices_realtime_admin")
+    .on("postgres_changes", { event: "*", schema: "public", table: "notices" }, () => {
+      void renderNoticePanel();
+    })
+    .subscribe();
 
   if (draftTaForm) {
     draftTaForm.addEventListener("submit", (e) => {
@@ -888,6 +1159,7 @@ window.initHeaderButtons = () => {
 
   if (draftTaOption) {
     draftTaOption.addEventListener("click", () => {
+      noticePanel?.classList.remove("show");
       void openDraftTaModal();
     });
   }
@@ -1023,6 +1295,7 @@ window.initHeaderButtons = () => {
   if (settingsOption) {
     settingsOption.addEventListener("click", () => {
       headerPopup.classList.remove("show");
+      noticePanel?.classList.remove("show");
       document.getElementById("settings-modal").classList.add("show");
     });
   }
@@ -1031,6 +1304,7 @@ window.initHeaderButtons = () => {
   if (logoutOption) {
     logoutOption.addEventListener("click", async () => {
       headerPopup.classList.remove("show");
+      noticePanel?.classList.remove("show");
 
       // Check if showConfirmation is available
       if (!window.adminShowConfirmation) {
@@ -1063,6 +1337,16 @@ window.initHeaderButtons = () => {
 
   // Close popup when clicking outside
   document.addEventListener("click", (e) => {
+    if (
+      noticePanel &&
+      !noticePanel.contains(e.target) &&
+      e.target !== messagesBtn &&
+      !messagesBtn?.contains(e.target)
+    ) {
+      noticePanel.classList.remove("show");
+      closeNoticeCompose();
+    }
+
     if (
       !headerPopup.contains(e.target) &&
       e.target !== userMenuBtn &&
@@ -4922,11 +5206,18 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
           const isOpen = filterPanel.classList.contains("show");
           // Close all panels first
           ["super", "admin", "user"].forEach((r) => {
-            document
-              .getElementById(`users-filter-panel-${r}`)
-              ?.classList.remove("show");
+            const panel = document.getElementById(`users-filter-panel-${r}`);
+            panel?.classList.remove("show");
+            panel?.classList.remove("open-up");
           });
-          if (!isOpen) filterPanel.classList.add("show");
+          if (!isOpen) {
+            const triggerRect = toggleBtn.getBoundingClientRect();
+            const panelHeight = Math.max(filterPanel.offsetHeight || 0, 280);
+            const availableBelow = window.innerHeight - triggerRect.bottom;
+            const shouldOpenUp = availableBelow < panelHeight + 20;
+            filterPanel.classList.toggle("open-up", shouldOpenUp);
+            filterPanel.classList.add("show");
+          }
         });
         document.addEventListener("click", (e) => {
           if (
