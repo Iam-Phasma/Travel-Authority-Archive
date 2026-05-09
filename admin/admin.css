@@ -797,6 +797,12 @@ body.dashboard-page::before {
   top: calc(100% + 8px);
   right: 0;
   left: auto;
+  z-index: 260;
+}
+
+.users-section-filter-panel.open-up {
+  top: auto;
+  bottom: calc(100% + 8px);
 }
 
 .users-role-table-wrap {
@@ -965,11 +971,24 @@ body.dashboard-page::before {
   box-shadow: none;
   color: #ffffff;
 }
+.dashboard-page .header-messages-btn {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #ffffff;
+}
 .dashboard-page .header-user-btn .user-icon {
   fill: none;
   stroke: #ffffff;
 }
+.dashboard-page .header-messages-icon {
+  fill: none;
+  stroke: #ffffff;
+}
 .dashboard-page .header-user-name {
+  color: #ffffff;
+}
+.dashboard-page .header-messages-label {
   color: #ffffff;
 }
 .dashboard-page .header-user-btn:hover {
@@ -977,7 +996,16 @@ body.dashboard-page::before {
   border-color: transparent;
   box-shadow: none;
 }
+.dashboard-page .header-messages-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: transparent;
+  box-shadow: none;
+}
 .dashboard-page .header-user-btn:hover .user-icon {
+  fill: none;
+  stroke: #ffffff;
+}
+.dashboard-page .header-messages-btn:hover .header-messages-icon {
   fill: none;
   stroke: #ffffff;
 }

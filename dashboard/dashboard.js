@@ -154,6 +154,7 @@ window.initHeaderButtons = () => {
 
   const userMenuBtn = document.getElementById("user-menu-btn");
   const headerPopup = document.getElementById("header-popup-panel");
+  const noticePanel = document.getElementById("header-notice-panel");
   const draftTaOption = document.getElementById("header-draft-ta-option");
   const settingsOption = document.getElementById("header-settings-option");
   const logoutOption = document.getElementById("header-logout-option");
@@ -195,6 +196,19 @@ window.initHeaderButtons = () => {
   const draftTaOfficialsOptions = document.getElementById(
     "header-draft-ta-officials-options",
   );
+  const messagesBtn = document.getElementById("header-messages-btn");
+  const noticeCreateBtn = document.getElementById("header-notice-create-btn");
+  const noticeActions = document.getElementById("header-notice-actions");
+  const noticeEmpty = document.getElementById("header-notice-empty");
+  const noticeDivider = document.getElementById("header-notice-divider");
+  const noticeList = document.getElementById("header-notice-list");
+  const noticeListItems = document.getElementById("header-notice-list-items");
+  const noticeListEmpty = document.getElementById("header-notice-list-empty");
+  const noticeCompose = document.getElementById("header-notice-compose");
+  const noticeComposeText = document.getElementById("header-notice-compose-text");
+  const noticeComposeSend = document.getElementById("header-notice-compose-send");
+  const noticeComposeCount = document.getElementById("header-notice-compose-count");
+  const noticeComposeCancel = document.getElementById("header-notice-compose-cancel");
   const userEmailElement = document.getElementById("header-user-email");
   const userNameElement = document.getElementById("header-user-name");
   const headerDraftSelectedEmployees = [];
@@ -250,6 +264,142 @@ window.initHeaderButtons = () => {
     }
     window.__headerNameResizeHandler = renderName;
     window.addEventListener("resize", window.__headerNameResizeHandler);
+  };
+
+  const setMessagesButtonVisibility = (role) => {
+    if (!messagesBtn) return;
+
+    const normalizedRole = String(role || "").toLowerCase();
+    const canViewMessages =
+      normalizedRole === "user" ||
+      normalizedRole === "admin" ||
+      normalizedRole === "super";
+    messagesBtn.toggleAttribute("hidden", !canViewMessages);
+    const isSuper = normalizedRole === "super";
+    noticeCreateBtn?.toggleAttribute("hidden", !isSuper);
+    noticeActions?.toggleAttribute("hidden", !isSuper);
+  };
+
+  let noticeSenderName = "";
+
+  const escapeHtml = (value) =>
+    String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/\"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const renderNoticePanel = async () => {
+    const isCurrentUserSuper = noticeCreateBtn && !noticeCreateBtn.hasAttribute("hidden");
+    const { data: notices, error } = await supabase
+      .from("notices")
+      .select("id, message, sender, created_at, receiver")
+      .eq("is_active", true)
+      .or("receiver.eq.users,receiver.eq.both")
+      .order("created_at", { ascending: false });
+
+    const items = error ? [] : (notices || []);
+    const hasNotices = items.length > 0;
+
+    noticeEmpty?.toggleAttribute("hidden", hasNotices);
+    noticeDivider?.toggleAttribute("hidden", !isCurrentUserSuper || !hasNotices);
+    noticeList?.toggleAttribute("hidden", !hasNotices);
+
+    if (!noticeListItems) {
+      return;
+    }
+
+    if (!hasNotices) {
+      noticeListItems.innerHTML = "";
+      noticeListEmpty?.toggleAttribute("hidden", false);
+      return;
+    }
+
+    noticeListEmpty?.toggleAttribute("hidden", true);
+    noticeListItems.innerHTML = items
+      .map((notice) => {
+        const createdAt = notice.created_at
+          ? new Date(notice.created_at).toLocaleString()
+          : "Recently";
+        const receiverLabel = notice.receiver === "both" ? "Everyone" : notice.receiver === "admins" ? "Admins" : "Users";
+        const actionBtns = isCurrentUserSuper ? `
+          <div class="header-notice-item-actions">
+            <button class="header-notice-item-btn notice-edit-receiver-btn" data-id="${escapeHtml(String(notice.id))}" title="Edit receiver" aria-label="Edit receiver">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z"/></svg>
+            </button>
+            <button class="header-notice-item-btn danger notice-delete-btn" data-id="${escapeHtml(String(notice.id))}" title="Delete notice" aria-label="Delete notice">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 7h14m-9 3v8m4-8v8M10 3h4a1 1 0 0 1 1 1v3H9V4a1 1 0 0 1 1-1ZM6 7h12v13a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V7Z"/></svg>
+            </button>
+          </div>` : "";
+        const receiverEditRow = isCurrentUserSuper ? `
+          <div class="header-notice-receiver-edit" hidden>
+            <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="users" ${notice.receiver === "users" || notice.receiver === "both" ? "checked" : ""}> Users</label>
+            <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="admins" ${notice.receiver === "admins" || notice.receiver === "both" ? "checked" : ""}> Admins</label>
+            <button class="header-notice-receiver-save">Save</button>
+            <button class="header-notice-receiver-cancel">Cancel</button>
+          </div>` : "";
+        return `<li class="header-notice-list-item" data-id="${escapeHtml(String(notice.id))}">
+          <div class="header-notice-item-body">
+            <div class="header-notice-item-text-wrap">
+              <p class="header-notice-list-item-text">${escapeHtml(notice.message || "")}</p>
+              <p class="header-notice-list-item-time">${escapeHtml(notice.sender || "")} · ${escapeHtml(createdAt)}</p>
+              ${isCurrentUserSuper ? `<span class="header-notice-item-receiver">${escapeHtml(receiverLabel)}</span>` : ""}
+            </div>
+            ${actionBtns}
+          </div>
+          ${receiverEditRow}
+        </li>`;
+      })
+      .join("");
+
+    if (isCurrentUserSuper) {
+      noticeListItems.querySelectorAll(".notice-delete-btn").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const id = btn.getAttribute("data-id");
+          if (!confirm("Delete this notice?")) return;
+          const { error: delError } = await supabase.from("notices").delete().eq("id", id);
+          if (delError) { console.error(delError); return; }
+          void renderNoticePanel();
+        });
+      });
+
+      noticeListItems.querySelectorAll(".notice-edit-receiver-btn").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const li = btn.closest(".header-notice-list-item");
+          const editRow = li?.querySelector(".header-notice-receiver-edit");
+          if (!editRow) return;
+          const isOpen = !editRow.hasAttribute("hidden");
+          editRow.toggleAttribute("hidden", isOpen);
+        });
+      });
+
+      noticeListItems.querySelectorAll(".header-notice-receiver-cancel").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const editRow = btn.closest(".header-notice-receiver-edit");
+          editRow?.toggleAttribute("hidden", true);
+        });
+      });
+
+      noticeListItems.querySelectorAll(".header-notice-receiver-save").forEach((btn) => {
+        btn.addEventListener("click", async (e) => {
+          e.stopPropagation();
+          const li = btn.closest(".header-notice-list-item");
+          const id = li?.getAttribute("data-id");
+          const checked = Array.from(li.querySelectorAll(".notice-receiver-cb:checked")).map((cb) => cb.value);
+          if (checked.length === 0) { alert("Select at least one receiver."); return; }
+          const newReceiver = checked.length === 2 ? "both" : checked[0];
+          btn.disabled = true;
+          const { error: updError } = await supabase.from("notices").update({ receiver: newReceiver }).eq("id", id);
+          btn.disabled = false;
+          if (updError) { console.error(updError); return; }
+          void renderNoticePanel();
+        });
+      });
+    }
   };
 
   const getTodayLocalISO = () => {
@@ -552,6 +702,8 @@ window.initHeaderButtons = () => {
   };
 
   // Fetch and display user email and name
+  setMessagesButtonVisibility("user");
+
   if (userEmailElement || userNameElement) {
     supabase.auth
       .getSession()
@@ -570,19 +722,23 @@ window.initHeaderButtons = () => {
               .maybeSingle();
 
             if (!error && profile) {
+              noticeSenderName = `${capitalizeWords(profile.FName || "")} ${capitalizeWords(profile.LName || "")}`.trim();
               setResponsiveHeaderName(
                 profile.FName,
                 profile.LName,
                 session.user.email.split("@")[0],
               );
+              setMessagesButtonVisibility(profile.role);
             } else if (userNameElement) {
               setResponsiveHeaderName("", "", session.user.email.split("@")[0]);
+              setMessagesButtonVisibility("user");
             }
           } catch (err) {
             console.error("Error fetching user name:", err);
             if (userNameElement) {
               setResponsiveHeaderName("", "", session.user.email.split("@")[0]);
             }
+            setMessagesButtonVisibility("user");
           }
         } else {
           if (userEmailElement) {
@@ -591,6 +747,7 @@ window.initHeaderButtons = () => {
           if (userNameElement) {
             setResponsiveHeaderName("", "", "User");
           }
+          setMessagesButtonVisibility("user");
         }
       })
       .catch(() => {
@@ -600,6 +757,7 @@ window.initHeaderButtons = () => {
         if (userNameElement) {
           setResponsiveHeaderName("", "", "User");
         }
+        setMessagesButtonVisibility("user");
       });
   }
 
@@ -607,6 +765,7 @@ window.initHeaderButtons = () => {
   if (userMenuBtn && headerPopup) {
     userMenuBtn.addEventListener("click", (e) => {
       e.stopPropagation();
+      noticePanel?.classList.remove("show");
       headerPopup.classList.toggle("show");
     });
   }
@@ -619,9 +778,117 @@ window.initHeaderButtons = () => {
 
   if (draftTaOption) {
     draftTaOption.addEventListener("click", () => {
+      noticePanel?.classList.remove("show");
       void openDraftTaModal();
     });
   }
+
+  if (messagesBtn && noticePanel) {
+    messagesBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      headerPopup.classList.remove("show");
+      noticePanel.classList.toggle("show");
+      if (noticePanel.classList.contains("show")) {
+        void renderNoticePanel();
+      }
+    });
+  }
+
+  const openNoticeCompose = () => {
+    noticeCompose?.removeAttribute("hidden");
+    noticeActions?.toggleAttribute("hidden", true);
+    noticeComposeText?.focus();
+  };
+
+  const closeNoticeCompose = () => {
+    noticeCompose?.toggleAttribute("hidden", true);
+    noticeActions?.toggleAttribute("hidden", false);
+    if (noticeComposeText) noticeComposeText.value = "";
+    if (noticeComposeSend) noticeComposeSend.disabled = false;
+    if (noticeComposeCount) {
+      noticeComposeCount.textContent = "0";
+      noticeComposeCount.closest(".header-notice-compose-counter")?.classList.remove("over");
+    }
+    const checkboxes = noticeCompose?.querySelectorAll("input[name='notice-receiver']");
+    checkboxes?.forEach((cb) => { cb.checked = cb.value === "users"; });
+  };
+
+  if (noticeCreateBtn) {
+    noticeCreateBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openNoticeCompose();
+    });
+  }
+
+  if (noticeComposeCancel) {
+    noticeComposeCancel.addEventListener("click", (e) => {
+      e.stopPropagation();
+      closeNoticeCompose();
+    });
+  }
+
+  if (noticeComposeText && noticeComposeCount) {
+    noticeComposeText.addEventListener("input", () => {
+      const len = noticeComposeText.value.length;
+      noticeComposeCount.textContent = len;
+      const counter = noticeComposeCount.closest(".header-notice-compose-counter");
+      counter?.classList.toggle("over", len > 1000);
+      if (noticeComposeSend) noticeComposeSend.disabled = len > 1000;
+    });
+  }
+
+  if (noticeComposeSend) {
+    noticeComposeSend.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const text = noticeComposeText?.value.trim();
+      if (!text || noticeComposeText.value.length > 1000) {
+        noticeComposeText?.focus();
+        return;
+      }
+
+      const checkedReceivers = Array.from(
+        noticeCompose?.querySelectorAll("input[name='notice-receiver']:checked") || []
+      ).map((cb) => cb.value);
+
+      if (checkedReceivers.length === 0) {
+        alert("Please select at least one receiver.");
+        noticeComposeSend.disabled = false;
+        return;
+      }
+
+      noticeComposeSend.disabled = true;
+
+      const receiverValue = checkedReceivers.length === 2 ? "both" : checkedReceivers[0];
+      const rows = [{
+        message: text,
+        sender: noticeSenderName || "Super User",
+        receiver: receiverValue,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      }];
+
+      const { error } = await supabase.from("notices").insert(rows);
+
+      if (error) {
+        console.error("Notice insert error:", error);
+        alert(`Notice error: ${error.message || error.code || JSON.stringify(error)}`);
+        noticeComposeSend.disabled = false;
+        return;
+      }
+
+      closeNoticeCompose();
+      void renderNoticePanel();
+    });
+  }
+
+  void renderNoticePanel();
+
+  supabase
+    .channel("notices_realtime_dashboard")
+    .on("postgres_changes", { event: "*", schema: "public", table: "notices" }, () => {
+      void renderNoticePanel();
+    })
+    .subscribe();
 
   if (draftTaCloseBtn) {
     draftTaCloseBtn.addEventListener("click", closeDraftTaModal);
@@ -754,6 +1021,7 @@ window.initHeaderButtons = () => {
   if (settingsOption && headerPopup) {
     settingsOption.addEventListener("click", () => {
       headerPopup.classList.remove("show");
+      noticePanel?.classList.remove("show");
       document.getElementById("settings-modal").classList.add("show");
     });
   }
@@ -762,6 +1030,7 @@ window.initHeaderButtons = () => {
   if (logoutOption && headerPopup) {
     logoutOption.addEventListener("click", async () => {
       headerPopup.classList.remove("show");
+      noticePanel?.classList.remove("show");
 
       // Show confirmation dialog
       const confirmed = await showConfirmation(
@@ -788,6 +1057,16 @@ window.initHeaderButtons = () => {
 
   // Close popup when clicking outside
   document.addEventListener("click", (e) => {
+    if (
+      noticePanel &&
+      !noticePanel.contains(e.target) &&
+      e.target !== messagesBtn &&
+      !messagesBtn?.contains(e.target)
+    ) {
+      noticePanel.classList.remove("show");
+      closeNoticeCompose();
+    }
+
     if (
       headerPopup &&
       !headerPopup.contains(e.target) &&
@@ -1201,6 +1480,15 @@ const updateFcBadgesAndSummary = () => {
   });
 };
 
+const buildAgendaEmptyState = (message) => `
+  <div class="agenda-empty">
+    <svg class="agenda-empty-icon" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
+      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 11c.889-.086 1.416-.543 2.156-1.057a22.323 22.323 0 0 0 3.958-5.084 1.6 1.6 0 0 1 .582-.628 1.549 1.549 0 0 1 1.466-.087c.205.095.388.233.537.406a1.64 1.64 0 0 1 .384 1.279l-1.388 4.114M7 11H4v6.5A1.5 1.5 0 0 0 5.5 19v0A1.5 1.5 0 0 0 7 17.5V11Zm6.5-1h4.915c.286 0 .372.014.626.15.254.135.472.332.637.572a1.874 1.874 0 0 1 .215 1.673l-2.098 6.4C17.538 19.52 17.368 20 16.12 20c-2.303 0-4.79-.943-6.67-1.475"/>
+    </svg>
+    <span>${escapeHtml(message)}</span>
+  </div>
+`;
+
 const renderAgendaList = () => {
   const agendaList = document.getElementById("agenda-ta-list");
   const agendaTargetDate = document.getElementById("agenda-target-date");
@@ -1216,20 +1504,20 @@ const renderAgendaList = () => {
       : formatAgendaDateLabel(viewIso);
 
     if (!rows.length) {
-      agendaList.innerHTML =
-        '<div class="agenda-empty">No travel authorities scheduled for this date.</div>';
+      agendaList.innerHTML = buildAgendaEmptyState(
+        "No travel authorities scheduled for this date.",
+      );
       return;
     }
 
     agendaList.innerHTML = rows
-      .map((row, index) => {
+      .map((row) => {
         const dateLabel = formatTaDateRange(row);
 
         return `
                 <div class="agenda-item">
-                    <span class="agenda-item-index">${index + 1}.</span>
-                    <span class="agenda-item-ta">${escapeHtml(row.ta_number || "-")}</span>
                     ${buildAgendaInfoBtn(row)}
+                    <span class="agenda-item-ta">${escapeHtml(row.ta_number || "-")}</span>
                     <span class="agenda-item-date">${escapeHtml(dateLabel)}</span>
                 </div>
             `;
@@ -1247,8 +1535,9 @@ const renderAgendaList = () => {
   agendaTargetDate.textContent = `Upcoming from: ${formatAgendaDateLabel(tomorrowIso)}`;
 
   if (!upcomingBuckets.length) {
-    agendaList.innerHTML =
-      '<div class="agenda-empty">No upcoming travel authorities found.</div>';
+    agendaList.innerHTML = buildAgendaEmptyState(
+      "No upcoming travel authorities found.",
+    );
     return;
   }
 
@@ -1257,11 +1546,10 @@ const renderAgendaList = () => {
       const headerLabel = formatAgendaDateLabel(bucket.isoDate);
       const items = bucket.rows
         .map(
-          (row, index) => `
+          (row) => `
             <div class="agenda-item agenda-item--upcoming">
-                <span class="agenda-item-index">${index + 1}.</span>
-                <span class="agenda-item-ta">${escapeHtml(row.ta_number || "-")}</span>
                 ${buildAgendaInfoBtn(row)}
+                <span class="agenda-item-ta">${escapeHtml(row.ta_number || "-")}</span>
                 <span class="agenda-item-date">${escapeHtml(row.travel_date ? formatTaDateRange(row) : "No travel date")}</span>
             </div>
         `,
@@ -2820,8 +3108,8 @@ const initDestinationsChart = async () => {
   if (!canvas) return;
 
   const DESTINATION_TITLES = {
-    region: "Travel Destinations by Region",
-    calabarzon: "Travel Destinations by CALABARZON Province",
+    region: "Travel Destinations",
+    calabarzon: "Travel Destinations",
   };
   const DESTINATION_SUBTITLES = {
     region: "Groups destination records by Philippine region.",

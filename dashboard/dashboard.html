@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
     <link rel="stylesheet" href="../styles.css?v=20260321-3">
-    <link rel="stylesheet" href="../header/header.css?v=20260326-2">
+    <link rel="stylesheet" href="../header/header.css?v=20260509-4">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <link rel="stylesheet" href="dashboard.css?v=20260401">
     <script type="module" src="https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js"></script>
@@ -19,7 +19,7 @@
     <script>
         // Load header HTML
         window.headerLoaded = false;
-        fetch('../header/header.html?v=20260326-2')
+        fetch('../header/header.html?v=20260509-4')
             .then(response => response.text())
             .then(data => {
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
@@ -195,7 +195,7 @@
                             <div class="insight-card">
                                 <div class="insight-card-header">
                                     <div class="insight-card-heading">
-                                        <h3 class="insight-card-title">Monthly Travel Authorities Filed</h3>
+                                        <h3 class="insight-card-title">Travel Authorities Filed</h3>
                                         <p class="insight-card-subtitle">Counts how many travel authority records were filed each month for the selected year.</p>
                                     </div>
                                     <select class="insight-year-select" id="tf-year-select" aria-label="Select year"><option value="">Loading...</option></select>
@@ -209,7 +209,7 @@
                             <div class="insight-card">
                                 <div class="insight-card-header">
                                     <div class="insight-card-heading">
-                                        <h3 class="insight-card-title" id="dest-card-title">Travel Destinations by Region</h3>
+                                        <h3 class="insight-card-title" id="dest-card-title">Travel Destinations</h3>
                                         <p class="insight-card-subtitle" id="dest-card-subtitle">Groups destination records by Philippine region.</p>
                                     </div>
                                     <div class="dest-switcher insight-segmented-switcher" data-segmented-control>
@@ -231,7 +231,7 @@
                         </div>
                         <div class="insight-card insight-card-os">
                             <div class="insight-card-heading">
-                                <h3 class="insight-card-title">Travel Authorities by Official</h3>
+                                <h3 class="insight-card-title">Official's Travel Count</h3>
                                 <p class="insight-card-subtitle">Ranks active officials by how many travel authority records include their names.</p>
                             </div>
                             <div class="os-list-wrap">
@@ -243,7 +243,7 @@
                     <div class="insight-card insight-agenda-card" id="insight-agenda-card">
                         <div class="insight-card-header">
                             <div class="insight-card-heading">
-                                <h3 class="insight-card-title">Calendar Agenda Tracker</h3>
+                                <h3 class="insight-card-title">Calendar and Agenda</h3>
                                 <p class="insight-card-subtitle">Track TA numbers by date using the calendar and agenda tabs.</p>
                             </div>
                         </div>

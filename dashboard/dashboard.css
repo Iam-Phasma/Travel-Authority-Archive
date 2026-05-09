@@ -519,6 +519,10 @@ body.dashboard-page::before {
   border: 1px solid rgba(11, 28, 59, 0.05);
   min-height: 52px !important;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   transition:
     background 0.14s,
     border-color 0.14s;
@@ -537,7 +541,7 @@ body.dashboard-page::before {
   font-size: 0.96rem;
   font-weight: 600;
   text-decoration: none !important;
-  padding: 14px 0 0 0;
+  padding: 0;
   font-family: inherit;
   line-height: 1;
   display: block;
@@ -546,38 +550,46 @@ body.dashboard-page::before {
 }
 /* Today */
 #agenda-fc-calendar .fc-day-today .fc-daygrid-day-frame {
-  background: rgba(47, 111, 228, 0.08) !important;
-  border-color: rgba(47, 111, 228, 0.4) !important;
+  background: #2f6fe4 !important;
+  border-color: #2f6fe4 !important;
 }
 #agenda-fc-calendar .fc-day-today .fc-daygrid-day-number {
-  color: var(--sea);
+  color: #ffffff;
   font-weight: 700;
-  position: relative;
 }
-/* Persistent dot under today's number, even when another day is selected */
-#agenda-fc-calendar .fc-day-today .fc-daygrid-day-number::after {
-  content: "";
-  display: block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--sea);
-  margin: 3px auto 0;
+/* Today TA badge — white bg, blue text so it pops on blue cell */
+#agenda-fc-calendar .fc-day-today .fc-ta-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: #2f6fe4;
 }
-/* Selected */
+/* Selected — thicker border only, no fill or text change */
 #agenda-fc-calendar .fc-day-selected .fc-daygrid-day-frame {
-  background: #6f63e8 !important;
-  border-color: rgba(111, 99, 232, 0.5) !important;
-  box-shadow: 0 8px 18px rgba(111, 99, 232, 0.25);
+  background: #f2f4f8 !important;
+  border-color: #2f6fe4 !important;
+  border-width: 2px !important;
+  box-shadow: none;
 }
 #agenda-fc-calendar .fc-day-selected .fc-daygrid-day-number {
-  color: #ffffff;
+  color: rgba(11, 28, 59, 0.56);
 }
-/* When today is also selected, keep dot white */
+/* When today is also selected, keep blue fill */
 #agenda-fc-calendar
   .fc-day-today.fc-day-selected
-  .fc-daygrid-day-number::after {
-  background: rgba(255, 255, 255, 0.7);
+  .fc-daygrid-day-frame {
+  background: #2f6fe4 !important;
+  border-color: #2f6fe4 !important;
+  border-width: 2px !important;
+}
+#agenda-fc-calendar
+  .fc-day-today.fc-day-selected
+  .fc-daygrid-day-number {
+  color: #ffffff;
+}
+#agenda-fc-calendar
+  .fc-day-today.fc-day-selected
+  .fc-ta-badge {
+  background: rgba(255, 255, 255, 0.9);
+  color: #2f6fe4;
 }
 /* Hide FC event bars — we use custom badges */
 #agenda-fc-calendar .fc-daygrid-day-events,
@@ -605,7 +617,8 @@ body.dashboard-page::before {
   z-index: 2;
 }
 #agenda-fc-calendar .fc-day-selected .fc-ta-badge {
-  background: rgba(255, 255, 255, 0.3);
+  background: #3b82f6;
+  color: #ffffff;
 }
 #agenda-fc-calendar .fc-day-other .fc-daygrid-day-frame {
   background: rgba(242, 244, 248, 0.55);
@@ -720,13 +733,33 @@ body.dashboard-page::before {
   border: 1px solid rgba(11, 28, 59, 0.1);
   border-radius: 10px;
   background: #ffffff;
+  flex: 1 1 auto;
   min-height: 200px;
-  max-height: 292px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 8px 12px;
   overflow-y: auto;
+  position: relative;
+}
+/* Full-height timeline rail on the list container */
+.agenda-ta-list:has(.agenda-date-group)::before {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 8px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    rgba(47, 111, 228, 0.26) 0%,
+    rgba(47, 111, 228, 0.08) 100%
+  );
+  pointer-events: none;
 }
 .agenda-item {
   display: grid;
-  grid-template-columns: auto auto 1fr auto;
+  grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
@@ -755,9 +788,9 @@ body.dashboard-page::before {
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  border: 1.5px solid rgba(47, 111, 228, 0.35);
+  border: 1.5px solid rgba(11, 28, 59, 0.22);
   background: transparent;
-  color: rgba(47, 111, 228, 0.7);
+  color: rgba(11, 28, 59, 0.38);
   font-size: 0.7rem;
   font-weight: 700;
   display: inline-flex;
@@ -773,9 +806,9 @@ body.dashboard-page::before {
   padding: 0;
 }
 .agenda-info-btn:hover {
-  background: rgba(47, 111, 228, 0.1);
-  border-color: var(--sea);
-  color: var(--sea);
+  background: rgba(11, 28, 59, 0.06);
+  border-color: rgba(11, 28, 59, 0.4);
+  color: rgba(11, 28, 59, 0.6);
 }
 .agenda-item-date {
   font-size: 0.82rem;
@@ -843,34 +876,66 @@ body.dashboard-page::before {
   padding: 2px 0;
 }
 .agenda-empty {
+  flex: 1 1 auto;
   min-height: 200px;
-  display: grid;
-  place-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   color: rgba(11, 28, 59, 0.45);
   font-size: 0.9rem;
   padding: 24px;
   text-align: center;
 }
-.agenda-date-group {
-  border-bottom: 1px solid rgba(47, 111, 228, 0.12);
+.agenda-empty-icon {
+  width: 26px;
+  height: 26px;
+  color: rgba(11, 28, 59, 0.38);
 }
-.agenda-date-group:last-child {
+.agenda-date-group {
+  position: relative;
+  padding: 0 0 6px 26px;
   border-bottom: none;
 }
+.agenda-date-group:last-child {
+  padding-bottom: 0;
+}
+/* Rail removed from per-group — now a single line on .agenda-ta-list */
 .agenda-date-group-header {
   position: sticky;
   top: 0;
-  z-index: 1;
+  z-index: 2;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 8px 12px;
-  background: #f2f6ff;
+  justify-content: flex-start;
+  gap: 8px;
+  padding: 4px 0 6px;
+  background: transparent;
   color: rgba(11, 28, 59, 0.72);
-  border-bottom: 1px solid rgba(47, 111, 228, 0.15);
-  font-size: 0.83rem;
+  border-bottom: none;
+  font-size: 0.82rem;
   font-weight: 700;
+}
+.agenda-date-group-header::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 2px solid rgba(47, 111, 228, 0.55);
+}
+.agenda-date-group-header > span:first-child {
+  display: inline-block;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  border: none;
+  color: rgba(11, 28, 59, 0.76);
 }
 .agenda-date-group-count {
   font-size: 0.76rem;
@@ -880,6 +945,22 @@ body.dashboard-page::before {
   border-radius: 999px;
   padding: 3px 8px;
   flex-shrink: 0;
+}
+.agenda-date-group .agenda-item {
+  margin: 0 8px 6px 0;
+  border: 1px solid rgba(47, 111, 228, 0.12);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+}
+.agenda-date-group .agenda-item:last-child {
+  margin-bottom: 0;
+}
+.agenda-item--upcoming {
+  border-bottom: none;
+}
+.agenda-date-group .agenda-item.agenda-item--upcoming {
+  padding-top: 8px;
+  padding-bottom: 8px;
 }
 .insight-card {
   background: #ffffff;
@@ -1220,7 +1301,7 @@ body.dashboard-page::before {
     grid-template-columns: 1fr;
   }
   .agenda-ta-list {
-    max-height: 340px;
+    max-height: none;
   }
 }
 
@@ -1480,29 +1561,53 @@ body.dashboard-page::before {
     right: 6px;
   }
 
-  /* Agenda list on phones: keep full text and allow horizontal scrolling */
+  /* Agenda list on phones: scroll within bounds, never push page width */
+  .agenda-list-panel {
+    overflow: hidden;
+    min-width: 0;
+  }
+
   .agenda-ta-list {
     overflow-x: auto;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior-x: contain;
+    /* Constrained to panel; inner content uses max-content to equalize rows */
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Inner scroll wrapper so all groups share the same width baseline */
+  .agenda-ta-list > * {
+    min-width: max-content;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .agenda-date-group {
-    width: max-content;
-    min-width: 100%;
+    min-width: max-content;
+    width: 100%;
+    padding-left: 24px;
+  }
+
+  .agenda-date-group .agenda-item {
+    margin-right: 8px;
+  }
+
+  .agenda-date-group-header::before {
+    left: -17px;
   }
 
   .agenda-date-group-header,
   .agenda-item {
-    width: max-content;
-    min-width: 100%;
+    min-width: max-content;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .agenda-item {
-    grid-template-columns: 34px max-content 28px max-content;
+    grid-template-columns: 30px max-content max-content;
     column-gap: 12px;
-    justify-content: start;
   }
 
   .agenda-item-ta {
@@ -1514,10 +1619,6 @@ body.dashboard-page::before {
   .agenda-item-date {
     text-align: left;
     white-space: nowrap;
-  }
-
-  .agenda-item-index {
-    width: 34px;
   }
 
   .agenda-info-btn {
@@ -1583,11 +1684,24 @@ body.dashboard-page::before {
   box-shadow: none;
   color: #ffffff;
 }
+.dashboard-page .header-messages-btn {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #ffffff;
+}
 .dashboard-page .header-user-btn .user-icon {
   fill: none;
   stroke: #ffffff;
 }
+.dashboard-page .header-messages-icon {
+  fill: none;
+  stroke: #ffffff;
+}
 .dashboard-page .header-user-name {
+  color: #ffffff;
+}
+.dashboard-page .header-messages-label {
   color: #ffffff;
 }
 .dashboard-page .header-user-btn:hover {
@@ -1595,7 +1709,16 @@ body.dashboard-page::before {
   border-color: transparent;
   box-shadow: none;
 }
+.dashboard-page .header-messages-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: transparent;
+  box-shadow: none;
+}
 .dashboard-page .header-user-btn:hover .user-icon {
+  fill: none;
+  stroke: #ffffff;
+}
+.dashboard-page .header-messages-btn:hover .header-messages-icon {
   fill: none;
   stroke: #ffffff;
 }

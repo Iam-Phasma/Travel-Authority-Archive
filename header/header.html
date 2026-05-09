@@ -14,6 +14,54 @@
             </div>
         </div>
         <div class="sticky-header-actions">
+            <div class="header-notice-wrap">
+                <button id="header-messages-btn" type="button" class="header-messages-btn" title="Notice" aria-label="Notice" hidden>
+                    <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" class="header-messages-icon">
+                        <path d="M12 5.365V3m0 2.365a5.338 5.338 0 0 1 5.133 5.368v1.8c0 2.386 1.867 2.982 1.867 4.175 0 .593 0 1.292-.538 1.292H5.538C5 18 5 17.301 5 16.708c0-1.193 1.867-1.789 1.867-4.175v-1.8A5.338 5.338 0 0 1 12 5.365ZM8.733 18c.094.852.306 1.54.944 2.112a3.48 3.48 0 0 0 4.646 0c.638-.572 1.236-1.26 1.33-2.112h-6.92Z"/>
+                    </svg>
+                    <span class="header-messages-label">Notice</span>
+                </button>
+                <div id="header-notice-panel" class="header-notice-panel" role="status" aria-live="polite">
+                    <div class="header-notice-content">
+                        <div id="header-notice-actions" class="header-notice-actions">
+                            <button id="header-notice-create-btn" class="header-notice-create-btn" type="button" hidden>Create Notice</button>
+                        </div>
+                        <div id="header-notice-compose" class="header-notice-compose" hidden>
+                            <div class="header-notice-compose-header">
+                                <span class="header-notice-compose-title">New Notice</span>
+                                <button id="header-notice-compose-cancel" type="button" class="header-notice-compose-cancel" aria-label="Cancel">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 18 17.94 6M18 18 6.06 6"/></svg>
+                                </button>
+                            </div>
+                            <textarea id="header-notice-compose-text" class="header-notice-compose-textarea" placeholder="Write your notice here..." rows="3" maxlength="1000"></textarea>
+                            <div class="header-notice-compose-counter"><span id="header-notice-compose-count">0</span> / 1000</div>
+                            <div class="header-notice-compose-footer">
+                                <div class="header-notice-compose-receiver">
+                                    <label class="header-notice-receiver-label">
+                                        <input type="checkbox" name="notice-receiver" value="users" checked> Users
+                                    </label>
+                                    <label class="header-notice-receiver-label">
+                                        <input type="checkbox" name="notice-receiver" value="admins"> Admins
+                                    </label>
+                                </div>
+                                <button id="header-notice-compose-send" type="button" class="header-notice-compose-send">Send</button>
+                            </div>
+                        </div>
+                        <div id="header-notice-empty" class="header-notice-empty">
+                            <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" class="header-notice-icon">
+                                <path d="M15 4h3a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1h3m0 3h6m-6 7 2 2 4-4m-5-9v4h4V3h-4Z"/>
+                            </svg>
+                            <p class="header-notice-text">You are all caught up now</p>
+                        </div>
+                        <div id="header-notice-divider" class="header-notice-divider" role="separator" aria-hidden="true" hidden></div>
+                        <div id="header-notice-list" class="header-notice-list" hidden>
+                            <p class="header-notice-list-title">List of notices</p>
+                            <p id="header-notice-list-empty" class="header-notice-list-empty" hidden>No notices yet.</p>
+                            <ul id="header-notice-list-items" class="header-notice-list-items"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <button id="user-menu-btn" type="button" class="header-user-btn" title="User Menu">
                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false" class="user-icon">
                     <path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0a8.949 8.949 0 0 0 4.951-1.488A3.987 3.987 0 0 0 13 16h-2a3.987 3.987 0 0 0-3.951 3.512A8.948 8.948 0 0 0 12 21Zm3-11a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
