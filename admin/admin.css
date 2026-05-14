@@ -425,8 +425,7 @@ body.dashboard-page::before {
 }
 
 /* Fill-height panels — table stretches to available space */
-.admin-panels #view-panel:not(.hidden),
-.admin-panels #users-panel:not(.hidden) {
+.admin-panels #view-panel:not(.hidden) {
   display: flex;
   flex-direction: column;
   gap: 20px;
@@ -439,6 +438,27 @@ body.dashboard-page::before {
   background: transparent;
   padding: 0;
   margin: 0;
+}
+
+/* Users panel: sticky header, scrollable body */
+.admin-panels #users-panel:not(.hidden) {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: none;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 0 0 24px;
+  margin: 0;
+  scrollbar-width: none;
+  gap: 20px;
+}
+.admin-panels #users-panel:not(.hidden)::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-panels #view-panel {
@@ -806,7 +826,7 @@ body.dashboard-page::before {
 }
 
 .users-role-table-wrap {
-  max-height: min(35vh, 300px) !important;
+  max-height: none !important;
 }
 
 .admin-panels #users-panel .panel-head {
@@ -814,6 +834,11 @@ body.dashboard-page::before {
   align-items: center;
   flex-shrink: 0;
   padding-top: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--mist, #f4f6fa);
+  padding-bottom: 8px;
 }
 
 .admin-panels #users-panel #users-filter-panel {
