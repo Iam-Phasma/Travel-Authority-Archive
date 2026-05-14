@@ -204,6 +204,7 @@ window.initHeaderButtons = () => {
   const noticeList = document.getElementById("header-notice-list");
   const noticeListItems = document.getElementById("header-notice-list-items");
   const noticeListEmpty = document.getElementById("header-notice-list-empty");
+  const noticeShowMore = document.getElementById("header-notice-show-more");
   const noticeCompose = document.getElementById("header-notice-compose");
   const noticeComposeText = document.getElementById("header-notice-compose-text");
   const noticeComposeSend = document.getElementById("header-notice-compose-send");
@@ -320,7 +321,7 @@ window.initHeaderButtons = () => {
     noticeListItems.innerHTML = items
       .map((notice) => {
         const createdAt = notice.created_at
-          ? new Date(notice.created_at).toLocaleString()
+          ? new Date(notice.created_at).toLocaleDateString()
           : "Recently";
         const receiverLabel = notice.receiver === "both" ? "Everyone" : notice.receiver === "admins" ? "Admins" : "Users";
         const actionBtns = isCurrentUserSuper ? `
@@ -334,10 +335,15 @@ window.initHeaderButtons = () => {
           </div>` : "";
         const receiverEditRow = isCurrentUserSuper ? `
           <div class="header-notice-receiver-edit" hidden>
-            <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="users" ${notice.receiver === "users" || notice.receiver === "both" ? "checked" : ""}> Users</label>
-            <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="admins" ${notice.receiver === "admins" || notice.receiver === "both" ? "checked" : ""}> Admins</label>
-            <button class="header-notice-receiver-save">Save</button>
-            <button class="header-notice-receiver-cancel">Cancel</button>
+            <textarea class="notice-message-edit-ta" rows="3" maxlength="400">${escapeHtml(notice.message || "")}</textarea>
+            <div class="notice-edit-receivers">
+              <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="users" ${notice.receiver === "users" || notice.receiver === "both" ? "checked" : ""}> Users</label>
+              <label class="header-notice-receiver-label"><input type="checkbox" class="notice-receiver-cb" value="admins" ${notice.receiver === "admins" || notice.receiver === "both" ? "checked" : ""}> Admins</label>
+            </div>
+            <div class="notice-edit-actions">
+              <button class="header-notice-receiver-save">Save</button>
+              <button class="header-notice-receiver-cancel">Cancel</button>
+            </div>
           </div>` : "";
         return `<li class="header-notice-list-item" data-id="${escapeHtml(String(notice.id))}">
           <div class="header-notice-item-body">
@@ -352,6 +358,24 @@ window.initHeaderButtons = () => {
         </li>`;
       })
       .join("");
+
+    // Show only first 3, rest hidden; wire Show More button
+    const NOTICE_LIMIT = 3;
+    const allLi = noticeListItems.querySelectorAll(".header-notice-list-item");
+    allLi.forEach((li, i) => { if (i >= NOTICE_LIMIT) li.setAttribute("hidden", ""); });
+    const hasMore = allLi.length > NOTICE_LIMIT;
+    if (noticeShowMore) {
+      noticeShowMore.toggleAttribute("hidden", !hasMore);
+      noticeShowMore.textContent = `Show more (${allLi.length - NOTICE_LIMIT})`;
+      const onShowMore = () => {
+        allLi.forEach((li) => li.removeAttribute("hidden"));
+        noticeShowMore.toggleAttribute("hidden", true);
+        noticeShowMore.removeEventListener("click", onShowMore);
+      };
+      noticeShowMore.removeEventListener("click", noticeShowMore._handler);
+      noticeShowMore._handler = onShowMore;
+      noticeShowMore.addEventListener("click", onShowMore);
+    }
 
     if (isCurrentUserSuper) {
       noticeListItems.querySelectorAll(".notice-delete-btn").forEach((btn) => {
@@ -392,8 +416,12 @@ window.initHeaderButtons = () => {
           const checked = Array.from(li.querySelectorAll(".notice-receiver-cb:checked")).map((cb) => cb.value);
           if (checked.length === 0) { alert("Select at least one receiver."); return; }
           const newReceiver = checked.length === 2 ? "both" : checked[0];
+          const ta = li.querySelector(".notice-message-edit-ta");
+          const newMessage = ta ? ta.value.trim() : null;
+          if (!newMessage) { alert("Notice message cannot be empty."); return; }
           btn.disabled = true;
-          const { error: updError } = await supabase.from("notices").update({ receiver: newReceiver }).eq("id", id);
+          const updates = { receiver: newReceiver, message: newMessage };
+          const { error: updError } = await supabase.from("notices").update(updates).eq("id", id);
           btn.disabled = false;
           if (updError) { console.error(updError); return; }
           void renderNoticePanel();
@@ -790,6 +818,10 @@ window.initHeaderButtons = () => {
       noticePanel.classList.toggle("show");
       if (noticePanel.classList.contains("show")) {
         void renderNoticePanel();
+      } else {
+        // Reset show-more state on close
+        noticeListItems?.querySelectorAll(".header-notice-list-item[hidden]").forEach((li) => li.removeAttribute("hidden"));
+        noticeShowMore?.toggleAttribute("hidden", true);
       }
     });
   }
