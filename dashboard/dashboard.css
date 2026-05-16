@@ -291,7 +291,7 @@ body.dashboard-page::before {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0 0 24px;
+  padding: 0 0 40px;
   scrollbar-width: none;
   animation: fadeUp 280ms ease-out both;
 }
@@ -1747,21 +1747,41 @@ body.dashboard-page::before {
 
 /* ── Draft TA panel — field styling ─────────────────────────────────── */
 #tab-draft-ta .upload-panel-structured {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   width: 100%;
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 32px 48px 24px;
-  border-radius: var(--radius-xl);
+  margin: 0;
+  /* Full-width scroll container; padding centers content to max 900px */
+  padding: 24px max(24px, calc((100% - 852px) / 2)) 0;
+  box-sizing: border-box;
+  border-radius: 0;
+  border: none;
   box-shadow: none;
   background: transparent;
+  animation: none;
 }
 
 #tab-draft-ta .panel-header-structured {
   position: sticky;
   top: 0;
-  z-index: 6;
+  z-index: 10;
+  background: #ffffff;
+  padding: 16px 0 16px;
+  margin-bottom: 0;
   text-align: left;
-  margin-bottom: 32px;
+}
+#tab-draft-ta .panel-header-structured::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  height: 20px;
+  background: linear-gradient(to bottom, #ffffff, rgba(255, 255, 255, 0));
+  pointer-events: none;
+  z-index: 1;
 }
 #tab-draft-ta .panel-header-structured h2 {
   font-size: 1.5rem;
@@ -1780,6 +1800,28 @@ body.dashboard-page::before {
 #tab-draft-ta .structured-fields {
   display: grid;
   gap: 20px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+#tab-draft-ta .form-section-sep {
+  margin: 0;
+}
+
+/* Match admin: consistent field and officials heights */
+#tab-draft-ta .structured-fields .input-wrap input[type="text"],
+#tab-draft-ta .structured-fields .input-wrap select,
+#tab-draft-ta .structured-fields .multiselect-display {
+  min-height: 54px;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+#tab-draft-ta .structured-fields .multiselect-display {
+  align-items: center;
+}
+
+#tab-draft-ta .upload-actions {
+  margin-bottom: 72px;
 }
 
 #tab-draft-ta .structured-fields .field-spread {
@@ -1799,10 +1841,17 @@ body.dashboard-page::before {
 
 @media (max-width: 768px) {
   #tab-draft-ta .upload-panel-structured {
-    margin: 0 auto;
-    padding: 24px 20px 20px;
+    margin: 0;
+    padding: 16px 16px 0;
     border: none;
+    border-radius: 0;
     box-shadow: none;
+  }
+  #tab-draft-ta .upload-actions {
+    margin-bottom: 60px;
+  }
+  #tab-draft-ta .panel-header-structured {
+    padding: 12px 0 12px;
   }
   #tab-draft-ta .structured-fields .field-spread {
     grid-template-columns: 1fr;
