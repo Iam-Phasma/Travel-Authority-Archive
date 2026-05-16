@@ -1062,11 +1062,11 @@ body.dashboard-page::before {
 .admin-panels #draft-ta-panel.upload-panel-structured {
   width: 100%;
   max-width: 860px;
-  margin: 16px auto 32px auto;
+  margin: 0 auto;
   padding: 32px 48px;
   border-radius: var(--radius-xl);
-  box-shadow: 0 12px 36px -8px rgba(11, 28, 59, 0.06);
-  background: #ffffff;
+  box-shadow: none;
+  background: transparent;
   /* Removed overflow:visible to restore native scrollable panel behavior */
 }
 
@@ -1086,6 +1086,12 @@ body.dashboard-page::before {
 .panel-header-structured {
   text-align: left;
   margin-bottom: 32px;
+}
+.admin-panels #upload-panel .panel-header-structured,
+.admin-panels #draft-ta-panel .panel-header-structured {
+  position: sticky;
+  top: 0;
+  z-index: 6;
 }
 .panel-header-structured h2 {
   font-size: 1.5rem;
@@ -1238,7 +1244,7 @@ body.dashboard-page::before {
 @media (max-width: 768px) {
   .admin-panels #upload-panel.upload-panel-structured,
   .admin-panels #draft-ta-panel.upload-panel-structured {
-    margin: 20px auto;
+    margin: 0 auto;
     padding: 24px 20px;
     border: none;
     box-shadow: none;
