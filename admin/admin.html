@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Admin</title>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
+    <!-- flatpickr and leaflet CSS injected by Vite bundle -->
     <link rel="stylesheet" href="../styles.css?v=20260321-3">
     <link rel="stylesheet" href="../header/header.css?v=20260509-4">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js"></script>
+    <!-- dotlottie-wc, supabase, flatpickr, leaflet bundled via Vite -->
+    <!-- pdf-lib — kept as CDN global build (window.PDFLib) -->
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
+    <!-- pdfjs-dist — kept as CDN global build (window.pdfjsLib) -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
         // Configure pdf.js worker after library loads
@@ -136,8 +137,11 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
+    <!-- leaflet — kept as CDN global build (window.L) for non-module scripts that need it before Vite modules load -->
+    <!-- NOTE: admin.js also exposes window.L from npm, so this is now redundant and can be removed after testing -->
+    <!-- jsPDF — kept as CDN global build (window.jspdf) for ta-generator.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- xlsx — kept as CDN global build (window.XLSX) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
@@ -146,7 +150,8 @@
     <script src="upload/ocr.js"></script>
     <script src="draft-ta/draft-ta-panel.js"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
-    <script type="module" src="admin.js?v=20260401"></script>
+    <!-- Vite entry — includes supabase, flatpickr, leaflet, dotlottie-wc -->
+    <script type="module" src="./admin.js"></script>
 
     <div id="settings-modal" class="modal">
         <div class="modal-content">
