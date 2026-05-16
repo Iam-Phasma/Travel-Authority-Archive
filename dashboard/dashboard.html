@@ -5,14 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Dashboard</title>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" integrity="sha384-RkASv+6KfBMW9eknReJIJ6b3UnjKOKC5bOUaNgIY778NFbQ8MtWq9Lr/khUgqtTt" crossorigin="anonymous">
+    <!-- fullcalendar CSS — kept as CDN (global build) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="anonymous">
+    <!-- flatpickr and leaflet CSS injected by Vite bundle -->
     <link rel="stylesheet" href="../styles.css?v=20260321-3">
     <link rel="stylesheet" href="../header/header.css?v=20260509-4">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <link rel="stylesheet" href="dashboard.css?v=20260401">
-    <script type="module" src="https://cdn.jsdelivr.net/npm/@lottiefiles/dotlottie-wc@latest/dist/dotlottie-wc.js"></script>
+    <!-- dotlottie-wc, supabase, chart.js, flatpickr, leaflet bundled via Vite -->
 </head>
 <body class="dashboard-page">
     <div id="header-container"></div>
@@ -418,11 +418,12 @@
         </div>
     </div>
 
-    <script type="module" src="dashboard.js?v=20260401"></script>
+    <!-- fullcalendar — kept as CDN global build (window.FullCalendar) -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="anonymous"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.js" integrity="sha384-5JqMv4L/Xa0hfvtF06qboNdhvuYXUku9ZrhZh3bSk8VXF0A/RuSLHpLsSV9Zqhl6" crossorigin="anonymous"></script>
+    <!-- jsPDF — kept as CDN global build (window.jspdf) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Vite entry — includes supabase, chart.js, flatpickr, leaflet, dotlottie-wc -->
+    <script type="module" src="./dashboard.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
     <script src="../admin/draft-ta/draft-ta-panel.js"></script>

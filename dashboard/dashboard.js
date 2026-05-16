@@ -1,6 +1,18 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+// Module: Dashboard — npm-managed dependencies via Vite
+import "@lottiefiles/dotlottie-wc";
+import { createClient } from "@supabase/supabase-js";
+import Chart from "chart.js/auto";
+import flatpickr from "flatpickr";
+import "flatpickr/dist/flatpickr.min.css";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
 import { supabaseConfig } from "../config.js";
 import { initAutoLogout } from "../auto-logout.js";
+
+// Expose globals for non-module scripts (draft-ta-panel.js, draft-location-picker.js, ta-generator.js)
+window.Chart = Chart;
+window.flatpickr = flatpickr;
+window.L = L;
 
 // Initialize Supabase
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
