@@ -377,6 +377,12 @@ body.dashboard-page::before {
   animation: none;
   transform: none;
 }
+
+/* Hard gate: when a panel is hidden via JS tab switch, never render it. */
+.admin-panels .panel.hidden {
+  display: none !important;
+}
+
 .admin-panels .panel.admin-panel-enter {
   animation: fadeUp 280ms ease-out both;
 }
@@ -393,10 +399,15 @@ body.dashboard-page::before {
 .admin-panels #upload-panel:not(.hidden),
 .admin-panels #draft-ta-panel:not(.hidden) {
   flex: 1;
+  height: 100%;
   min-height: 0;
   overflow-y: auto;
-  padding-bottom: 24px;
   scrollbar-width: none;
+}
+/* Draft TA: flex column so fields can be vertically centered */
+.admin-panels #draft-ta-panel:not(.hidden) {
+  display: flex;
+  flex-direction: column;
 }
 .admin-panels #upload-panel:not(.hidden)::-webkit-scrollbar,
 .admin-panels #draft-ta-panel:not(.hidden)::-webkit-scrollbar {
@@ -491,10 +502,7 @@ body.dashboard-page::before {
 }
 
 .admin-panels #employees-panel .employee-directory-card {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  min-width: 0; /* prevent grid blowout */
 }
 
 .admin-panels #employees-panel .employee-position-filter-wrap {
@@ -549,11 +557,8 @@ body.dashboard-page::before {
 }
 
 .admin-panels #employees-panel .employee-list {
-  flex: 0 1 auto;
-  height: auto;
-  min-height: 0;
-  max-height: min(60vh, calc(100vh - 340px));
-  max-height: min(60vh, calc(100dvh - 340px));
+  max-height: min(52vh, 580px);
+  max-height: min(52dvh, 580px);
 }
 
 /* Lock the form card height and make the directory fill */
@@ -955,11 +960,24 @@ body.dashboard-page::before {
     transition: none;
   }
 
-  /* view-panel/users-panel/draft-ta: restore scroll inside content on mobile */
+  /* restore scroll inside admin-content on mobile */
   #view-panel:not(.hidden),
+  #employees-panel:not(.hidden),
   #users-panel:not(.hidden),
   #draft-ta-panel:not(.hidden) {
     overflow-y: auto;
+  }
+
+  /* employees body: let the panel scroll instead of nesting two scroll areas */
+  .admin-panels #employees-panel .employees-body {
+    overflow: visible;
+    flex: unset;
+    height: auto;
+    padding-bottom: 80px;
+  }
+
+  .admin-panels #employees-panel .employee-list {
+    max-height: none;
   }
 
   .admin-panels #view-panel .table-wrap.max-rows-10 {
@@ -1061,13 +1079,42 @@ body.dashboard-page::before {
 .admin-panels #upload-panel.upload-panel-structured,
 .admin-panels #draft-ta-panel.upload-panel-structured {
   width: 100%;
-  max-width: 860px;
-  margin: 0 auto;
-  padding: 32px 48px;
-  border-radius: var(--radius-xl);
+  margin: 0;
+  /* Full-width scroll container; padding centers content to max 900px */
+  padding: 0 max(24px, calc((100% - 852px) / 2)) 16px;
+  box-sizing: border-box;
+  border-radius: 0;
+  border: none;
   box-shadow: none;
   background: transparent;
-  /* Removed overflow:visible to restore native scrollable panel behavior */
+}
+
+/* Suppress the base .panel page-load animation, but allow admin-panel-enter to fire */
+.admin-panels #upload-panel.upload-panel-structured:not(.admin-panel-enter),
+.admin-panels #draft-ta-panel.upload-panel-structured:not(.admin-panel-enter) {
+  animation: none;
+}
+
+.admin-panels #upload-panel.upload-panel-structured .upload-controls {
+  margin-top: 16px;
+}
+
+.admin-panels #upload-panel .upload-buttons {
+  margin-bottom: 80px;
+}
+
+.admin-panels #draft-ta-panel .upload-actions {
+  margin-bottom: 80px;
+}
+
+/* Vertical rhythm for draft-ta: consistent 20px row gap, separator is visual-only */
+.admin-panels #draft-ta-panel .fields.structured-fields {
+  gap: 20px;
+  margin-top: auto;
+  margin-bottom: auto;
+}
+.admin-panels #draft-ta-panel .form-section-sep {
+  margin: 0;
 }
 
 /* Ensure consistent field heights horizontally */
@@ -1084,14 +1131,24 @@ body.dashboard-page::before {
 
 /* On desktop, naturally space it beautifully */
 .panel-header-structured {
-  text-align: left;
-  margin-bottom: 32px;
-}
-.admin-panels #upload-panel .panel-header-structured,
-.admin-panels #draft-ta-panel .panel-header-structured {
   position: sticky;
   top: 0;
-  z-index: 6;
+  z-index: 10;
+  background: var(--mist, #f4f6fa);
+  padding: 16px 0 16px;
+  margin-bottom: 0;
+  text-align: left;
+}
+.panel-header-structured::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  height: 20px;
+  background: linear-gradient(to bottom, var(--mist, #f4f6fa), rgba(244, 246, 250, 0));
+  pointer-events: none;
+  z-index: 1;
 }
 .panel-header-structured h2 {
   font-size: 1.5rem;
@@ -1244,10 +1301,20 @@ body.dashboard-page::before {
 @media (max-width: 768px) {
   .admin-panels #upload-panel.upload-panel-structured,
   .admin-panels #draft-ta-panel.upload-panel-structured {
-    margin: 0 auto;
-    padding: 24px 20px;
+    margin: 0;
+    padding: 0 16px 16px;
     border: none;
+    border-radius: 0;
     box-shadow: none;
+  }
+  .admin-panels #upload-panel .upload-buttons {
+    margin-bottom: 72px;
+  }
+  .admin-panels #draft-ta-panel .upload-actions {
+    margin-bottom: 72px;
+  }
+  .panel-header-structured {
+    padding: 12px 0 12px;
   }
   .structured-fields .field-spread {
     grid-template-columns: 1fr;
