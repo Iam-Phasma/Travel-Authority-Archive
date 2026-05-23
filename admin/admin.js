@@ -2077,7 +2077,7 @@ viewPanelLoaded.then(() => {
   // Table view functionality
   const viewBody = document.getElementById("view-body");
   const viewStatus = document.getElementById("view-status");
-  const viewMoreBtn = document.getElementById("view-more");
+  const viewMoreBtn = document.getElementById("view-lazy-sentinel");
   const deleteModal = document.getElementById("delete-modal");
   const viewModal = document.getElementById("view-modal");
   const updateModal = document.getElementById("update-modal");
@@ -2236,6 +2236,9 @@ viewPanelLoaded.then(() => {
 
   const recordCache = new Map();
   let viewRows = [];
+  let adminCurrentDisplayRows = [];
+  let adminRenderedCount = 0;
+  const ADMIN_LAZY_BATCH_SIZE = 50;
   const currentYear = new Date().getFullYear().toString();
   let deleteRecordData = null;
   let updateRecordData = null;
@@ -2601,55 +2604,37 @@ viewPanelLoaded.then(() => {
     return sorted;
   };
 
-  const renderViewRows = (rows) => {
-    const filteredRows = applyAdminClientFilters(rows);
-    const sortedRows = applyAdminClientSorting(filteredRows);
+  const buildAdminRowHtml = (row, batchIndex) => {
     const shouldAnimateRows = window.matchMedia(
       "(prefers-reduced-motion: no-preference)",
     ).matches;
+    const dateText = row.travel_date
+      ? new Date(row.travel_date).toLocaleDateString()
+      : "-";
+    const untilText = row.travel_until
+      ? new Date(row.travel_until).toLocaleDateString()
+      : "-";
+    const fileUrl = safeUrl(row.file_url);
+    const safeName = row.file_name || "Download";
+    const displayName = formatFileLabel(safeName);
+    const hasFile = !!row.file_url;
+    const isDemoClass = row.is_demo ? " is-demo" : "";
+    const rowClass = (
+      isDemoClass + (shouldAnimateRows ? " row-enter" : "")
+    ).trim();
+    const rowStyle = shouldAnimateRows
+      ? ` style="--row-enter-delay:${Math.min(batchIndex * 22, 220)}ms;"`
+      : "";
 
-    if (!sortedRows.length) {
-      recordCache.clear();
-      viewBody.innerHTML =
-        '<tr><td colspan="8">No records match the current filters.</td></tr>';
-      return;
+    let employeesText = row.employees || "-";
+    if (employeesText !== "-") {
+      const employeeArray = parseEmployeeNames(employeesText);
+      if (employeeArray.length > 2) {
+        employeesText = employeeArray.slice(0, 2).join(", ") + "...";
+      }
     }
 
-    recordCache.clear();
-    sortedRows.forEach((row) => {
-      recordCache.set(String(row.id), row);
-    });
-
-    viewBody.innerHTML = sortedRows
-      .map((row, index) => {
-        const dateText = row.travel_date
-          ? new Date(row.travel_date).toLocaleDateString()
-          : "-";
-        const untilText = row.travel_until
-          ? new Date(row.travel_until).toLocaleDateString()
-          : "-";
-        const fileUrl = safeUrl(row.file_url);
-        const safeName = row.file_name || "Download";
-        const displayName = formatFileLabel(safeName);
-        const hasFile = !!row.file_url;
-        const isDemoClass = row.is_demo ? " is-demo" : "";
-        const rowClass = (
-          isDemoClass + (shouldAnimateRows ? " row-enter" : "")
-        ).trim();
-        const rowStyle = shouldAnimateRows
-          ? ` style="--row-enter-delay:${Math.min(index * 22, 220)}ms;"`
-          : "";
-
-        // Truncate employees to show max 2
-        let employeesText = row.employees || "-";
-        if (employeesText !== "-") {
-          const employeeArray = parseEmployeeNames(employeesText);
-          if (employeeArray.length > 2) {
-            employeesText = employeeArray.slice(0, 2).join(", ") + "...";
-          }
-        }
-
-        return `
+    return `
             <tr data-id="${escapeHtml(row.id)}" class="${rowClass}"${rowStyle}>
                 <td>
                     <button class="view-btn icon-btn" data-id="${escapeHtml(row.id)}" aria-label="View details">
@@ -2691,172 +2676,174 @@ viewPanelLoaded.then(() => {
                 </td>
             </tr>
         `;
-      })
+  };
+
+  const bindAdminRowEvents = (trs) => {
+    trs.forEach((tr) => {
+      const deleteBtn = tr.querySelector(".delete-btn");
+      if (deleteBtn) {
+        deleteBtn.addEventListener("click", (e) => {
+          const row = e.target.closest("tr");
+          const recordId = (row?.getAttribute("data-id") || "").trim();
+          const record = recordCache.get(recordId);
+          deleteRecordData = {
+            id: recordId,
+            file_url: record?.file_url || "",
+          };
+          deleteModal.classList.add("show");
+        });
+      }
+
+      const updateBtn = tr.querySelector(".update-btn");
+      if (updateBtn) {
+        updateBtn.addEventListener("click", (e) => {
+          const row = e.target.closest("tr");
+          if (!row) return;
+          const recordId = (row.getAttribute("data-id") || "").trim();
+          const record = recordCache.get(recordId);
+          if (!recordId || !record) return;
+
+          updateRecordData = {
+            id: recordId,
+            file_url: record.file_url || "",
+            file_name: record.file_name || "",
+            ta_number: record.ta_number || "",
+            purpose: record.purpose || "",
+            destination: record.destination || "",
+            employees: record.employees || "",
+            travel_date: record.travel_date || "",
+            travel_until: record.travel_until || "",
+            is_demo: record.is_demo || false,
+          };
+
+          updateTaInput.value = record.ta_number || "";
+          updatePurposeInput.value = record.purpose || "";
+          updateDestinationInput.value = record.destination || "";
+          autoResizeUpdateTextarea(updatePurposeInput);
+          autoResizeUpdateTextarea(updateDestinationInput);
+          updateTravelDateInput.value = record.travel_date || "";
+          updateTravelUntilInput.value = record.travel_until || "";
+          updateScanFileInput.value = "";
+          if (updateIsDemoCheckbox)
+            updateIsDemoCheckbox.checked = record.is_demo || false;
+
+          updateSelectedEmployees.length = 0;
+          if (record.employees) {
+            const employeeNames = parseEmployeeNames(record.employees);
+            updateSelectedEmployees.push(...employeeNames);
+          }
+          updateEmployeesMultiSelect.updateDisplay();
+          updateEmployeesMultiSelect.renderOptions();
+
+          updateStatus.textContent = "";
+          updateStatus.classList.remove("status--error");
+          updateStatus.classList.add("hidden");
+
+          updateModal.classList.add("show");
+        });
+      }
+
+      const openFileLink = tr.querySelector(".open-file-link");
+      if (openFileLink) {
+        openFileLink.addEventListener("click", async (e) => {
+          e.preventDefault();
+          const fileUrl =
+            e.currentTarget?.getAttribute("data-file-url") ||
+            e.currentTarget?.getAttribute("href") ||
+            "";
+          const fileName =
+            e.currentTarget?.getAttribute("data-file-name") || "Download";
+          await openStoredFile(fileUrl, fileName, e.currentTarget);
+        });
+      }
+
+      const viewBtn = tr.querySelector(".view-btn");
+      if (viewBtn) {
+        viewBtn.addEventListener("click", (e) => {
+          const row = e.target.closest("tr");
+          if (!row) return;
+          const recordId = (row.getAttribute("data-id") || "").trim();
+          const record = recordCache.get(recordId);
+          if (!recordId || !record) return;
+
+          viewTaNumber.textContent = record.ta_number || "-";
+          viewPurpose.textContent = record.purpose || "-";
+          viewDestination.textContent = record.destination || "-";
+          viewEmployees.textContent = record.employees || "-";
+          viewTravelDate.textContent = record.travel_date
+            ? new Date(record.travel_date).toLocaleDateString()
+            : "-";
+          viewTravelUntil.textContent = record.travel_until
+            ? new Date(record.travel_until).toLocaleDateString()
+            : "-";
+
+          if (record.file_url) {
+            const safeFileUrl = safeUrl(record.file_url);
+            viewFileLink.href = safeFileUrl;
+            viewFileLink.dataset.fileUrl = safeFileUrl;
+            viewFileLink.dataset.fileName = record.file_name || "Open file";
+            viewFileLink.textContent = record.file_name || "Open file";
+            updateViewFileSize(safeFileUrl);
+          } else {
+            viewFileLink.href = "#";
+            viewFileLink.dataset.fileUrl = "";
+            viewFileLink.dataset.fileName = "";
+            viewFileLink.textContent = "No file";
+            if (viewFileSize) viewFileSize.textContent = "File size: -";
+          }
+
+          viewModal.classList.add("show");
+          document.body.style.overflow = "hidden";
+          document.getElementById("view-edit-btn")._currentRecordId = recordId;
+        });
+      }
+    });
+  };
+
+  const renderViewRows = (rows) => {
+    const filteredRows = applyAdminClientFilters(rows);
+    adminCurrentDisplayRows = applyAdminClientSorting(filteredRows);
+    adminRenderedCount = Math.min(ADMIN_LAZY_BATCH_SIZE, adminCurrentDisplayRows.length);
+
+    recordCache.clear();
+    adminCurrentDisplayRows.forEach((row) => {
+      recordCache.set(String(row.id), row);
+    });
+
+    if (!adminCurrentDisplayRows.length) {
+      viewBody.innerHTML =
+        '<tr><td colspan="8">No records match the current filters.</td></tr>';
+      if (viewMoreBtn) viewMoreBtn.style.display = "none";
+      return;
+    }
+
+    viewBody.innerHTML = adminCurrentDisplayRows
+      .slice(0, adminRenderedCount)
+      .map((row, i) => buildAdminRowHtml(row, i))
       .join("");
+    bindAdminRowEvents(Array.from(viewBody.querySelectorAll("tr")));
+    if (viewMoreBtn)
+      viewMoreBtn.style.display =
+        adminRenderedCount < adminCurrentDisplayRows.length ? "flex" : "none";
+  };
 
-    // Add delete button event listeners
-    document.querySelectorAll(".delete-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const row = e.target.closest("tr");
-        const recordId = (row?.getAttribute("data-id") || "").trim();
-        const record = recordCache.get(recordId);
-        deleteRecordData = {
-          id: recordId,
-          file_url: record?.file_url || "",
-        };
-        deleteModal.classList.add("show");
-      });
-    });
-
-    document.querySelectorAll(".update-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const row = e.target.closest("tr");
-        if (!row) return;
-        const recordId = (row.getAttribute("data-id") || "").trim();
-        const record = recordCache.get(recordId);
-        if (!recordId || !record) return;
-
-        updateRecordData = {
-          id: recordId,
-          file_url: record.file_url || "",
-          file_name: record.file_name || "",
-          ta_number: record.ta_number || "",
-          purpose: record.purpose || "",
-          destination: record.destination || "",
-          employees: record.employees || "",
-          travel_date: record.travel_date || "",
-          travel_until: record.travel_until || "",
-          is_demo: record.is_demo || false,
-        };
-
-        updateTaInput.value = record.ta_number || "";
-        updatePurposeInput.value = record.purpose || "";
-        updateDestinationInput.value = record.destination || "";
-        autoResizeUpdateTextarea(updatePurposeInput);
-        autoResizeUpdateTextarea(updateDestinationInput);
-        updateTravelDateInput.value = record.travel_date || "";
-        updateTravelUntilInput.value = record.travel_until || "";
-        updateScanFileInput.value = "";
-        if (updateIsDemoCheckbox)
-          updateIsDemoCheckbox.checked = record.is_demo || false;
-
-        // Populate employees multiselect
-        updateSelectedEmployees.length = 0;
-        if (record.employees) {
-          const employeeNames = parseEmployeeNames(record.employees);
-          updateSelectedEmployees.push(...employeeNames);
-        }
-        updateEmployeesMultiSelect.updateDisplay();
-        updateEmployeesMultiSelect.renderOptions();
-
-        updateStatus.textContent = "";
-        updateStatus.classList.remove("status--error");
-        updateStatus.classList.add("hidden");
-
-        updateModal.classList.add("show");
-      });
-    });
-
-    document.querySelectorAll(".open-file-link").forEach((link) => {
-      link.addEventListener("click", async (e) => {
-        e.preventDefault();
-        const fileUrl =
-          e.currentTarget?.getAttribute("data-file-url") ||
-          e.currentTarget?.getAttribute("href") ||
-          "";
-        const fileName =
-          e.currentTarget?.getAttribute("data-file-name") || "Download";
-        await openStoredFile(fileUrl, fileName, e.currentTarget);
-      });
-    });
-
-    document.querySelectorAll(".view-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const row = e.target.closest("tr");
-        if (!row) return;
-        const recordId = (row.getAttribute("data-id") || "").trim();
-        const record = recordCache.get(recordId);
-        if (!recordId || !record) return;
-
-        viewTaNumber.textContent = record.ta_number || "-";
-        viewPurpose.textContent = record.purpose || "-";
-        viewDestination.textContent = record.destination || "-";
-        viewEmployees.textContent = record.employees || "-";
-        viewTravelDate.textContent = record.travel_date
-          ? new Date(record.travel_date).toLocaleDateString()
-          : "-";
-        viewTravelUntil.textContent = record.travel_until
-          ? new Date(record.travel_until).toLocaleDateString()
-          : "-";
-
-        if (record.file_url) {
-          const safeFileUrl = safeUrl(record.file_url);
-          viewFileLink.href = safeFileUrl;
-          viewFileLink.dataset.fileUrl = safeFileUrl;
-          viewFileLink.dataset.fileName = record.file_name || "Open file";
-          viewFileLink.textContent = record.file_name || "Open file";
-          updateViewFileSize(safeFileUrl);
-        } else {
-          viewFileLink.href = "#";
-          viewFileLink.dataset.fileUrl = "";
-          viewFileLink.dataset.fileName = "";
-          viewFileLink.textContent = "No file";
-          if (viewFileSize) viewFileSize.textContent = "File size: -";
-        }
-
-        viewModal.classList.add("show");
-        document.body.style.overflow = "hidden";
-        document.getElementById("view-edit-btn")._currentRecordId = recordId;
-      });
-    });
-
-    document.querySelectorAll(".update-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
-        const row = e.target.closest("tr");
-        if (!row) return;
-        const recordId = (row.getAttribute("data-id") || "").trim();
-        const record = recordCache.get(recordId);
-        if (!recordId || !record) return;
-
-        updateRecordData = {
-          id: recordId,
-          file_url: record.file_url || "",
-          file_name: record.file_name || "",
-          ta_number: record.ta_number || "",
-          purpose: record.purpose || "",
-          destination: record.destination || "",
-          employees: record.employees || "",
-          travel_date: record.travel_date || "",
-          travel_until: record.travel_until || "",
-          is_demo: record.is_demo || false,
-        };
-
-        updateTaInput.value = record.ta_number || "";
-        updatePurposeInput.value = record.purpose || "";
-        updateDestinationInput.value = record.destination || "";
-        autoResizeUpdateTextarea(updatePurposeInput);
-        autoResizeUpdateTextarea(updateDestinationInput);
-        updateTravelDateInput.value = record.travel_date || "";
-        updateTravelUntilInput.value = record.travel_until || "";
-        updateScanFileInput.value = "";
-        if (updateIsDemoCheckbox)
-          updateIsDemoCheckbox.checked = record.is_demo || false;
-
-        updateSelectedEmployees.length = 0;
-        if (record.employees) {
-          const employeeNames = parseEmployeeNames(record.employees);
-          updateSelectedEmployees.push(...employeeNames);
-        }
-        updateEmployeesMultiSelect.updateDisplay();
-        updateEmployeesMultiSelect.renderOptions();
-
-        updateStatus.textContent = "";
-        updateStatus.classList.remove("status--error");
-        updateStatus.classList.add("hidden");
-
-        updateModal.classList.add("show");
-      });
-    });
+  const loadMoreAdminRows = () => {
+    if (adminRenderedCount >= adminCurrentDisplayRows.length) return;
+    const from = adminRenderedCount;
+    const to = Math.min(adminRenderedCount + ADMIN_LAZY_BATCH_SIZE, adminCurrentDisplayRows.length);
+    const temp = document.createElement("tbody");
+    temp.innerHTML = adminCurrentDisplayRows
+      .slice(from, to)
+      .map((row, batchIdx) => buildAdminRowHtml(row, batchIdx))
+      .join("");
+    const newTrs = Array.from(temp.querySelectorAll("tr"));
+    newTrs.forEach((tr) => viewBody.appendChild(tr));
+    bindAdminRowEvents(newTrs);
+    adminRenderedCount = to;
+    updateViewFooter();
+    if (viewMoreBtn)
+      viewMoreBtn.style.display =
+        adminRenderedCount < adminCurrentDisplayRows.length ? "flex" : "none";
   };
 
   // Set up modal event listeners (only once, not on every render)
@@ -2918,7 +2905,7 @@ viewPanelLoaded.then(() => {
   });
 
   const updateViewFooter = () => {
-    const filteredCount = applyAdminClientFilters(viewRows).length;
+    const totalFiltered = adminCurrentDisplayRows.length;
     const hasActiveFilters =
       adminActiveFilters.taNumber ||
       adminActiveFilters.employee ||
@@ -2927,8 +2914,14 @@ viewPanelLoaded.then(() => {
 
     if (!viewRows.length) {
       viewStatus.textContent = "No records yet.";
+    } else if (!totalFiltered) {
+      viewStatus.textContent = "No records match the current filters.";
+    } else if (adminRenderedCount < totalFiltered) {
+      viewStatus.textContent = hasActiveFilters
+        ? `Showing ${adminRenderedCount} of ${totalFiltered} filtered record${totalFiltered === 1 ? "" : "s"} (${viewRows.length} total). Scroll for more.`
+        : `Showing ${adminRenderedCount} of ${totalFiltered} record${totalFiltered === 1 ? "" : "s"}. Scroll for more.`;
     } else if (hasActiveFilters) {
-      viewStatus.textContent = `Showing ${filteredCount} of ${viewRows.length} record${viewRows.length === 1 ? "" : "s"} (filtered).`;
+      viewStatus.textContent = `Showing ${totalFiltered} of ${viewRows.length} record${viewRows.length === 1 ? "" : "s"} (filtered).`;
     } else {
       viewStatus.textContent = `Loaded ${viewRows.length} record${viewRows.length === 1 ? "" : "s"}.`;
     }
@@ -3177,9 +3170,16 @@ viewPanelLoaded.then(() => {
     }
   }
 
-  // Hide load more button since we load all records now
+  // Infinite scroll: auto-load more rows when sentinel scrolls into view
   if (viewMoreBtn) {
-    viewMoreBtn.style.display = "none";
+    const adminTableWrap = document.querySelector("#view-panel .table-wrap");
+    const adminLazyObserver = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) loadMoreAdminRows();
+      },
+      { threshold: 0.1, root: adminTableWrap },
+    );
+    adminLazyObserver.observe(viewMoreBtn);
   }
 
   closeViewBtn.addEventListener("click", () => {
