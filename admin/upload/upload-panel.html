@@ -102,7 +102,15 @@
                     <span class="file-remove-label">Remove</span>
                 </button>
             </div>
+            <ul class="scan-file-list" id="scan-file-list" hidden></ul>
             <p class="drop-hint" id="scan-file-drop-hint">Desktop: Drag and drop files here, or click to browse.</p>
+            <button type="button" id="clipboard-paste-btn" class="clipboard-paste-btn" title="Paste file from clipboard (Ctrl+V)">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" width="13" height="13">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                Paste from clipboard
+            </button>
             <p class="disclaimer">Accept PDFs and/or images (max 10 files, 10MB total). Multiple files will be combined into one PDF. Images are automatically compressed to reduce file size.</p>
         </div>
 

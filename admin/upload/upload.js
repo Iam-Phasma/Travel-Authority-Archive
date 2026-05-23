@@ -466,30 +466,63 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     // Bind TA number formatter
     bindTaFormatter(taNumberInput);
 
+    const scanFileList = document.getElementById("scan-file-list");
+
+    const formatFileSize = (bytes) => {
+        if (bytes >= 1048576) return `${(bytes / 1048576).toFixed(1)} MB`;
+        return `${Math.round(bytes / 1024)} KB`;
+    };
+
+    const removeFileAtIndex = (index) => {
+        const remaining = Array.from(scanFileInput.files).filter((_, i) => i !== index);
+        const transfer = new DataTransfer();
+        remaining.forEach((f) => transfer.items.add(f));
+        scanFileInput.files = transfer.files;
+        scanFileInput.dispatchEvent(new Event("change", { bubbles: true }));
+    };
+
+    const renderFileList = () => {
+        if (!scanFileList) return;
+        const files = Array.from(scanFileInput.files);
+        if (files.length === 0) {
+            scanFileList.hidden = true;
+            scanFileList.innerHTML = "";
+            return;
+        }
+        scanFileList.hidden = false;
+        scanFileList.innerHTML = files.map((f, i) => {
+            const isPdf = f.type === "application/pdf";
+            const safeName = f.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            return `<li class="scan-file-item">
+                <span class="scan-file-type-badge ${isPdf ? "is-pdf" : "is-img"}">${isPdf ? "PDF" : "IMG"}</span>
+                <span class="scan-file-name" title="${safeName}">${safeName}</span>
+                <span class="scan-file-size">${formatFileSize(f.size)}</span>
+                <button type="button" class="scan-file-remove-single" aria-label="Remove ${safeName}" data-index="${i}">
+                    <svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </li>`;
+        }).join("");
+        scanFileList.querySelectorAll(".scan-file-remove-single").forEach((btn) => {
+            btn.addEventListener("click", () => removeFileAtIndex(parseInt(btn.dataset.index, 10)));
+        });
+    };
+
     const updateSelectedFilesUi = () => {
         const fileCount = scanFileInput.files.length;
         if (scanFileRemoveBtn) {
             scanFileRemoveBtn.hidden = fileCount === 0;
         }
+        renderFileList();
 
         if (fileCount > 0) {
-            const hasPdf = Array.from(scanFileInput.files).some(f => f.type === 'application/pdf');
-            const hasImages = Array.from(scanFileInput.files).some(f => f.type.startsWith('image/'));
-
-            if (fileCount === 1) {
-                uploadStatus.textContent = `Selected: ${scanFileInput.files[0].name}`;
-            } else {
-                const fileTypes = [];
-                if (hasPdf) fileTypes.push('PDF');
-                if (hasImages) fileTypes.push('images');
-                uploadStatus.textContent = `Selected: ${fileCount} files (${fileTypes.join(' + ')}) - will be combined into one PDF`;
-            }
-
             // Show warning if too many files
             if (fileCount > 10) {
                 uploadStatus.textContent = "⚠️ Maximum 10 files allowed";
                 uploadStatus.classList.add("status--error");
             } else {
+                uploadStatus.textContent = fileCount === 1
+                    ? `Selected: ${scanFileInput.files[0].name}`
+                    : `${fileCount} files selected — will be combined into one PDF`;
                 uploadStatus.classList.remove("status--error");
             }
         } else {
@@ -571,6 +604,135 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 uploadStatus.classList.add("status--shake");
             }
         });
+    }
+
+    // ---- Clipboard paste button ----
+    const clipboardPasteBtn = document.getElementById("clipboard-paste-btn");
+
+    const applyClipboardFiles = (files) => {
+        if (!files || files.length === 0) return false;
+        const supported = Array.from(files).filter(
+            (f) => f && (f.type === "application/pdf" || f.type.startsWith("image/"))
+        );
+        if (supported.length === 0) return false;
+        // Deduplicate by name + size (clipboard may expose the same file multiple times)
+        const seen = new Set();
+        const unique = supported.filter((f) => {
+            const key = `${f.name}::${f.size}`;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+        try {
+            const transfer = new DataTransfer();
+            unique.forEach((f) => transfer.items.add(f));
+            scanFileInput.files = transfer.files;
+            scanFileInput.dispatchEvent(new Event("change", { bubbles: true }));
+            return true;
+        } catch (err) {
+            console.warn("Clipboard file assignment failed:", err);
+            return false;
+        }
+    };
+
+    // Extract files from a DataTransferItemList (more reliable than .files for PDFs)
+    const extractItemListFiles = (itemList) => {
+        if (!itemList) return [];
+        return Array.from(itemList)
+            .filter((i) => i.kind === "file")
+            .map((i) => i.getAsFile())
+            .filter(Boolean);
+    };
+
+    // Show a transient status hint without marking it as an error
+    const showPasteHint = (msg) => {
+        uploadStatus.textContent = msg;
+        uploadStatus.classList.remove("status--error");
+    };
+
+    const showPasteError = (msg) => {
+        uploadStatus.textContent = msg;
+        uploadStatus.classList.add("status--error");
+        uploadStatus.classList.remove("status--shake");
+        void uploadStatus.offsetWidth;
+        uploadStatus.classList.add("status--shake");
+    };
+
+    // Try navigator.clipboard.read() — works for images; PDFs depend on browser/OS
+    const tryClipboardApiRead = async () => {
+        if (!navigator.clipboard?.read) return false;
+        try {
+            const items = await navigator.clipboard.read();
+            const files = [];
+            for (const item of items) {
+                for (const mime of item.types) {
+                    if (mime === "text/plain" || mime === "text/html" || mime === "text/uri-list") continue;
+                    try {
+                        const blob = await item.getType(mime);
+                        if (blob.size === 0) continue;
+                        const ext = mime === "application/pdf" ? "pdf"
+                            : mime.startsWith("image/") ? mime.split("/")[1].split("+")[0]
+                            : "bin";
+                        const type = mime.startsWith("image/") || mime === "application/pdf" ? mime : "";
+                        if (!type) continue;
+                        files.push(new File([blob], `clipboard-paste.${ext}`, { type }));
+                        break;
+                    } catch (_) { /* type not readable */ }
+                }
+            }
+            return applyClipboardFiles(files);
+        } catch (err) {
+            if (err.name === "NotAllowedError") {
+                showPasteError("Clipboard permission denied. Allow clipboard access in your browser settings.");
+                return true; // handled
+            }
+            return false;
+        }
+    };
+
+    const handleNativePasteEvent = (e) => {
+        // Try DataTransferItemList first (captures PDFs, images from file manager / Universal Clipboard)
+        const fromItems = extractItemListFiles(e.clipboardData?.items);
+        if (fromItems.length > 0 && applyClipboardFiles(fromItems)) {
+            e.preventDefault();
+            return true;
+        }
+        // Fallback to .files
+        const fromFiles = e.clipboardData?.files;
+        if (fromFiles && fromFiles.length > 0 && applyClipboardFiles(fromFiles)) {
+            e.preventDefault();
+            return true;
+        }
+        return false;
+    };
+
+    if (clipboardPasteBtn) {
+        clipboardPasteBtn.addEventListener("click", async () => {
+            // First try the Clipboard API (works for images, sometimes PDFs)
+            const apiResult = await tryClipboardApiRead();
+            if (apiResult) return;
+
+            // If API found nothing, focus the drop zone and ask user to press ⌘V / Ctrl+V
+            if (scanFileDropZone) scanFileDropZone.focus();
+            const isMac = navigator.platform?.toUpperCase().includes("MAC") || navigator.userAgent.includes("Mac");
+            showPasteHint(`Press ${isMac ? "⌘V" : "Ctrl+V"} to paste your file.`);
+        });
+    }
+
+    // Document-level paste listener — catches ⌘V / Ctrl+V anywhere while upload panel is in view
+    document.addEventListener("paste", (e) => {
+        const panel = document.getElementById("upload-panel");
+        if (!panel || panel.closest(".hidden, [hidden]") || panel.style.display === "none") return;
+        // Don't steal paste from focused text inputs
+        const tag = document.activeElement?.tagName;
+        if (tag === "INPUT" || tag === "TEXTAREA") return;
+        handleNativePasteEvent(e);
+    });
+
+    // Also handle paste directly on the drop zone when focused
+    if (scanFileDropZone) {
+        scanFileDropZone.setAttribute("tabindex", "0");
+        scanFileDropZone.addEventListener("paste", handleNativePasteEvent);
     }
 
     // Demo checkbox handler
