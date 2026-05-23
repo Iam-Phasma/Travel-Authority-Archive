@@ -1199,9 +1199,12 @@ setInterval(validateSession, 30000);
 const taBody = document.getElementById("ta-body");
 const taStatus = document.getElementById("ta-status");
 const taLastUpdated = document.getElementById("ta-last-updated");
-const taMoreBtn = document.getElementById("ta-more");
+const taMoreBtn = document.getElementById("ta-lazy-sentinel");
 let dashboardUserRole = "user";
 let taRows = [];
+let currentDisplayRows = [];
+let renderedCount = 0;
+const LAZY_BATCH_SIZE = 50;
 let latestKnownTimestamp = null;
 const currentYear = new Date().getFullYear().toString();
 let activeFilters = {
@@ -2231,49 +2234,38 @@ const applyClientSorting = (rows) => {
   return sorted;
 };
 
-const renderRows = (rows) => {
-  const filteredRows = applyClientFilters(rows);
-  const sortedRows = applyClientSorting(filteredRows);
+const buildDashRowHtml = (row, globalIndex, batchIndex) => {
   const shouldAnimateRows =
     dashboardUserRole === "user" &&
     window.matchMedia("(prefers-reduced-motion: no-preference)").matches;
+  const dateText = row.travel_date
+    ? new Date(row.travel_date).toLocaleDateString()
+    : "-";
+  const untilText = row.travel_until
+    ? new Date(row.travel_until).toLocaleDateString()
+    : "-";
+  const fileUrl = safeUrl(row.file_url);
+  const safeName = row.file_name || "Download";
+  const displayName = formatFileLabel(safeName);
+  const hasFile = !!row.file_url;
 
-  if (!sortedRows.length) {
-    taBody.innerHTML =
-      '<tr><td colspan="8">No records match the current filters.</td></tr>';
-    return;
+  let employeesText = row.employees || "-";
+  if (employeesText !== "-") {
+    const employeeArray = employeesText.split(",").map((e) => e.trim());
+    if (employeeArray.length > 2) {
+      employeesText = employeeArray.slice(0, 2).join(", ") + "...";
+    }
   }
 
-  taBody.innerHTML = sortedRows
-    .map((row, index) => {
-      const dateText = row.travel_date
-        ? new Date(row.travel_date).toLocaleDateString()
-        : "-";
-      const untilText = row.travel_until
-        ? new Date(row.travel_until).toLocaleDateString()
-        : "-";
-      const fileUrl = safeUrl(row.file_url);
-      const safeName = row.file_name || "Download";
-      const displayName = formatFileLabel(safeName);
-      const hasFile = !!row.file_url;
+  const animDelay = Math.min(batchIndex * 22, 220);
+  const rowAnimationAttrs = shouldAnimateRows
+    ? ` class="row-enter" style="--row-enter-delay:${animDelay}ms;"`
+    : "";
 
-      // Truncate employees to show max 2
-      let employeesText = row.employees || "-";
-      if (employeesText !== "-") {
-        const employeeArray = employeesText.split(",").map((e) => e.trim());
-        if (employeeArray.length > 2) {
-          employeesText = employeeArray.slice(0, 2).join(", ") + "...";
-        }
-      }
-
-      const rowAnimationAttrs = shouldAnimateRows
-        ? ` class="row-enter" style="--row-enter-delay:${Math.min(index * 22, 220)}ms;"`
-        : "";
-
-      return `
+  return `
             <tr${rowAnimationAttrs}>
                 <td>
-                    <button class="view-btn icon-btn" data-index="${index}" aria-label="View details">
+                    <button class="view-btn icon-btn" data-index="${globalIndex}" aria-label="View details">
                         <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true" focusable="false">
                             <path d="M8 4H4m0 0v4m0-4 5 5m7-5h4m0 0v4m0-4-5 5M8 20H4m0 0v-4m0 4 5-5m7 5h4m0 0v-4m0 4-5-5"/>
                         </svg>
@@ -2294,61 +2286,109 @@ const renderRows = (rows) => {
                 </td>
             </tr>
         `;
-    })
-    .join("");
+};
 
-  document.querySelectorAll(".row-file-link").forEach((link) => {
-    link.addEventListener("click", async (e) => {
-      e.preventDefault();
-      const fileUrl =
-        link.getAttribute("data-file-url") || link.getAttribute("href") || "";
-      const fileName =
-        link.getAttribute("data-file-name") || link.textContent || "Open file";
-      if (!fileUrl || fileUrl === "#") return;
-      await openStoredFile(fileUrl, fileName, link);
-    });
-  });
+const bindDashRowEvents = (trs) => {
+  trs.forEach((tr) => {
+    const fileLink = tr.querySelector(".row-file-link");
+    if (fileLink) {
+      fileLink.addEventListener("click", async (e) => {
+        e.preventDefault();
+        const url =
+          fileLink.getAttribute("data-file-url") ||
+          fileLink.getAttribute("href") ||
+          "";
+        const name =
+          fileLink.getAttribute("data-file-name") ||
+          fileLink.textContent ||
+          "Open file";
+        if (!url || url === "#") return;
+        await openStoredFile(url, name, fileLink);
+      });
+    }
+    const viewBtn = tr.querySelector(".view-btn");
+    if (viewBtn) {
+      viewBtn.addEventListener("click", (e) => {
+        const index = Number(e.currentTarget.getAttribute("data-index"));
+        const record = currentDisplayRows[index];
+        if (!record) return;
 
-  document.querySelectorAll(".view-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
-      const index = Number(e.currentTarget.getAttribute("data-index"));
-      const record = sortedRows[index];
-      if (!record) return;
+        viewTaNumber.textContent = record.ta_number || "-";
+        viewPurpose.textContent = record.purpose || "-";
+        viewDestination.textContent = record.destination || "-";
+        viewEmployees.textContent = record.employees || "-";
+        viewTravelDate.textContent = record.travel_date
+          ? new Date(record.travel_date).toLocaleDateString()
+          : "-";
+        viewTravelUntil.textContent = record.travel_until
+          ? new Date(record.travel_until).toLocaleDateString()
+          : "-";
 
-      viewTaNumber.textContent = record.ta_number || "-";
-      viewPurpose.textContent = record.purpose || "-";
-      viewDestination.textContent = record.destination || "-";
-      viewEmployees.textContent = record.employees || "-";
-      viewTravelDate.textContent = record.travel_date
-        ? new Date(record.travel_date).toLocaleDateString()
-        : "-";
-      viewTravelUntil.textContent = record.travel_until
-        ? new Date(record.travel_until).toLocaleDateString()
-        : "-";
+        if (record.file_url) {
+          const safeFileUrl = safeUrl(record.file_url);
+          viewFileLink.href = safeFileUrl;
+          viewFileLink.dataset.fileUrl = safeFileUrl;
+          viewFileLink.dataset.fileName = record.file_name || "Open file";
+          viewFileLink.textContent = record.file_name || "Open file";
+          updateViewFileSize(safeFileUrl);
+        } else {
+          viewFileLink.href = "#";
+          viewFileLink.dataset.fileUrl = "";
+          viewFileLink.dataset.fileName = "";
+          viewFileLink.textContent = "No file";
+          if (viewFileSize) viewFileSize.textContent = "File size: -";
+        }
 
-      if (record.file_url) {
-        const safeFileUrl = safeUrl(record.file_url);
-        viewFileLink.href = safeFileUrl;
-        viewFileLink.dataset.fileUrl = safeFileUrl;
-        viewFileLink.dataset.fileName = record.file_name || "Open file";
-        viewFileLink.textContent = record.file_name || "Open file";
-        updateViewFileSize(safeFileUrl);
-      } else {
-        viewFileLink.href = "#";
-        viewFileLink.dataset.fileUrl = "";
-        viewFileLink.dataset.fileName = "";
-        viewFileLink.textContent = "No file";
-        if (viewFileSize) viewFileSize.textContent = "File size: -";
-      }
-
-      viewModal.classList.add("show");
-      document.body.style.overflow = "hidden";
-    });
+        viewModal.classList.add("show");
+        document.body.style.overflow = "hidden";
+      });
+    }
   });
 };
 
+const renderRows = (rows) => {
+  const filteredRows = applyClientFilters(rows);
+  currentDisplayRows = applyClientSorting(filteredRows);
+  renderedCount = Math.min(LAZY_BATCH_SIZE, currentDisplayRows.length);
+
+  if (!currentDisplayRows.length) {
+    taBody.innerHTML =
+      '<tr><td colspan="8">No records match the current filters.</td></tr>';
+    if (taMoreBtn) taMoreBtn.style.display = "none";
+    return;
+  }
+
+  taBody.innerHTML = currentDisplayRows
+    .slice(0, renderedCount)
+    .map((row, i) => buildDashRowHtml(row, i, i))
+    .join("");
+  bindDashRowEvents(Array.from(taBody.querySelectorAll("tr")));
+  if (taMoreBtn)
+    taMoreBtn.style.display =
+      renderedCount < currentDisplayRows.length ? "flex" : "none";
+};
+
+const loadMoreDashRows = () => {
+  if (renderedCount >= currentDisplayRows.length) return;
+  const from = renderedCount;
+  const to = Math.min(renderedCount + LAZY_BATCH_SIZE, currentDisplayRows.length);
+  const temp = document.createElement("tbody");
+  temp.innerHTML = currentDisplayRows
+    .slice(from, to)
+    .map((row, batchIdx) => buildDashRowHtml(row, from + batchIdx, batchIdx))
+    .join("");
+  const newTrs = Array.from(temp.querySelectorAll("tr"));
+  newTrs.forEach((tr) => taBody.appendChild(tr));
+  bindDashRowEvents(newTrs);
+  renderedCount = to;
+  updateTaFooter();
+  if (taMoreBtn)
+    taMoreBtn.style.display =
+      renderedCount < currentDisplayRows.length ? "flex" : "none";
+};
+
 const updateTaFooter = () => {
-  const filteredCount = applyClientFilters(taRows).length;
+  const totalFiltered = currentDisplayRows.length;
   const hasActiveFilters =
     activeFilters.taNumber ||
     activeFilters.employee ||
@@ -2357,8 +2397,14 @@ const updateTaFooter = () => {
 
   if (!taRows.length) {
     taStatus.textContent = "No records yet.";
+  } else if (!totalFiltered) {
+    taStatus.textContent = "No records match the current filters.";
+  } else if (renderedCount < totalFiltered) {
+    taStatus.textContent = hasActiveFilters
+      ? `Showing ${renderedCount} of ${totalFiltered} filtered record${totalFiltered === 1 ? "" : "s"} (${taRows.length} total). Scroll for more.`
+      : `Showing ${renderedCount} of ${totalFiltered} record${totalFiltered === 1 ? "" : "s"}. Scroll for more.`;
   } else if (hasActiveFilters) {
-    taStatus.textContent = `Showing ${filteredCount} of ${taRows.length} record${taRows.length === 1 ? "" : "s"} (filtered).`;
+    taStatus.textContent = `Showing ${totalFiltered} of ${taRows.length} record${taRows.length === 1 ? "" : "s"} (filtered).`;
   } else {
     taStatus.textContent = `Loaded ${taRows.length} record${taRows.length === 1 ? "" : "s"}.`;
   }
@@ -2413,9 +2459,16 @@ const loadTravelAuthorities = async (reset = false) => {
     taStatus.textContent = "Failed to load travel authorities.";
   }
 };
-// Hide load more button since we load all records now
+// Infinite scroll: auto-load more rows when sentinel scrolls into view
 if (taMoreBtn) {
-  taMoreBtn.style.display = "none";
+  const dashTableWrap = document.querySelector("#ta-panel .table-wrap");
+  const dashLazyObserver = new IntersectionObserver(
+    (entries) => {
+      if (entries[0].isIntersecting) loadMoreDashRows();
+    },
+    { threshold: 0.1, root: dashTableWrap },
+  );
+  dashLazyObserver.observe(taMoreBtn);
 }
 
 // Fade scrollbar in on scroll, fade out after idle
