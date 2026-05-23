@@ -1280,7 +1280,7 @@ body.dashboard-page::before {
   outline-offset: 2px;
 }
 .structured-fields .file-upload-block .drop-hint {
-  margin: 0 auto 10px;
+  margin: 0 auto 4px;
   max-width: 480px;
   font-size: 0.84rem;
   color: rgba(11, 28, 59, 0.72);
@@ -1291,10 +1291,116 @@ body.dashboard-page::before {
   max-width: 480px;
   font-size: 0.85rem;
 }
+/* Per-file list */
+.structured-fields .file-upload-block .scan-file-list {
+  list-style: none;
+  margin: 0 auto 10px;
+  padding: 0;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  text-align: left;
+}
+.structured-fields .file-upload-block .scan-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: #fff;
+  border: 1px solid rgba(11, 28, 59, 0.1);
+  border-radius: 10px;
+  font-size: 0.8rem;
+  min-width: 0;
+}
+.structured-fields .file-upload-block .scan-file-type-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+.structured-fields .file-upload-block .scan-file-type-badge.is-pdf {
+  background: rgba(181, 33, 38, 0.1);
+  color: #b52126;
+}
+.structured-fields .file-upload-block .scan-file-type-badge.is-img {
+  background: rgba(47, 111, 228, 0.1);
+  color: var(--sea);
+}
+.structured-fields .file-upload-block .scan-file-name {
+  flex: 1 1 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(11, 28, 59, 0.85);
+}
+.structured-fields .file-upload-block .scan-file-size {
+  flex-shrink: 0;
+  color: rgba(11, 28, 59, 0.45);
+  font-size: 0.75rem;
+}
+.structured-fields .file-upload-block .scan-file-remove-single {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  background: none !important;
+  border: none !important;
+  border-radius: 50%;
+  color: rgba(11, 28, 59, 0.35) !important;
+  cursor: pointer;
+  transition: background 0.13s ease, color 0.13s ease;
+  font-weight: 400;
+}
+.structured-fields .file-upload-block .scan-file-remove-single:hover {
+  background: rgba(181, 33, 38, 0.1) !important;
+  color: #b52126 !important;
+  transform: none;
+  box-shadow: none;
+}
+/* Clipboard paste button — desktop only, small pill alongside drop-hint */
+.structured-fields .file-upload-block .clipboard-paste-btn {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  margin: 6px auto 8px;
+  padding: 3px 9px 3px 7px;
+  background: none !important;
+  border: 1px solid rgba(47, 111, 228, 0.35) !important;
+  border-radius: 20px;
+  color: var(--sea) !important;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+.structured-fields .file-upload-block .clipboard-paste-btn:hover {
+  background: rgba(47, 111, 228, 0.08) !important;
+  border-color: var(--sea) !important;
+  transform: none;
+  box-shadow: none;
+}
+.structured-fields .file-upload-block .clipboard-paste-btn:active {
+  background: rgba(47, 111, 228, 0.15) !important;
+}
+.structured-fields .file-upload-block .clipboard-paste-btn.is-pasting {
+  opacity: 0.55;
+  pointer-events: none;
+}
 
 @media (min-width: 769px) and (hover: hover) and (pointer: fine) {
   .structured-fields .file-upload-block .drop-hint {
     display: block;
+  }
+  .structured-fields .file-upload-block .clipboard-paste-btn {
+    display: inline-flex;
   }
 }
 
