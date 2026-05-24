@@ -420,6 +420,7 @@ body.dashboard-page::before {
   grid-template-columns: minmax(300px, 1fr) minmax(0, 1.15fr);
   gap: 20px;
   align-items: stretch;
+  min-height: 0;
 }
 .agenda-calendar-panel,
 .agenda-list-panel {
@@ -428,6 +429,7 @@ body.dashboard-page::before {
   background: #fbfcff;
   padding: 16px;
   min-width: 0;
+  min-height: 0;
 }
 /* --- FullCalendar overrides for Agenda Tracker --- */
 .agenda-calendar-meta {
@@ -635,6 +637,7 @@ body.dashboard-page::before {
   display: flex;
   flex-direction: column;
   min-height: 0;
+  overflow: hidden;
 }
 .insight-segmented-switcher {
   --seg-pill-x: 0px;
@@ -734,7 +737,8 @@ body.dashboard-page::before {
   border-radius: 10px;
   background: #ffffff;
   flex: 1 1 auto;
-  min-height: 200px;
+  min-height: 0;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: 8px 8px 12px;
@@ -747,7 +751,8 @@ body.dashboard-page::before {
   position: absolute;
   left: 19px;
   top: 8px;
-  bottom: 12px;
+  /* height is driven by JS to match scrollHeight so the line extends to content bottom */
+  height: var(--agenda-line-h, calc(100% - 20px));
   width: 2px;
   border-radius: 999px;
   background: linear-gradient(
@@ -785,14 +790,11 @@ body.dashboard-page::before {
   text-overflow: ellipsis;
 }
 .agenda-info-btn {
-  width: 18px;
-  height: 18px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  border: 1.5px solid rgba(11, 28, 59, 0.22);
   background: transparent;
   color: rgba(11, 28, 59, 0.38);
-  font-size: 0.7rem;
-  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -800,14 +802,16 @@ body.dashboard-page::before {
   flex-shrink: 0;
   transition:
     background 0.15s,
-    color 0.15s,
-    border-color 0.15s;
+    color 0.15s;
   line-height: 1;
   padding: 0;
 }
+.agenda-info-btn svg {
+  width: 18px;
+  height: 18px;
+}
 .agenda-info-btn:hover {
   background: rgba(11, 28, 59, 0.06);
-  border-color: rgba(11, 28, 59, 0.4);
   color: rgba(11, 28, 59, 0.6);
 }
 .agenda-item-date {
@@ -826,7 +830,11 @@ body.dashboard-page::before {
   box-shadow: 0 8px 28px rgba(11, 28, 59, 0.14);
   padding: 14px 16px;
   min-width: 220px;
-  max-width: 300px;
+  max-width: min(320px, calc(100vw - 24px));
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
   pointer-events: none;
   opacity: 0;
   transform: translateY(4px);
@@ -867,8 +875,8 @@ body.dashboard-page::before {
 }
 .agenda-ta-tooltip-officials {
   white-space: normal;
-  word-break: normal;
-  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 .agenda-ta-tooltip-official {
   font-size: 0.82rem;
@@ -903,8 +911,8 @@ body.dashboard-page::before {
 }
 /* Rail removed from per-group — now a single line on .agenda-ta-list */
 .agenda-date-group-header {
-  position: sticky;
-  top: 0;
+  position: relative;
+  top: auto;
   z-index: 2;
   display: flex;
   align-items: center;
@@ -1565,6 +1573,7 @@ body.dashboard-page::before {
   .agenda-list-panel {
     overflow: hidden;
     min-width: 0;
+    height: 100%;
   }
 
   .agenda-ta-list {
@@ -1574,12 +1583,7 @@ body.dashboard-page::before {
     overscroll-behavior-x: contain;
     /* Constrained to panel; inner content uses max-content to equalize rows */
     width: 100%;
-    box-sizing: border-box;
-  }
-
-  /* Inner scroll wrapper so all groups share the same width baseline */
-  .agenda-ta-list > * {
-    min-width: max-content;
+  flex: 1 1 auto;
     width: 100%;
     box-sizing: border-box;
   }

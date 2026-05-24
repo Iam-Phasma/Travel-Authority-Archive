@@ -1224,124 +1224,58 @@ let insightsHeightFrame = null;
 let insightsResizeTimeout = null;
 let insightsViewportSettleTimeout = null;
 let insightsBreakpointQuery = null;
+let agendaCalendarHeightObserver = null;
+let agendaBreakpointQuery = null;
 let agendaTrackerInitialized = false;
 let fcCalendar = null;
 let agendaCalendarSyncFrame = null;
 let agendaCalendarResizeTimeout = null;
 let agendaCalendarViewportSettleTimeout = null;
 
-// --- Tooltip singleton ---
-let agendaTooltipEl = null;
-let agendaTooltipCloseHandler = null;
+const openViewModalForRecord = async (record) => {
+  if (!record) return;
 
-const getOrCreateAgendaTooltip = () => {
-  if (!agendaTooltipEl) {
-    agendaTooltipEl = document.createElement("div");
-    agendaTooltipEl.className = "agenda-ta-tooltip";
-    document.body.appendChild(agendaTooltipEl);
+  viewTaNumber.textContent = record.ta_number || "-";
+  viewPurpose.textContent = record.purpose || "-";
+  viewDestination.textContent = record.destination || "-";
+  viewEmployees.textContent = record.employees || "-";
+  viewTravelDate.textContent = record.travel_date || "-";
+  viewTravelUntil.textContent = record.travel_until || "-";
+
+  if (record.file_url) {
+    const safeFileUrl = record.file_url;
+    viewFileLink.href = safeFileUrl;
+    viewFileLink.dataset.fileUrl = safeFileUrl;
+    viewFileLink.dataset.fileName = record.file_name || "Open file";
+    viewFileLink.textContent = record.file_name || "Open file";
+    await updateViewFileSize(safeFileUrl);
+  } else {
+    viewFileLink.href = "#";
+    viewFileLink.dataset.fileUrl = "";
+    viewFileLink.dataset.fileName = "";
+    viewFileLink.textContent = "No file";
+    if (viewFileSize) viewFileSize.textContent = "File size: -";
   }
-  return agendaTooltipEl;
+
+  viewModal.classList.add("show");
+  document.body.style.overflow = "hidden";
 };
 
-const hideAgendaTooltip = () => {
-  if (!agendaTooltipEl) return;
-  agendaTooltipEl.classList.remove("is-visible");
-  if (agendaTooltipCloseHandler) {
-    document.removeEventListener("click", agendaTooltipCloseHandler);
-    agendaTooltipCloseHandler = null;
-  }
-};
-
-const showAgendaTooltip = (btn, row) => {
-  hideAgendaTooltip();
-  const tooltip = getOrCreateAgendaTooltip();
-
-  const officialsStr =
-    typeof row.employees === "string" ? row.employees.trim() : "";
-  let officialNames = [];
-  if (officialsStr) {
-    // Split on commas but reattach suffix tokens (Jr., Sr., III, CESO III, etc.) to the previous name
-    const SUFFIX_RE =
-      /^(jr\.?|sr\.?|i{2,}|iv|vi*|ceso\s*\w*|ph\.?d\.?|dpa|rn|cpa|md|lpt|msn|bsn|edd|lld)$/i;
-    const parts = officialsStr
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    for (const part of parts) {
-      if (SUFFIX_RE.test(part) && officialNames.length > 0) {
-        officialNames[officialNames.length - 1] += ", " + part;
-      } else {
-        officialNames.push(part);
-      }
-    }
-  }
-  const officials = officialNames.length
-    ? `<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials">${escapeHtml(officialNames.join(", "))}</div>`
-    : '<div class="agenda-ta-tooltip-value agenda-ta-tooltip-officials" style="color:rgba(11,28,59,0.4)">None listed</div>';
-
-  tooltip.innerHTML = `
-        <div class="agenda-ta-tooltip-title">${escapeHtml(row.ta_number || "-")}</div>
-        <div class="agenda-ta-tooltip-row">
-            <div class="agenda-ta-tooltip-label">Destination</div>
-            <div class="agenda-ta-tooltip-value">${escapeHtml(row.destination || "—")}</div>
-        </div>
-        <div class="agenda-ta-tooltip-row">
-            <div class="agenda-ta-tooltip-label">Purpose</div>
-            <div class="agenda-ta-tooltip-value">${escapeHtml(row.purpose || "—")}</div>
-        </div>
-        <div class="agenda-ta-tooltip-row">
-            <div class="agenda-ta-tooltip-label">Officials</div>
-            ${officials}
-        </div>
-    `;
-
-  // Position: prefer below button, flip if near bottom
-  const rect = btn.getBoundingClientRect();
-  const ttW = 280;
-  const ttH = tooltip.offsetHeight || 160;
-  let left = rect.left;
-  let top = rect.bottom + 8;
-
-  if (left + ttW > window.innerWidth - 12) left = window.innerWidth - ttW - 12;
-  if (top + ttH > window.innerHeight - 12) top = rect.top - ttH - 8;
-
-  tooltip.style.left = `${left}px`;
-  tooltip.style.top = `${top}px`;
-  tooltip.style.minWidth = `${ttW}px`;
-  tooltip.classList.add("is-visible");
-
-  agendaTooltipCloseHandler = (e) => {
-    if (!tooltip.contains(e.target) && e.target !== btn) {
-      hideAgendaTooltip();
-    }
-  };
-  setTimeout(
-    () => document.addEventListener("click", agendaTooltipCloseHandler),
-    0,
-  );
-};
-
-const buildAgendaInfoBtn = (row) => {
-  return `<button type="button" class="agenda-info-btn" data-ta-key="${escapeHtml(row.ta_number || "")}" aria-label="Info for ${escapeHtml(row.ta_number || "TA")}">i</button>`;
-};
+const buildAgendaInfoBtn = (row) => `
+  <button type="button" class="agenda-info-btn" data-ta-key="${escapeHtml(row.ta_number || "")}" aria-label="View details for ${escapeHtml(row.ta_number || "TA")}">
+    <svg class="agenda-info-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 14v4.833A1.166 1.166 0 0 1 16.833 20H5.167A1.167 1.167 0 0 1 4 18.833V7.167A1.166 1.166 0 0 1 5.167 6h4.618m4.447-2H20v5.768m-7.889 2.121 7.778-7.778"/>
+    </svg>
+  </button>`;
 
 const attachAgendaInfoBtnListeners = (container) => {
   container.querySelectorAll(".agenda-info-btn").forEach((btn) => {
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
       const taKey = btn.getAttribute("data-ta-key");
       const row = taRows.find((r) => r.ta_number === taKey);
       if (!row) return;
-      if (
-        agendaTooltipEl &&
-        agendaTooltipEl.classList.contains("is-visible") &&
-        agendaTooltipEl.dataset.openFor === taKey
-      ) {
-        hideAgendaTooltip();
-        return;
-      }
-      agendaTooltipEl && (agendaTooltipEl.dataset.openFor = taKey);
-      showAgendaTooltip(btn, row);
+      await openViewModalForRecord(row);
     });
   });
 };
@@ -1554,6 +1488,8 @@ const renderAgendaList = () => {
       agendaList.innerHTML = buildAgendaEmptyState(
         "No travel authorities scheduled for this date.",
       );
+      // clear any custom timeline height when empty
+      agendaList.style.removeProperty("--agenda-line-h");
       return;
     }
 
@@ -1571,6 +1507,14 @@ const renderAgendaList = () => {
       })
       .join("");
     attachAgendaInfoBtnListeners(agendaList);
+    // Make the timeline line match the full scroll height of the list content
+    try {
+      const cs = window.getComputedStyle(agendaList);
+      const padTop = parseFloat(cs.paddingTop) || 0;
+      const padBottom = parseFloat(cs.paddingBottom) || 0;
+      const lineH = Math.max(0, agendaList.scrollHeight - padTop - padBottom - 0);
+      agendaList.style.setProperty("--agenda-line-h", `${Math.ceil(lineH)}px`);
+    } catch (e) {}
     return;
   }
 
@@ -1585,6 +1529,7 @@ const renderAgendaList = () => {
     agendaList.innerHTML = buildAgendaEmptyState(
       "No upcoming travel authorities found.",
     );
+    agendaList.style.removeProperty("--agenda-line-h");
     return;
   }
 
@@ -1621,6 +1566,14 @@ const renderAgendaList = () => {
     scrollToUpcomingDateGroup(agendaState.selectedDateIso);
   }
   attachAgendaInfoBtnListeners(agendaList);
+  // After rendering, set timeline height to cover all content
+  try {
+    const cs2 = window.getComputedStyle(agendaList);
+    const padTop2 = parseFloat(cs2.paddingTop) || 0;
+    const padBottom2 = parseFloat(cs2.paddingBottom) || 0;
+    const lineH2 = Math.max(0, agendaList.scrollHeight - padTop2 - padBottom2 - 0);
+    agendaList.style.setProperty("--agenda-line-h", `${Math.ceil(lineH2)}px`);
+  } catch (e) {}
 };
 
 const renderAgendaTracker = () => {
@@ -1637,20 +1590,65 @@ const syncAgendaCalendarLayout = () => {
 
   const insightsPane = document.getElementById("tab-insights");
   const fcContainer = document.getElementById("agenda-fc-calendar");
+  const calendarPanel = document.querySelector(".agenda-calendar-panel");
+  const agendaListPanel = document.querySelector(".agenda-list-panel");
   if (
     !insightsPane ||
     !insightsPane.classList.contains("active") ||
-    !fcContainer
+    !fcContainer ||
+    !calendarPanel ||
+    !agendaListPanel
   ) {
     return;
   }
-
-  const { width, height } = fcContainer.getBoundingClientRect();
-  if (width <= 0 || height <= 0) {
-    return;
-  }
-
+  // Ask FullCalendar to update, then wait for layout to settle before measuring.
   fcCalendar.updateSize();
+
+  // Use a double requestAnimationFrame to allow FullCalendar to finish layout.
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      const { width } = fcContainer.getBoundingClientRect();
+      const { height } = calendarPanel.getBoundingClientRect();
+      if (width <= 0 || height <= 0) {
+        // If measurement failed, clear any forced heights to avoid locking layout.
+        if (!window.matchMedia("(min-width: 950px)").matches) {
+          agendaListPanel.style.height = "";
+          agendaListPanel.style.maxHeight = "";
+          calendarPanel.style.height = "";
+          calendarPanel.style.maxHeight = "";
+        }
+        return;
+      }
+
+      if (window.matchMedia("(min-width: 950px)").matches) {
+        // Set both panels to the same outer height so the list can scroll internally.
+        const h = Math.ceil(height);
+        calendarPanel.style.height = `${h}px`;
+        calendarPanel.style.maxHeight = `${h}px`;
+        agendaListPanel.style.height = `${h}px`;
+        agendaListPanel.style.maxHeight = `${h}px`;
+        // update timeline pseudo-element height to match content scrollHeight
+        try {
+          const agendaTaList = document.getElementById("agenda-ta-list");
+          if (agendaTaList) {
+            const cs = window.getComputedStyle(agendaTaList);
+            const padTop = parseFloat(cs.paddingTop) || 0;
+            const padBottom = parseFloat(cs.paddingBottom) || 0;
+            const lineH = Math.max(0, agendaTaList.scrollHeight - padTop - padBottom - 0);
+            agendaTaList.style.setProperty("--agenda-line-h", `${Math.ceil(lineH)}px`);
+          }
+        } catch (e) {}
+      } else {
+        // On small screens, remove any forced heights so panels flow naturally.
+        agendaListPanel.style.height = "";
+        agendaListPanel.style.maxHeight = "";
+        calendarPanel.style.height = "";
+        calendarPanel.style.maxHeight = "";
+        const agendaTaList = document.getElementById("agenda-ta-list");
+        if (agendaTaList) agendaTaList.style.removeProperty("--agenda-line-h");
+      }
+    });
+  });
 };
 
 const queueAgendaCalendarLayoutSync = () => {
@@ -1723,6 +1721,33 @@ const initAgendaTracker = () => {
 
   fcCalendar.render();
   scheduleAgendaCalendarLayoutSync();
+
+  // Observe calendar panel size changes to keep the agenda list height in sync
+  try {
+    const calendarPanel = document.querySelector(".agenda-calendar-panel");
+    if (calendarPanel && typeof ResizeObserver !== "undefined") {
+      if (agendaCalendarHeightObserver) agendaCalendarHeightObserver.disconnect();
+      agendaCalendarHeightObserver = new ResizeObserver(() => {
+        queueAgendaCalendarLayoutSync();
+      });
+      agendaCalendarHeightObserver.observe(calendarPanel);
+    }
+
+    // Re-sync when breakpoint crosses (desktop <-> mobile)
+    if (typeof window !== "undefined") {
+      if (agendaBreakpointQuery) {
+        try { agendaBreakpointQuery.removeEventListener('change', scheduleAgendaCalendarLayoutSync); } catch (e) {}
+      }
+      agendaBreakpointQuery = window.matchMedia("(min-width: 950px)");
+      if (agendaBreakpointQuery.addEventListener) {
+        agendaBreakpointQuery.addEventListener("change", scheduleAgendaCalendarLayoutSync);
+      } else if (agendaBreakpointQuery.addListener) {
+        agendaBreakpointQuery.addListener(scheduleAgendaCalendarLayoutSync);
+      }
+    }
+  } catch (err) {
+    // noop if ResizeObserver not supported or other failures
+  }
 
   // Mark today as selected on init
   const todayEl = fcContainer.querySelector(".fc-day-today");
