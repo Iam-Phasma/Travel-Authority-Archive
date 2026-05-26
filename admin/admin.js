@@ -1609,6 +1609,21 @@ const createMultiSelect = (
         });
       });
     }
+
+    // Wire clear-all if present in this multiselect instance
+    const clearBtn = document.getElementById(dropdownId)?.querySelector('.multiselect-clear-all');
+    if (clearBtn) {
+      clearBtn.removeEventListener('click', clearBtn._clearHandler);
+      clearBtn._clearHandler = (e) => {
+        e.stopPropagation();
+        if (selectedArray.length === 0) return;
+        selectedArray.length = 0;
+        updateDisplay();
+        renderOptions();
+        search.focus();
+      };
+      clearBtn.addEventListener('click', clearBtn._clearHandler);
+    }
   };
 
   display.addEventListener("click", (e) => {

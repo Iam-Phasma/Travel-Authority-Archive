@@ -14,6 +14,7 @@ window.initDraftTaPanel = (supabase) => {
     const officialsDropdown  = document.getElementById('panel-draft-ta-officials-dropdown');
     const officialsSearch    = document.getElementById('panel-draft-ta-officials-search');
     const officialsOptions   = document.getElementById('panel-draft-ta-officials-options');
+    const officialsClearAll   = document.getElementById('panel-draft-ta-officials-clear-all');
     const clearBtn           = document.getElementById('panel-draft-ta-clear');
     const createBtn          = document.getElementById('panel-draft-ta-create');
     const isoControlInput    = document.getElementById('panel-draft-ta-iso-control');
@@ -66,7 +67,7 @@ window.initDraftTaPanel = (supabase) => {
         const renderOptions = () => {
             const term = officialsSearch.value.toLowerCase();
             const filtered = employeesList.filter(emp =>
-                emp.name.toLowerCase().includes(term) && !selectedEmployees.includes(emp.name)
+                emp.name.toLowerCase().includes(term)
             );
 
             if (filtered.length === 0) {
@@ -101,14 +102,51 @@ window.initDraftTaPanel = (supabase) => {
             officialsOptions.innerHTML = filtered.map(emp => {
                 const inactiveClass = emp.is_active === false ? ' inactive-employee' : '';
                 const inactiveLabel = emp.is_active === false ? ' <span class="inactive-label">(Inactive)</span>' : '';
-                return `<div class="multiselect-option${inactiveClass}" data-name="${escapeHtml(emp.name)}">${escapeHtml(emp.name)}${inactiveLabel}</div>`;
+                const checked = selectedEmployees.includes(emp.name) ? ' checked' : '';
+                return `
+                    <div class="multiselect-option${inactiveClass}" data-name="${escapeHtml(emp.name)}">
+                        <label class="multiselect-checkbox-label">
+                            <input type="checkbox" class="multiselect-option-checkbox" data-name="${escapeHtml(emp.name)}"${checked}>
+                            <span class="multiselect-option-name">${escapeHtml(emp.name)}${inactiveLabel}</span>
+                        </label>
+                    </div>`;
             }).join('');
 
+            // checkbox handlers: update selection on change
+            officialsOptions.querySelectorAll('.multiselect-option-checkbox').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    const name = cb.getAttribute('data-name');
+                    if (cb.checked) {
+                        if (!selectedEmployees.includes(name)) selectedEmployees.push(name);
+                    } else {
+                        const idx = selectedEmployees.indexOf(name);
+                        if (idx > -1) selectedEmployees.splice(idx, 1);
+                    }
+                    officialsSearch.value = '';
+                    updateDisplay();
+                    renderOptions();
+                });
+            });
+
+            // clicking an option toggles its checkbox (so row/name clicks select too)
             officialsOptions.querySelectorAll('.multiselect-option').forEach(opt => {
                 opt.addEventListener('click', e => {
                     e.stopPropagation();
-                    const name = opt.getAttribute('data-name');
-                    if (!selectedEmployees.includes(name)) { selectedEmployees.push(name); officialsSearch.value = ''; updateDisplay(); renderOptions(); }
+                    const cb = opt.querySelector('.multiselect-option-checkbox');
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        cb.dispatchEvent(new Event('change', { bubbles: true }));
+                    } else {
+                        const name = opt.getAttribute('data-name');
+                        if (!selectedEmployees.includes(name)) selectedEmployees.push(name);
+                        else {
+                            const idx = selectedEmployees.indexOf(name);
+                            if (idx > -1) selectedEmployees.splice(idx, 1);
+                        }
+                        officialsSearch.value = '';
+                        updateDisplay();
+                        renderOptions();
+                    }
                 });
             });
         };
@@ -123,6 +161,16 @@ window.initDraftTaPanel = (supabase) => {
 
         officialsSearch.addEventListener('input', renderOptions);
         officialsSearch.addEventListener('click', e => e.stopPropagation());
+
+        // Clear All button: remove all selected employees
+        officialsClearAll?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (selectedEmployees.length === 0) return;
+            selectedEmployees.length = 0;
+            updateDisplay();
+            renderOptions();
+            officialsSearch.focus();
+        });
 
         document.addEventListener('click', e => {
             if (!officialsDropdown.contains(e.target) && e.target !== officialsDisplay) closeDropdown();

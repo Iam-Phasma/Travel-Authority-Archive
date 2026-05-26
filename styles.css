@@ -2972,11 +2972,15 @@ button:hover {
 .multiselect-search-wrapper {
   padding: 10px;
   border-bottom: 1px solid rgba(15, 26, 31, 0.08);
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .multiselect-search {
   width: 100%;
   padding: 8px 12px;
+  flex: 1 1 auto;
   border-radius: 8px;
   border: 1px solid rgba(15, 26, 31, 0.12);
   background: rgba(255, 255, 255, 0.9);
@@ -3030,6 +3034,44 @@ button:hover {
 
 .multiselect-add-btn:active {
   background: var(--hover-ink);
+}
+
+/* Checkbox + option name layout for multiselect options */
+.multiselect-checkbox-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px; /* space between checkbox and name */
+  width: 100%;
+}
+
+.multiselect-option-name {
+  font-weight: 400; /* ensure names are not bold */
+}
+
+.multiselect-clear-all {
+  padding: 0;
+  background: rgba(161, 37, 27, 0.15);
+  color: #a1251b;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px; /* square matching search field height */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multiselect-clear-all:hover {
+  background: var(--hover-danger-soft);
+}
+
+.multiselect-clear-all svg {
+  width: 18px;
+  height: 18px;
 }
 
 /* Employee Management Styles */
