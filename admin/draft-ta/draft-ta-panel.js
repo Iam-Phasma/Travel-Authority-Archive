@@ -42,6 +42,11 @@ window.initDraftTaPanel = (supabase) => {
     const createMultiSelect = () => {
         if (!officialsDisplay || !officialsDropdown || !officialsSearch || !officialsOptions) return null;
 
+        // persisted CHED-only toggle
+        let chedOnly = localStorage.getItem('draftTaChedOnly') === '1';
+        const settingsBtn = document.getElementById('panel-draft-ta-officials-settings-btn');
+        let settingsPanel = null;
+
         const closeDropdown = () => {
             officialsSearch.value = '';
             officialsDropdown.classList.remove('show');
@@ -66,9 +71,14 @@ window.initDraftTaPanel = (supabase) => {
 
         const renderOptions = () => {
             const term = officialsSearch.value.toLowerCase();
-            const filtered = employeesList.filter(emp =>
-                emp.name.toLowerCase().includes(term)
-            );
+            const filtered = employeesList
+                .filter(emp => {
+                    if (chedOnly) {
+                        const office = String(emp.office || '').trim().toLowerCase();
+                        if (office !== 'ched') return false;
+                    }
+                    return emp.name.toLowerCase().includes(term);
+                });
 
             if (filtered.length === 0) {
                 if (term.trim()) {
@@ -176,6 +186,41 @@ window.initDraftTaPanel = (supabase) => {
             if (!officialsDropdown.contains(e.target) && e.target !== officialsDisplay) closeDropdown();
         });
 
+        // Settings panel (CHED-only) wiring
+        const createSettingsPanel = () => {
+            if (settingsPanel) return settingsPanel;
+            settingsPanel = document.createElement('div');
+            settingsPanel.className = 'multiselect-settings-panel';
+            settingsPanel.innerHTML = `
+                <div class="settings-list">
+                    <div class="settings-toggle-item">
+                        <label class="settings-toggle-label">
+                            <input type="checkbox" id="panel-draft-ta-ched-only-toggle" ${chedOnly ? 'checked' : ''}>
+                            <div class="settings-toggle-ui"></div>
+                            <div class="settings-toggle-text">
+                                <div class="settings-title">Toggle ched officials</div>
+                                <div class="settings-sub">Show only officials with Office = CHED</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>`;
+            officialsDropdown.appendChild(settingsPanel);
+
+            const toggle = settingsPanel.querySelector('#panel-draft-ta-ched-only-toggle');
+            toggle.addEventListener('change', () => {
+                chedOnly = !!toggle.checked;
+                localStorage.setItem('draftTaChedOnly', chedOnly ? '1' : '0');
+                renderOptions();
+            });
+            return settingsPanel;
+        };
+
+        settingsBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (!settingsPanel) createSettingsPanel();
+            settingsPanel.classList.toggle('open');
+        });
+
         return { updateDisplay, renderOptions, closeDropdown };
     };
 
@@ -184,7 +229,7 @@ window.initDraftTaPanel = (supabase) => {
         try {
             const { data, error } = await supabase
                 .from('employee_list')
-                .select('name, position, is_active')
+                .select('name, position, is_active, office')
                 .order('is_active', { ascending: false })
                 .order('name', { ascending: true });
             if (!error) employeesList = data || [];
