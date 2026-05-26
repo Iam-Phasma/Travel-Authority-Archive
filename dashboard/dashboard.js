@@ -467,7 +467,7 @@ window.initHeaderButtons = () => {
     try {
       const { data, error } = await supabase
         .from("employee_list")
-        .select("name, position, is_active")
+        .select("name, position, is_active, office")
         .order("is_active", { ascending: false })
         .order("name", { ascending: true });
 
@@ -493,6 +493,11 @@ window.initHeaderButtons = () => {
     ) {
       return null;
     }
+
+    // persisted CHED-only toggle for header multi-select
+    let dashChedOnly = localStorage.getItem('draftTaHeaderChedOnly') === '1';
+    const dashSettingsBtn = document.getElementById('dash-panel-draft-ta-officials-settings-btn');
+    let dashSettingsPanel = null;
 
     const closeDropdown = () => {
       draftTaOfficialsSearch.value = "";
@@ -532,11 +537,13 @@ window.initHeaderButtons = () => {
 
     const renderOptions = () => {
       const searchTerm = draftTaOfficialsSearch.value.toLowerCase();
-      const filteredEmployees = headerDraftEmployeesList.filter(
-        (emp) =>
-          emp.name.toLowerCase().includes(searchTerm) &&
-          !headerDraftSelectedEmployees.includes(emp.name),
-      );
+      const filteredEmployees = headerDraftEmployeesList.filter((emp) => {
+        if (dashChedOnly) {
+          const office = String(emp.office || '').trim().toLowerCase();
+          if (office !== 'ched') return false;
+        }
+        return emp.name.toLowerCase().includes(searchTerm) && !headerDraftSelectedEmployees.includes(emp.name);
+      });
 
       if (filteredEmployees.length === 0) {
         if (searchTerm.trim()) {
@@ -675,6 +682,41 @@ window.initHeaderButtons = () => {
       }
 
       closeDropdown();
+    });
+
+    // Settings panel (dashboard header) wiring
+    const createDashSettingsPanel = () => {
+      if (dashSettingsPanel) return dashSettingsPanel;
+      dashSettingsPanel = document.createElement('div');
+      dashSettingsPanel.className = 'multiselect-settings-panel';
+      dashSettingsPanel.innerHTML = `
+        <div class="settings-list">
+          <div class="settings-toggle-item">
+            <label class="settings-toggle-label">
+              <input type="checkbox" id="dash-draft-ta-ched-only-toggle" ${dashChedOnly ? 'checked' : ''}>
+              <div class="settings-toggle-ui"></div>
+              <div class="settings-toggle-text">
+                <div class="settings-title">Toggle ched officials</div>
+                <div class="settings-sub">Show only officials with Office = CHED</div>
+              </div>
+            </label>
+          </div>
+        </div>`;
+      draftTaOfficialsDropdown.appendChild(dashSettingsPanel);
+
+      const toggle = dashSettingsPanel.querySelector('#dash-draft-ta-ched-only-toggle');
+      toggle.addEventListener('change', () => {
+        dashChedOnly = !!toggle.checked;
+        localStorage.setItem('draftTaHeaderChedOnly', dashChedOnly ? '1' : '0');
+        renderOptions();
+      });
+      return dashSettingsPanel;
+    };
+
+    dashSettingsBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!dashSettingsPanel) createDashSettingsPanel();
+      dashSettingsPanel.classList.toggle('open');
     });
 
     return { updateDisplay, renderOptions, closeDropdown };

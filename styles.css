@@ -2008,6 +2008,42 @@ button:hover {
   line-height: 1.5;
 }
 
+/* Multiselect settings button + panel */
+.multiselect-settings-btn {
+  background: transparent;
+  border-radius: 8px;
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-grid;
+  place-items: center;
+  color: rgba(15,26,31,0.7);
+}
+.multiselect-settings-btn:hover { background: rgba(15,26,31,0.04); color: var(--sea); }
+.multiselect-settings-panel {
+  margin-top: 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+  padding: 8px;
+  width: 280px;
+  z-index: 1200;
+  display: none;
+}
+.multiselect-settings-panel.open { display: block; }
+.settings-list { display: flex; flex-direction: column; gap: 8px; }
+.settings-toggle-item { display: flex; align-items: center; }
+.settings-toggle-label { display:flex; gap:10px; align-items:center; cursor:pointer; width:100%; }
+.settings-toggle-label input { display:none; }
+.settings-toggle-ui { width:44px; height:26px; border-radius:16px; background: #e6ecf5; position:relative; flex-shrink:0; }
+.settings-toggle-ui::after { content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; box-shadow:var(--shadow-soft); transition: transform 160ms ease; }
+.settings-toggle-label input:checked + .settings-toggle-ui { background: var(--sea); }
+.settings-toggle-label input:checked + .settings-toggle-ui::after { transform: translateX(18px); }
+.settings-toggle-text { display:flex; flex-direction:column; }
+.settings-title { font-weight:700; font-size:0.95rem; }
+.settings-sub { font-size:0.85rem; color: rgba(15,26,31,0.6); }
+
 .settings-list {
   display: flex;
   flex-direction: column;
