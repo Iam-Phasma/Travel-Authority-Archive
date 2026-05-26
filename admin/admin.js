@@ -4221,6 +4221,15 @@ let usersTableFilters = {
   user: { access: "", status: "" },
 };
 
+const updateUsersFilterButtonStates = () => {
+  ["super", "admin", "user"].forEach((role) => {
+    const toggleBtn = document.getElementById(`users-filter-toggle-btn-${role}`);
+    const applied = usersTableFilters[role] || { access: "", status: "" };
+    const isActive = Boolean((applied.access && applied.access !== "") || (applied.status && applied.status !== ""));
+    if (toggleBtn) toggleBtn.classList.toggle("active", !!isActive);
+  });
+};
+
 const getRolePriority = (role) => {
   const priorities = { super: 3, admin: 2, user: 1 };
   return priorities[role] || 0;
@@ -4806,6 +4815,7 @@ const loadUsers = async () => {
           usersTableFilters[role].status = statusSel?.value || "";
           renderUsersTable(allUsersData);
           filterPanel?.classList.remove("show");
+          updateUsersFilterButtonStates();
         };
       }
       if (clearBtn) {
@@ -4816,8 +4826,10 @@ const loadUsers = async () => {
           if (statusSel) statusSel.value = "";
           renderUsersTable(allUsersData);
           filterPanel?.classList.remove("show");
+          updateUsersFilterButtonStates();
         };
       }
+      // Button state updates only on Apply/Clear — no live listeners for selects
     }
 
     renderUsersTable(allUsersData);

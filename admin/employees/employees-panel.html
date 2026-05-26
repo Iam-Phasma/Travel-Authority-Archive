@@ -63,6 +63,17 @@
             />
             <datalist id="employee-position-suggestions"></datalist>
           </div>
+          <div>
+            <label for="employee-office">Office</label>
+            <input
+              id="employee-office"
+              type="text"
+              placeholder="Enter office (optional)"
+              autocomplete="off"
+              list="employee-office-suggestions"
+            />
+            <datalist id="employee-office-suggestions"></datalist>
+          </div>
         </div>
         <div class="employee-form-actions">
           <button id="add-employee-btn" type="button">Add Official</button>
@@ -161,6 +172,16 @@
                   </select>
                 </div>
                 <div class="filter-field">
+                  <label for="employee-office-filter">Office</label>
+                  <select
+                    id="employee-office-filter"
+                    class="filter-select"
+                    aria-label="Filter by office"
+                  >
+                    <option value="">All Offices</option>
+                  </select>
+                </div>
+                <div class="filter-field">
                   <label for="employee-status-filter">Status</label>
                   <select
                     id="employee-status-filter"
@@ -204,6 +225,18 @@
                   >
                     <option value="az">A → Z</option>
                     <option value="za">Z → A</option>
+                  </select>
+                </div>
+                <div class="filter-field">
+                  <label for="employee-sort-status">Active Status</label>
+                  <select
+                    id="employee-sort-status"
+                    class="filter-select"
+                    aria-label="Sort by active status"
+                  >
+                    <option value="active-first">Active first</option>
+                    <option value="inactive-first">Inactive first</option>
+                    <option value="none">None</option>
                   </select>
                 </div>
               </div>
