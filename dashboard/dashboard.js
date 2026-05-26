@@ -1943,7 +1943,6 @@ const loadSortFromStorage = () => {
 const updateButtonStates = () => {
   const filterToggleBtn = document.getElementById("filter-toggle-btn");
   const sortToggleBtn = document.getElementById("sort-toggle-btn");
-
   // Check if filters are active (not default)
   const isFilterActive =
     activeFilters.taNumber ||
@@ -2716,6 +2715,8 @@ if (filterEmployeeInput) {
   });
 }
 
+// Button state updates only on Apply/Clear — no live UI listeners here
+
 document.addEventListener("click", (e) => {
   if (
     filterEmployeeDropdown &&
@@ -2880,6 +2881,8 @@ clearSortBtn.addEventListener("click", () => {
   renderRows(taRows);
   updateTaFooter();
 });
+
+// Button state updates only on Apply/Clear — no live listeners for sort controls
 
 // Close filter and sort panels when clicking outside
 document.addEventListener("click", (e) => {

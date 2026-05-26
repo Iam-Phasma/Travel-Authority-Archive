@@ -42,6 +42,10 @@ window.initEmployeeManagement = (supabase) => {
   const employeePositionSuggestions = document.getElementById(
     "employee-position-suggestions",
   );
+  const employeeOfficeInput = document.getElementById("employee-office");
+  const employeeOfficeSuggestions = document.getElementById(
+    "employee-office-suggestions",
+  );
   const addEmployeeBtn = document.getElementById("add-employee-btn");
   const employeeStatus = document.getElementById("employee-status");
   const employeeListContainer = document.getElementById("employee-list");
@@ -53,6 +57,8 @@ window.initEmployeeManagement = (supabase) => {
   const employeeStatusFilter = document.getElementById(
     "employee-status-filter",
   );
+  const employeeOfficeFilter = document.getElementById("employee-office-filter");
+  const employeeSortStatusSelect = document.getElementById("employee-sort-status");
   const employeeSortOrderSelect = document.getElementById(
     "employee-sort-order",
   );
@@ -76,8 +82,8 @@ window.initEmployeeManagement = (supabase) => {
   const employeeClearSortBtn = document.getElementById(
     "employee-clear-sort-btn",
   );
-  let activeEmpFilters = { position: "", status: "" };
-  let activeEmpSort = { order: "az" };
+  let activeEmpFilters = { position: "", status: "", office: "" };
+  let activeEmpSort = { order: "az", status: "active-first" };
   let allEmployeesData = []; // Store all employees for filtering
   let allEmployeesCache = []; // Always holds the full unfiltered list
   const deleteEmployeeModal = document.getElementById("delete-employee-modal");
@@ -91,6 +97,9 @@ window.initEmployeeManagement = (supabase) => {
   const editEmployeeNameInput = document.getElementById("edit-employee-name");
   const editEmployeePositionInput = document.getElementById(
     "edit-employee-position",
+  );
+  const editEmployeeOfficeInput = document.getElementById(
+    "edit-employee-office",
   );
   const editEmployeeStatus = document.getElementById("edit-employee-status");
   const cancelEditEmployeeBtn = document.getElementById("cancel-edit-employee");
@@ -124,6 +133,27 @@ window.initEmployeeManagement = (supabase) => {
     );
     employeePositionSuggestions.innerHTML = positions
       .map((position) => `<option value="${escapeHtml(position)}"></option>`)
+      .join("");
+  };
+
+  const renderOfficeSuggestions = (employees = []) => {
+    if (!employeeOfficeSuggestions) return;
+
+    const seen = new Set();
+    const offices = [];
+
+    (employees || []).forEach((emp) => {
+      const office = String(emp?.office || "").trim();
+      if (!office) return;
+      const key = office.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      offices.push(office);
+    });
+
+    offices.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    employeeOfficeSuggestions.innerHTML = offices
+      .map((office) => `<option value="${escapeHtml(office)}"></option>`)
       .join("");
   };
 
@@ -170,9 +200,46 @@ window.initEmployeeManagement = (supabase) => {
     }
   };
 
+  const renderOfficeFilterOptions = (employees = []) => {
+    if (!employeeOfficeFilter) return;
+
+    const seen = new Set();
+    const offices = [];
+
+    (employees || []).forEach((emp) => {
+      const office = String(emp?.office || "").trim();
+      if (!office) return;
+      const key = office.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      offices.push(office);
+    });
+
+    offices.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    const currentValue = employeeOfficeFilter.value;
+
+    employeeOfficeFilter.innerHTML = [
+      '<option value="">All Offices</option>',
+      ...offices.map(
+        (office) =>
+          `<option value="${escapeHtml(office)}">${escapeHtml(office)}</option>`,
+      ),
+    ].join("");
+
+    if (
+      currentValue &&
+      offices.some((office) => office.toLowerCase() === currentValue.toLowerCase())
+    ) {
+      const matched = offices.find((office) => office.toLowerCase() === currentValue.toLowerCase());
+      employeeOfficeFilter.value = matched || "";
+    } else {
+      employeeOfficeFilter.value = "";
+    }
+  };
+
   const updateEmpButtonStates = () => {
-    const isFilterActive = activeEmpFilters.position || activeEmpFilters.status;
-    const isSortActive = activeEmpSort.order !== "az";
+    const isFilterActive = activeEmpFilters.position || activeEmpFilters.status || activeEmpFilters.office;
+    const isSortActive = activeEmpSort.order !== "az" || activeEmpSort.status !== "active-first";
     if (employeeFilterToggleBtn)
       employeeFilterToggleBtn.classList.toggle("active", !!isFilterActive);
     if (employeeSortToggleBtn)
@@ -200,25 +267,34 @@ window.initEmployeeManagement = (supabase) => {
       );
     }
 
+    if (activeEmpFilters.office) {
+      filtered = filtered.filter(
+        (emp) => String(emp?.office || "").toLowerCase() === activeEmpFilters.office,
+      );
+    }
+
     if (activeEmpFilters.status === "active") {
       filtered = filtered.filter((emp) => emp.is_active !== false);
     } else if (activeEmpFilters.status === "hidden") {
       filtered = filtered.filter((emp) => emp.is_active === false);
     }
 
-    if (activeEmpSort.order === "az") {
-      filtered.sort((a, b) =>
-        String(a.name || "").localeCompare(String(b.name || ""), undefined, {
-          sensitivity: "base",
-        }),
-      );
-    } else {
-      filtered.sort((a, b) =>
-        String(b.name || "").localeCompare(String(a.name || ""), undefined, {
-          sensitivity: "base",
-        }),
-      );
-    }
+    // Apply combined sorting: active/inactive status then name
+    filtered.sort((a, b) => {
+      const aActive = a.is_active !== false ? 1 : 0;
+      const bActive = b.is_active !== false ? 1 : 0;
+
+      if (activeEmpSort.status === "active-first") {
+        if (aActive !== bActive) return bActive - aActive; // active (1) before inactive (0)
+      } else if (activeEmpSort.status === "inactive-first") {
+        if (aActive !== bActive) return aActive - bActive; // inactive (0) before active (1)
+      }
+
+      if (activeEmpSort.order === "az") {
+        return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
+      }
+      return String(b.name || "").localeCompare(String(a.name || ""), undefined, { sensitivity: "base" });
+    });
 
     renderEmployeeList(filtered);
   };
@@ -227,21 +303,22 @@ window.initEmployeeManagement = (supabase) => {
     try {
       if (filteredData === null) {
         employeeListContainer.innerHTML = `
-                    <div class="employee-table-header">
-                        <span class="employee-header-name">Name</span>
-                        <span class="employee-header-position">Position</span>
-                        <span class="employee-header-action">Actions</span>
-                    </div>
-                    <p class="loading-text">Loading officials...</p>
-                `;
+              <div class="employee-table-header">
+                <span class="employee-header-name">Name</span>
+                <span class="employee-header-position">Position</span>
+                <span class="employee-header-office">Office</span>
+                <span class="employee-header-action">Actions</span>
+              </div>
+              <p class="loading-text">Loading officials...</p>
+            `;
         if (employeeSummaryContainer) {
           employeeSummaryContainer.textContent =
             "Total: 0 | Active: 0 | Inactive: 0";
         }
 
-        const { data, error } = await supabase
-          .from("employee_list")
-          .select("id, name, position, is_active")
+          const { data, error } = await supabase
+            .from("employee_list")
+            .select("id, name, position, office, is_active")
           .order("is_active", { ascending: false })
           .order("name", { ascending: true });
 
@@ -254,17 +331,20 @@ window.initEmployeeManagement = (supabase) => {
       }
 
       renderPositionSuggestions(allEmployeesCache);
+      renderOfficeSuggestions(allEmployeesCache);
       renderPositionFilterOptions(allEmployeesCache);
+      renderOfficeFilterOptions(allEmployeesCache);
 
       if (!allEmployeesData || allEmployeesData.length === 0) {
         employeeListContainer.innerHTML = `
-                    <div class="employee-table-header">
-                        <span class="employee-header-name">Name</span>
-                        <span class="employee-header-position">Position</span>
-                        <span class="employee-header-action">Actions</span>
-                    </div>
-                    <p class="no-employees">No officials found.</p>
-                `;
+              <div class="employee-table-header">
+                <span class="employee-header-name">Name</span>
+                <span class="employee-header-position">Position</span>
+                <span class="employee-header-office">Office</span>
+                <span class="employee-header-action">Actions</span>
+              </div>
+              <p class="no-employees">No officials found.</p>
+            `;
         if (employeeSummaryContainer) {
           employeeSummaryContainer.textContent =
             "Total: 0 | Active: 0 | Inactive: 0";
@@ -276,6 +356,7 @@ window.initEmployeeManagement = (supabase) => {
                 <div class="employee-table-header">
                     <span class="employee-header-name">Name</span>
                     <span class="employee-header-position">Position</span>
+                      <span class="employee-header-office">Office</span>
                     <span class="employee-header-action">Actions</span>
                 </div>
             `;
@@ -300,13 +381,14 @@ window.initEmployeeManagement = (supabase) => {
                 <div class="employee-item${inactiveClass}">
                     <span class="employee-name">${escapeHtml(emp.name)}</span>
                     <span class="employee-position">${escapeHtml(emp.position || "—")}</span>
+                      <span class="employee-office">${escapeHtml(emp.office || "—")}</span>
                     <div class="employee-item-actions">
                         <button class="toggle-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" data-active="${isActive}" aria-label="${toggleLabel}" title="${toggleLabel}">
                             <svg class="icon-line" viewBox="0 0 24 24" fill="none" role="img" aria-hidden="true" focusable="false">
                                 ${toggleIcon}
                             </svg>
                         </button>
-                        <button class="edit-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" data-position="${escapeHtml(emp.position || "")}" aria-label="Update official" title="Update official">
+                        <button class="edit-employee-btn icon-btn" data-id="${escapeHtml(emp.id)}" data-name="${escapeHtml(emp.name)}" data-position="${escapeHtml(emp.position || "")}" data-office="${escapeHtml(emp.office || "")}" aria-label="Update official" title="Update official">
                             <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true" focusable="false">
                                 <path d="m14.304 4.844 2.852 2.852M7 7H4a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h11a1 1 0 0 0 1-1v-4.5m2.409-9.91a2.017 2.017 0 0 1 0 2.853l-6.844 6.844L8 14l.713-3.565 6.844-6.844a2.015 2.015 0 0 1 2.852 0Z" />
                             </svg>
@@ -394,11 +476,15 @@ window.initEmployeeManagement = (supabase) => {
             id: btn.getAttribute("data-id"),
             name: btn.getAttribute("data-name"),
             position: btn.getAttribute("data-position") || "",
+            office: btn.getAttribute("data-office") || "",
           };
           editEmployeeNameInput.value = editEmployeeData.name;
           if (editEmployeePositionInput) {
             editEmployeePositionInput.value =
               editEmployeeData.position || "Not specified";
+          }
+          if (editEmployeeOfficeInput) {
+            editEmployeeOfficeInput.value = editEmployeeData.office || "";
           }
           editEmployeeStatus.classList.add("hidden");
           if (editEmployeeRecordsNote)
@@ -489,6 +575,7 @@ window.initEmployeeManagement = (supabase) => {
         .toLowerCase()
         .trim();
       activeEmpFilters.status = employeeStatusFilter?.value || "";
+      activeEmpFilters.office = (employeeOfficeFilter?.value || "").toLowerCase().trim();
       updateEmpButtonStates();
       applyEmployeeFilters();
       employeeFilterPanel?.classList.remove("show");
@@ -499,8 +586,10 @@ window.initEmployeeManagement = (supabase) => {
     employeeClearFilterBtn.addEventListener("click", () => {
       activeEmpFilters.position = "";
       activeEmpFilters.status = "";
+      activeEmpFilters.office = "";
       if (employeePositionFilter) employeePositionFilter.value = "";
       if (employeeStatusFilter) employeeStatusFilter.value = "";
+      if (employeeOfficeFilter) employeeOfficeFilter.value = "";
       updateEmpButtonStates();
       applyEmployeeFilters();
       employeeFilterPanel?.classList.remove("show");
@@ -510,6 +599,7 @@ window.initEmployeeManagement = (supabase) => {
   if (employeeApplySortBtn) {
     employeeApplySortBtn.addEventListener("click", () => {
       activeEmpSort.order = employeeSortOrderSelect?.value || "az";
+      activeEmpSort.status = employeeSortStatusSelect?.value || "active-first";
       updateEmpButtonStates();
       applyEmployeeFilters();
       employeeSortPanel?.classList.remove("show");
@@ -519,7 +609,9 @@ window.initEmployeeManagement = (supabase) => {
   if (employeeClearSortBtn) {
     employeeClearSortBtn.addEventListener("click", () => {
       activeEmpSort.order = "az";
+      activeEmpSort.status = "active-first";
       if (employeeSortOrderSelect) employeeSortOrderSelect.value = "az";
+      if (employeeSortStatusSelect) employeeSortStatusSelect.value = "active-first";
       updateEmpButtonStates();
       applyEmployeeFilters();
     });
@@ -697,6 +789,7 @@ window.initEmployeeManagement = (supabase) => {
   addEmployeeBtn.addEventListener("click", async () => {
     const employeeName = employeeNameInput.value.trim();
     const employeePosition = employeePositionInput.value.trim();
+    const employeeOffice = employeeOfficeInput?.value.trim() || "";
 
     if (!employeeName) {
       employeeStatus.textContent = "Please enter an official name.";
@@ -753,7 +846,7 @@ window.initEmployeeManagement = (supabase) => {
       const { error } = await supabase
         .from("employee_list")
         .insert([
-          { name: employeeName, position: employeePosition, is_active: true },
+          { name: employeeName, position: employeePosition, office: employeeOffice, is_active: true },
         ]);
 
       if (error) {
@@ -786,6 +879,7 @@ window.initEmployeeManagement = (supabase) => {
       employeeStatus.textContent = "Official added successfully!";
       employeeNameInput.value = "";
       employeePositionInput.value = "";
+      if (employeeOfficeInput) employeeOfficeInput.value = "";
       setDropdownVisible(false);
       await refreshEmployeeListPreservingFilters();
       // Refresh the global employee list for dropdowns
@@ -861,6 +955,7 @@ window.initEmployeeManagement = (supabase) => {
     const newName = editEmployeeNameInput.value.trim();
     const newPosition =
       (editEmployeePositionInput?.value || "").trim() || "Not specified";
+    const newOffice = (editEmployeeOfficeInput?.value || "").trim() || "Not specified";
     if (!newName) {
       editEmployeeStatus.textContent = "Please enter an official name.";
       editEmployeeStatus.classList.remove(
@@ -907,8 +1002,13 @@ window.initEmployeeManagement = (supabase) => {
 
     const originalPosition =
       (editEmployeeData.position || "").trim() || "Not specified";
+    const originalOffice = (editEmployeeData.office || "").trim() || "Not specified";
 
-    if (newName === editEmployeeData.name && newPosition === originalPosition) {
+    if (
+      newName === editEmployeeData.name &&
+      newPosition === originalPosition &&
+      newOffice === originalOffice
+    ) {
       editEmployeeStatus.textContent = "No changes made.";
       editEmployeeStatus.classList.remove(
         "hidden",
@@ -953,7 +1053,7 @@ window.initEmployeeManagement = (supabase) => {
 
       const { data: updatedRows, error } = await supabase
         .from("employee_list")
-        .update({ name: newName, position: newPosition })
+        .update({ name: newName, position: newPosition, office: newOffice })
         .eq("id", editEmployeeData.id)
         .select();
 

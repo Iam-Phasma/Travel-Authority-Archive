@@ -3154,6 +3154,11 @@ button:hover {
   justify-items: start;
 }
 
+/* Center the Add Official button and its subtext inside the form card */
+.employee-form-card .employee-form-actions {
+  justify-items: center;
+}
+
 .employee-form-actions .status {
   margin: 0;
   font-size: 0.92rem;
@@ -3285,6 +3290,16 @@ button:hover {
   flex: 1 0 170px;
 }
 
+.employee-header-office {
+  font-size: 0.9rem;
+  color: rgba(15, 26, 31, 0.7);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+  flex: 1 0 150px;
+}
+
 .employee-header-action {
   font-size: 0.9rem;
   color: rgba(15, 26, 31, 0.7);
@@ -3329,6 +3344,15 @@ button:hover {
   font-size: 0.95rem;
   color: rgba(15, 26, 31, 0.82);
   flex: 1 0 170px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-office {
+  font-size: 0.95rem;
+  color: rgba(15, 26, 31, 0.82);
+  flex: 1 0 150px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
