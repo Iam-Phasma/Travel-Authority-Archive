@@ -650,6 +650,17 @@ window.initHeaderButtons = () => {
       e.stopPropagation(),
     );
 
+    // Clear All (dashboard) — clear selected header draft employees
+    const dashClearAllBtn = document.getElementById('dash-panel-draft-ta-officials-clear-all');
+    dashClearAllBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (headerDraftSelectedEmployees.length === 0) return;
+      headerDraftSelectedEmployees.length = 0;
+      updateDisplay();
+      renderOptions();
+      draftTaOfficialsSearch.focus();
+    });
+
     document.addEventListener("click", (e) => {
       const headerPopupPanel = document.getElementById("header-popup-panel");
       const userMenuButton = document.getElementById("user-menu-btn");

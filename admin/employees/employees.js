@@ -410,6 +410,8 @@ window.initEmployeeManagement = (supabase) => {
 
       // Add delete button listeners
       document.querySelectorAll(".delete-employee-btn").forEach((btn) => {
+        // Skip any delete buttons used as UI-only icons (e.g., multiselect clear-all)
+        if (btn.getAttribute('data-clear-all') === 'true') return;
         btn.addEventListener("click", async () => {
           deleteEmployeeData = {
             id: btn.getAttribute("data-id"),
