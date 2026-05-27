@@ -2010,16 +2010,28 @@ button:hover {
 
 /* Multiselect settings button + panel */
 .multiselect-settings-btn {
-  background: transparent;
+  background: rgba(15, 26, 31, 0.08);
   border-radius: 8px;
-  padding: 8px;
-  width: 36px;
-  height: 36px;
+  padding: 8px 14px;
   display: inline-grid;
   place-items: center;
   color: rgba(15,26,31,0.7);
+  border: none;
+  cursor: pointer;
+  height: 44px;
+  transition: background 200ms ease;
 }
-.multiselect-settings-btn:hover { background: rgba(15,26,31,0.04); color: var(--sea); }
+.multiselect-settings-btn:hover { background: rgba(15,26,31,0.12); color: var(--sea); }
+
+.multiselect-settings-btn svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 .multiselect-settings-panel {
   margin-top: 8px;
   border-radius: 10px;
@@ -3012,6 +3024,7 @@ button:hover {
   align-items: center;
   gap: 8px;
 }
+.multiselect-search-wrapper { position: relative; }
 
 .multiselect-search {
   width: 100%;
@@ -3275,6 +3288,11 @@ button:hover {
   text-align: center;
 }
 
+.multiselect-settings-panel {
+  position: absolute;
+  right: 12px;
+  top: 48px;
+}
 .employee-list {
   width: 100%;
   max-width: 100%;

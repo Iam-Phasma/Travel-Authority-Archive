@@ -502,6 +502,7 @@ window.initHeaderButtons = () => {
     const closeDropdown = () => {
       draftTaOfficialsSearch.value = "";
       draftTaOfficialsDropdown.classList.remove("show");
+      if (dashSettingsPanel) dashSettingsPanel.classList.remove("open");
     };
 
     const updateDisplay = () => {
@@ -696,8 +697,8 @@ window.initHeaderButtons = () => {
               <input type="checkbox" id="dash-draft-ta-ched-only-toggle" ${dashChedOnly ? 'checked' : ''}>
               <div class="settings-toggle-ui"></div>
               <div class="settings-toggle-text">
-                <div class="settings-title">Toggle ched officials</div>
-                <div class="settings-sub">Show only officials with Office = CHED</div>
+                <div>Filter CHED officials</div>
+                <div class="settings-sub">Only show CHED-affiliated officials</div>
               </div>
             </label>
           </div>
