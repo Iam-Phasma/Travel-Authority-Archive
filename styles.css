@@ -3045,6 +3045,7 @@ button:hover {
 .multiselect-options {
   max-height: 220px;
   overflow-y: auto;
+  padding-bottom: 8px;
 }
 
 .multiselect-option {
