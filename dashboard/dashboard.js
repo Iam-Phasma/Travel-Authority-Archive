@@ -3214,13 +3214,16 @@ const initOfficialsSummaryChart = async () => {
   try {
     const { data: employees, error: empError } = await supabase
       .from("employee_list")
-      .select("name, position")
+      .select("name, position, office")
       .eq("is_active", true);
 
     if (empError) throw empError;
 
     const validEmployees = (employees || []).filter(
-      (e) => e.position && e.position.trim().toLowerCase() !== "officials",
+      (e) =>
+        e.position &&
+        e.position.trim().toLowerCase() !== "officials" &&
+        String(e.office || "").trim().toLowerCase() === "ched",
     );
 
     if (!validEmployees.length) {
