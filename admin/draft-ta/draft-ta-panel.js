@@ -50,6 +50,7 @@ window.initDraftTaPanel = (supabase) => {
         const closeDropdown = () => {
             officialsSearch.value = '';
             officialsDropdown.classList.remove('show');
+            if (settingsPanel) settingsPanel.classList.remove('open');
         };
 
         const updateDisplay = () => {
@@ -198,8 +199,8 @@ window.initDraftTaPanel = (supabase) => {
                             <input type="checkbox" id="panel-draft-ta-ched-only-toggle" ${chedOnly ? 'checked' : ''}>
                             <div class="settings-toggle-ui"></div>
                             <div class="settings-toggle-text">
-                                <div class="settings-title">Toggle ched officials</div>
-                                <div class="settings-sub">Show only officials with Office = CHED</div>
+                                <div>Filter CHED officials</div>
+                                <div class="settings-sub">Only show CHED-affiliated officials</div>
                             </div>
                         </label>
                     </div>
