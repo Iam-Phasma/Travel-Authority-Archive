@@ -505,13 +505,12 @@ input[type="file"] {
   font-size: 1rem;
   line-height: 1.5;
   font-family: inherit;
-  resize: none;
+  resize: vertical;
   outline: none;
   box-sizing: border-box;
   min-height: calc(1.5em + 28px);
-  height: calc(1.5em + 28px);
-  max-height: 170px;
-  overflow-y: hidden;
+  max-height: 144px;
+  overflow-y: auto;
   transition: height 120ms ease;
 }
 .input-wrap textarea:focus {
