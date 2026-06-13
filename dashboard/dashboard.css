@@ -1091,18 +1091,7 @@ body.dashboard-page::before {
   flex-direction: column;
 }
 .os-list-fade {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 36px;
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    rgba(245, 248, 255, 0.92)
-  );
-  pointer-events: none;
-  border-radius: 0 0 12px 12px;
+  display: none;
 }
 .os-list-wrap::-webkit-scrollbar {
   width: 4px;
