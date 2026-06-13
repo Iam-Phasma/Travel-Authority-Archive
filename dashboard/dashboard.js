@@ -3248,8 +3248,10 @@ const initOfficialsSummaryChart = async () => {
     });
     (tas || []).forEach((ta) => {
       if (!ta.employees) return;
-      ta.employees
-        .split(",")
+      // Split on commas but preserve suffixes like Jr., Sr., III
+      // Match complete names: handles "A, Jr." as one unit
+      const names = ta.employees.match(/[^,]+(?:,\s*(?:Jr\.|Sr\.|II|III|IV|V|Ph\.D\.|M\.D\.))?/g) || [];
+      names
         .map((n) => n.trim())
         .forEach((name) => {
           if (name in counts) counts[name]++;
