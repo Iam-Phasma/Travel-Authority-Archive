@@ -2560,13 +2560,13 @@ button:hover {
 
 /* Active state for filter and sort buttons */
 .filter-icon-btn.active {
-  background: var(--sea);
-  border-color: var(--sea);
-  color: white;
+  background: var(--sea) !important;
+  border-color: var(--sea) !important;
+  color: white !important;
 }
 
 .filter-icon-btn.active:hover {
-  background: var(--hover-ink);
+  background: var(--hover-ink) !important;
 }
 
 .filter-icon-btn .btn-label {
