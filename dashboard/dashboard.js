@@ -2852,6 +2852,9 @@ window.flatpickr(filterTravelDateInput, {
         filterYearSelect.value = "";
       }
     }
+    // Reflect the selected date in the activeFilters so the header button updates
+    activeFilters.travelDate = dateStr || "";
+    updateButtonStates();
   },
 });
 
@@ -2860,6 +2863,42 @@ filterToggleBtn.addEventListener("click", () => {
   if (!filterPanel.classList.contains("show"))
     setFilterEmpDropdownVisible(false);
 });
+
+// Live, non-persistent listeners to update header button state immediately
+if (filterEmployeeInput) {
+  filterEmployeeInput.addEventListener("input", () => {
+    activeFilters.employee = filterEmployeeInput.value.trim();
+    updateButtonStates();
+  });
+}
+
+if (filterYearSelect) {
+  filterYearSelect.addEventListener("change", () => {
+    activeFilters.year = filterYearSelect.value;
+    updateButtonStates();
+  });
+}
+
+if (filterMatchAllCheckbox) {
+  filterMatchAllCheckbox.addEventListener("change", () => {
+    activeFilters.matchAll = filterMatchAllCheckbox.checked;
+    updateButtonStates();
+  });
+}
+
+if (sortBySelect) {
+  sortBySelect.addEventListener("change", () => {
+    activeSort.by = sortBySelect.value;
+    updateButtonStates();
+  });
+}
+
+if (sortOrderSelect) {
+  sortOrderSelect.addEventListener("change", () => {
+    activeSort.order = sortOrderSelect.value;
+    updateButtonStates();
+  });
+}
 
 applyFilterBtn.addEventListener("click", () => {
   activeFilters.employee = filterEmployeeInput.value.trim();
