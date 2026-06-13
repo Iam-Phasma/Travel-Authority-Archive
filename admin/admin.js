@@ -5319,7 +5319,14 @@ Promise.all([
   draftTaPanelLoaded,
 ]).then(() => {
   const savedPanel = localStorage.getItem("adminActivePanel");
-  if (!savedPanel || savedPanel === "upload-panel") return;
+  if (!savedPanel || savedPanel === "upload-panel") {
+    // Trigger animation on first load for the default panel
+    const uploadPanel = document.getElementById("upload-panel");
+    if (uploadPanel) {
+      revealAdminPanel(uploadPanel);
+    }
+    return;
+  }
   const targetBtn = document.querySelector(
     `.switch-btn[data-panel="${savedPanel}"]`,
   );

@@ -1214,6 +1214,7 @@ const requireUser = async () => {
     if (previousLoginMarker !== loginMarker) {
       localStorage.removeItem("dashboardFilters");
       localStorage.removeItem("dashboardSort");
+      localStorage.setItem("dashActiveTab", "insights");
       sessionStorage.setItem("dashboardLoginMarker", loginMarker);
     }
   } catch (storageError) {
