@@ -591,10 +591,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             if (!droppedFiles || droppedFiles.length === 0) return;
 
             try {
-                const transfer = new DataTransfer();
-                Array.from(droppedFiles).forEach((file) => transfer.items.add(file));
-                scanFileInput.files = transfer.files;
-                scanFileInput.dispatchEvent(new Event("change", { bubbles: true }));
+                applySelectedFiles(Array.from(droppedFiles), { appendExisting: true });
             } catch (error) {
                 console.warn("Drag-and-drop assignment to file input failed:", error);
                 uploadStatus.textContent = "Could not use dropped files. Please click to browse and select files.";
@@ -609,30 +606,44 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     // ---- Clipboard paste button ----
     const clipboardPasteBtn = document.getElementById("clipboard-paste-btn");
 
-    const applyClipboardFiles = (files) => {
-        if (!files || files.length === 0) return false;
-        const supported = Array.from(files).filter(
+    const applySelectedFiles = (incomingFiles, { appendExisting = true } = {}) => {
+        const files = Array.from(incomingFiles || []).filter(Boolean);
+        if (files.length === 0) return false;
+
+        const supported = files.filter(
             (f) => f && (f.type === "application/pdf" || f.type.startsWith("image/"))
         );
         if (supported.length === 0) return false;
-        // Deduplicate by name + size (clipboard may expose the same file multiple times)
-        const seen = new Set();
-        const unique = supported.filter((f) => {
-            const key = `${f.name}::${f.size}`;
-            if (seen.has(key)) return false;
+
+        const existingFiles = Array.from(scanFileInput?.files || []);
+        const combinedFiles = appendExisting ? [...existingFiles] : [];
+        const seen = new Set(existingFiles.map((f) => `${f.name}::${f.size}`));
+        let addedCount = 0;
+
+        supported.forEach((file) => {
+            const key = `${file.name}::${file.size}`;
+            if (seen.has(key)) return;
             seen.add(key);
-            return true;
+            combinedFiles.push(file);
+            addedCount += 1;
         });
+
+        if (addedCount === 0 && appendExisting) return false;
+
         try {
             const transfer = new DataTransfer();
-            unique.forEach((f) => transfer.items.add(f));
+            combinedFiles.forEach((file) => transfer.items.add(file));
             scanFileInput.files = transfer.files;
             scanFileInput.dispatchEvent(new Event("change", { bubbles: true }));
             return true;
         } catch (err) {
-            console.warn("Clipboard file assignment failed:", err);
+            console.warn("File assignment failed:", err);
             return false;
         }
+    };
+
+    const applyClipboardFiles = (files) => {
+        return applySelectedFiles(files, { appendExisting: true });
     };
 
     // Extract files from a DataTransferItemList (more reliable than .files for PDFs)
