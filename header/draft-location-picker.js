@@ -202,18 +202,34 @@
                 return;
             }
 
-            searchResults.innerHTML = results.map((result, index) => {
+            searchResults.innerHTML = '';
+            const resultFragment = document.createDocumentFragment();
+
+            results.forEach((result, index) => {
                 const address = result.address || {};
                 const location = buildDestinationFromAddress(address, result.display_name || '');
                 const title = location.destinationText || result.display_name || 'Unnamed location';
                 const subtitle = result.display_name || title;
-                return `
-                    <button type="button" class="header-draft-location-search-result" data-index="${index}">
-                        <span class="header-draft-location-search-result-title">${title}</span>
-                        <span class="header-draft-location-search-result-subtitle">${subtitle}</span>
-                    </button>
-                `;
-            }).join('');
+
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'header-draft-location-search-result';
+                button.dataset.index = String(index);
+
+                const titleSpan = document.createElement('span');
+                titleSpan.className = 'header-draft-location-search-result-title';
+                titleSpan.textContent = title;
+
+                const subtitleSpan = document.createElement('span');
+                subtitleSpan.className = 'header-draft-location-search-result-subtitle';
+                subtitleSpan.textContent = subtitle;
+
+                button.appendChild(titleSpan);
+                button.appendChild(subtitleSpan);
+                resultFragment.appendChild(button);
+            });
+
+            searchResults.appendChild(resultFragment);
 
             setSearchResultsHidden(false);
 

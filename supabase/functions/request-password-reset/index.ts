@@ -1,25 +1,51 @@
 // @ts-nocheck
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+const baseCorsHeaders: Record<string, string> = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  Vary: "Origin",
 };
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://iam-phasma.github.io",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
 
 const DEFAULT_COOLDOWN_SECONDS = 60;
 
 type ResetRequestBody = {
   email?: string;
   captchaToken?: string;
-  redirectTo?: string;
 };
 
-const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+const getAllowedOrigins = () => {
+  const configured = (Deno.env.get("CORS_ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return configured.length ? configured : DEFAULT_ALLOWED_ORIGINS;
+};
+
+const buildCorsHeaders = (req: Request): Record<string, string> => {
+  const requestOrigin = (req.headers.get("origin") || "").trim();
+  const allowedOrigins = getAllowedOrigins();
+  const allowOrigin = requestOrigin && allowedOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : allowedOrigins[0] || "null";
+
+  return {
+    ...baseCorsHeaders,
+    "Access-Control-Allow-Origin": allowOrigin,
+  };
+};
+
+const jsonResponse = (req: Request, body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders,
+      ...buildCorsHeaders(req),
       "Content-Type": "application/json",
     },
   });
@@ -28,18 +54,34 @@ const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const getClientIp = (req: Request) => {
-  const xForwardedFor = req.headers.get("x-forwarded-for");
-  if (xForwardedFor) {
-    const [firstIp] = xForwardedFor.split(",");
-    if (firstIp && firstIp.trim()) {
-      return firstIp.trim();
-    }
-  }
+const isLikelyIp = (value: string) => {
+  const candidate = value.trim();
+  if (!candidate) return false;
+  const isV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(candidate)
+    && candidate.split(".").every((octet) => Number(octet) >= 0 && Number(octet) <= 255);
+  const isV6 = /^[0-9a-f:]+$/i.test(candidate) && candidate.includes(":");
+  return isV4 || isV6;
+};
 
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp && realIp.trim()) {
-    return realIp.trim();
+const firstForwardedValue = (value: string | null) => {
+  if (!value) return "";
+  const [firstValue] = value.split(",");
+  return (firstValue || "").trim();
+};
+
+const getClientIp = (req: Request) => {
+  const trustedIpHeaders = [
+    "cf-connecting-ip",
+    "fly-client-ip",
+    "x-vercel-forwarded-for",
+    "x-envoy-external-address",
+  ];
+
+  for (const headerName of trustedIpHeaders) {
+    const candidate = firstForwardedValue(req.headers.get(headerName));
+    if (isLikelyIp(candidate)) {
+      return candidate;
+    }
   }
 
   return "unknown";
@@ -79,41 +121,40 @@ const verifyHCaptcha = async (token: string, secret: string, remoteIp: string) =
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: buildCorsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ accepted: false, code: "method_not_allowed" }, 405);
+    return jsonResponse(req, { accepted: false, code: "method_not_allowed" }, 405);
   }
 
   let requestBody: ResetRequestBody;
   try {
     requestBody = (await req.json()) as ResetRequestBody;
   } catch {
-    return jsonResponse({ accepted: false, code: "invalid_payload" });
+    return jsonResponse(req, { accepted: false, code: "invalid_payload" });
   }
 
   const email = normalizeEmail(requestBody?.email || "");
   const captchaToken = (requestBody?.captchaToken || "").trim();
 
   if (!email || !isValidEmail(email)) {
-    return jsonResponse({ accepted: false, code: "invalid_email" });
+    return jsonResponse(req, { accepted: false, code: "invalid_email" });
   }
 
   if (!captchaToken) {
-    return jsonResponse({ accepted: false, code: "captcha_required" });
+    return jsonResponse(req, { accepted: false, code: "captcha_required" });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const hcaptchaSecret = Deno.env.get("HCAPTCHA_SECRET");
   const configuredRedirectUrl = (Deno.env.get("PASSWORD_RESET_REDIRECT_URL") || "").trim();
-  const requestRedirectUrl = (requestBody?.redirectTo || "").trim();
-  const redirectTo = configuredRedirectUrl || requestRedirectUrl;
+  const redirectTo = configuredRedirectUrl;
 
   if (!supabaseUrl || !serviceRoleKey || !hcaptchaSecret || !redirectTo) {
     console.error("Missing required env config for request-password-reset function");
-    return jsonResponse({
+    return jsonResponse(req, {
       accepted: true,
       cooldown_seconds: DEFAULT_COOLDOWN_SECONDS,
       limited: true,
@@ -131,7 +172,7 @@ Deno.serve(async (req) => {
   }
 
   if (!captchaVerified) {
-    return jsonResponse({ accepted: false, code: "captcha_failed" });
+    return jsonResponse(req, { accepted: false, code: "captcha_failed" });
   }
 
   const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
@@ -172,7 +213,7 @@ Deno.serve(async (req) => {
     }
   } catch (error) {
     console.error("Rate-limit consume error:", error);
-    return jsonResponse({
+    return jsonResponse(req, {
       accepted: true,
       cooldown_seconds: DEFAULT_COOLDOWN_SECONDS,
       limited: true,
@@ -186,7 +227,7 @@ Deno.serve(async (req) => {
   );
 
   if (emailCooldownSeconds > 0 || ipCooldownSeconds > 0) {
-    return jsonResponse({
+    return jsonResponse(req, {
       accepted: true,
       cooldown_seconds: effectiveCooldown,
       limited: true,
@@ -201,7 +242,7 @@ Deno.serve(async (req) => {
     console.error("Password reset dispatch error:", resetError);
   }
 
-  return jsonResponse({
+  return jsonResponse(req, {
     accepted: true,
     cooldown_seconds: effectiveCooldown,
     limited: false,
