@@ -333,6 +333,7 @@ const requireAdmin = async () => {
     if (previousLoginMarker !== loginMarker) {
       localStorage.removeItem("adminFilters");
       localStorage.removeItem("adminSort");
+      localStorage.setItem("adminActivePanel", "upload-panel");
       sessionStorage.setItem("adminLoginMarker", loginMarker);
     }
   } catch (storageError) {
@@ -1995,6 +1996,39 @@ const enforceUsersPanelAccess = () => {
 
   updateAdminSwitcherLayout();
 };
+
+const restoreAdminActivePanel = () =>
+  Promise.all([
+    viewPanelLoaded,
+    employeePanelLoaded,
+    uploadPanelLoaded,
+    draftTaPanelLoaded,
+  ]).then(() => {
+    const savedPanel = localStorage.getItem("adminActivePanel");
+    let targetPanel = savedPanel || "upload-panel";
+
+    if (targetPanel === "users-panel" && !isSuperUser()) {
+      targetPanel = "upload-panel";
+      localStorage.setItem("adminActivePanel", targetPanel);
+    }
+
+    if (targetPanel === "upload-panel") {
+      const uploadPanel = document.getElementById("upload-panel");
+      if (uploadPanel) {
+        revealAdminPanel(uploadPanel);
+      }
+      return;
+    }
+
+    const targetBtn = document.querySelector(
+      `.switch-btn[data-panel="${targetPanel}"]`,
+    );
+    if (!targetBtn || targetBtn.classList.contains("hidden")) {
+      activateAdminPanel("upload-panel");
+      return;
+    }
+    targetBtn.click();
+  });
 
 const revealAdminPanel = (panelEl) => {
   if (!panelEl) return;
@@ -5255,6 +5289,7 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
   window.adminCurrentRole = userRole;
   window.adminCurrentControl = userControl;
   enforceUsersPanelAccess();
+  await restoreAdminActivePanel();
   window.dispatchEvent(
     new CustomEvent("admin-role-ready", { detail: { role: userRole } }),
   );
@@ -5384,29 +5419,6 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 
 // loadEmployees() is now called in uploadPanelLoaded.then() to ensure proper initialization
 // Note: loadAdminEmployeesForFilter() is called inside viewPanelLoaded.then() where it's defined
-
-// Restore last active panel (wait for panels to load first)
-Promise.all([
-  viewPanelLoaded,
-  employeePanelLoaded,
-  uploadPanelLoaded,
-  draftTaPanelLoaded,
-]).then(() => {
-  const savedPanel = localStorage.getItem("adminActivePanel");
-  if (!savedPanel || savedPanel === "upload-panel") {
-    // Trigger animation on first load for the default panel
-    const uploadPanel = document.getElementById("upload-panel");
-    if (uploadPanel) {
-      revealAdminPanel(uploadPanel);
-    }
-    return;
-  }
-  const targetBtn = document.querySelector(
-    `.switch-btn[data-panel="${savedPanel}"]`,
-  );
-  if (!targetBtn || targetBtn.classList.contains("hidden")) return;
-  targetBtn.click();
-});
 
 let lastScannedOrphanPaths = [];
 
