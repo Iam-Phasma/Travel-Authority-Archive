@@ -1016,7 +1016,6 @@ window.initHeaderButtons = () => {
     if (draftTaTravelDateInput) draftTaTravelDateInput.value = "";
     if (draftTaTravelEndInput) {
       draftTaTravelEndInput.value = "";
-      draftTaTravelEndInput.setCustomValidity("");
     }
 
     // Clear selected officials
@@ -1037,7 +1036,6 @@ window.initHeaderButtons = () => {
     if (draftTaTravelDateInput) draftTaTravelDateInput.value = "";
     if (draftTaTravelEndInput) {
       draftTaTravelEndInput.value = "";
-      draftTaTravelEndInput.setCustomValidity("");
     }
 
     // Clear selected officials
@@ -1263,14 +1261,7 @@ window.initHeaderButtons = () => {
     const validateTravelDates = () => {
       const travelDate = draftTaTravelDateInput.value;
       const travelEnd = draftTaTravelEndInput.value;
-
-      if (travelDate && travelEnd && travelEnd < travelDate) {
-        draftTaTravelEndInput.setCustomValidity(
-          "Travel end date cannot be before travel date",
-        );
-      } else {
-        draftTaTravelEndInput.setCustomValidity("");
-      }
+      return !(travelDate && travelEnd && travelEnd < travelDate);
     };
 
     draftTaTravelDateInput.addEventListener("change", validateTravelDates);
@@ -1296,15 +1287,25 @@ window.initHeaderButtons = () => {
 
       // Check date validation
       const travelDate = draftTaTravelDateInput.value;
-      const travelEnd = draftTaTravelEndInput?.value;
+      const selectedTravelEnd = draftTaTravelEndInput?.value || "";
+      const travelEnd =
+        selectedTravelEnd && selectedTravelEnd !== travelDate
+          ? selectedTravelEnd
+          : "";
       const dateRequest = draftTaDateRequestInput?.value || getTodayLocalISO();
       const travelType = draftTaTravelTypeSelect?.value || "official_business";
       const fundingOption =
         draftTaFundingOptionSelect?.value || "reimbursement";
 
-      if (travelDate && travelEnd && travelEnd < travelDate) {
-        alert("Travel end date cannot be before travel date.");
-        draftTaTravelEndInput?.focus();
+      if (travelDate && selectedTravelEnd && selectedTravelEnd < travelDate) {
+        if (window.showAppAlert) {
+          void window.showAppAlert(
+            "Invalid Travel End",
+            "Travel end date cannot be before travel date.",
+          );
+        } else {
+          alert("Travel end date cannot be before travel date.");
+        }
         return;
       }
       // Format dates
