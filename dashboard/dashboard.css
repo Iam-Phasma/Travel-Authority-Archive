@@ -1832,6 +1832,15 @@ body.dashboard-page::before {
   flex-wrap: wrap;
 }
 
+#tab-draft-ta .upload-actions .modal-btn {
+  min-width: 136px;
+  min-height: 46px;
+  padding: 12px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 @media (max-width: 768px) {
   #tab-draft-ta .upload-panel-structured {
     margin: 0;

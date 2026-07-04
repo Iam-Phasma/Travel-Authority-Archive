@@ -1179,6 +1179,15 @@ body.dashboard-page::before {
   flex-wrap: wrap;
 }
 
+.admin-panels #draft-ta-panel .upload-actions .modal-btn {
+  min-width: 136px;
+  min-height: 46px;
+  padding: 12px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .structured-fields .ocr-group {
   background: var(--surface-soft);
   padding: 24px;
