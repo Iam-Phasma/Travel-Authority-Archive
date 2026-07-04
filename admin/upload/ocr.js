@@ -488,12 +488,27 @@ const initOCRModal = () => {
                     recentFilesDiv.innerHTML = '<p class="ocr-empty-state">No recent image files available.</p>';
                     return;
                 }
-                recentFilesDiv.innerHTML = fileList.map((file, index) => `
-                    <button class="ocr-file-item" type="button" data-file-index="${index}">
-                        <span class="ocr-file-name">${file.name}</span>
-                        <span class="ocr-file-size">${(file.size / 1024).toFixed(0)} KB</span>
-                    </button>
-                `).join('');
+                recentFilesDiv.innerHTML = '';
+                const fileListFragment = document.createDocumentFragment();
+                fileList.forEach((file, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'ocr-file-item';
+                    btn.type = 'button';
+                    btn.dataset.fileIndex = String(index);
+
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'ocr-file-name';
+                    nameSpan.textContent = file.name;
+
+                    const sizeSpan = document.createElement('span');
+                    sizeSpan.className = 'ocr-file-size';
+                    sizeSpan.textContent = `${(file.size / 1024).toFixed(0)} KB`;
+
+                    btn.appendChild(nameSpan);
+                    btn.appendChild(sizeSpan);
+                    fileListFragment.appendChild(btn);
+                });
+                recentFilesDiv.appendChild(fileListFragment);
                 recentFilesDiv.querySelectorAll('.ocr-file-item').forEach(btn => {
                     btn.addEventListener('click', () => {
                         handleFileSelect(fileList[parseInt(btn.dataset.fileIndex)]);

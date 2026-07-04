@@ -1,11 +1,17 @@
 // @ts-nocheck
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders: Record<string, string> = {
-  "Access-Control-Allow-Origin": "*",
+const baseCorsHeaders: Record<string, string> = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
+  Vary: "Origin",
 };
+
+const DEFAULT_ALLOWED_ORIGINS = [
+  "https://iam-phasma.github.io",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+];
 
 const DEFAULT_RETRY_SECONDS = 60;
 
@@ -15,11 +21,32 @@ type LoginRequestBody = {
   captchaToken?: string;
 };
 
-const jsonResponse = (body: Record<string, unknown>, status = 200) =>
+const getAllowedOrigins = () => {
+  const configured = (Deno.env.get("CORS_ALLOWED_ORIGINS") || "")
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  return configured.length ? configured : DEFAULT_ALLOWED_ORIGINS;
+};
+
+const buildCorsHeaders = (req: Request): Record<string, string> => {
+  const requestOrigin = (req.headers.get("origin") || "").trim();
+  const allowedOrigins = getAllowedOrigins();
+  const allowOrigin = requestOrigin && allowedOrigins.includes(requestOrigin)
+    ? requestOrigin
+    : allowedOrigins[0] || "null";
+
+  return {
+    ...baseCorsHeaders,
+    "Access-Control-Allow-Origin": allowOrigin,
+  };
+};
+
+const jsonResponse = (req: Request, body: Record<string, unknown>, status = 200) =>
   new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders,
+      ...buildCorsHeaders(req),
       "Content-Type": "application/json",
     },
   });
@@ -28,18 +55,34 @@ const normalizeEmail = (value: string) => value.trim().toLowerCase();
 
 const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const getClientIp = (req: Request) => {
-  const xForwardedFor = req.headers.get("x-forwarded-for");
-  if (xForwardedFor) {
-    const [firstIp] = xForwardedFor.split(",");
-    if (firstIp && firstIp.trim()) {
-      return firstIp.trim();
-    }
-  }
+const isLikelyIp = (value: string) => {
+  const candidate = value.trim();
+  if (!candidate) return false;
+  const isV4 = /^(?:\d{1,3}\.){3}\d{1,3}$/.test(candidate)
+    && candidate.split(".").every((octet) => Number(octet) >= 0 && Number(octet) <= 255);
+  const isV6 = /^[0-9a-f:]+$/i.test(candidate) && candidate.includes(":");
+  return isV4 || isV6;
+};
 
-  const realIp = req.headers.get("x-real-ip");
-  if (realIp && realIp.trim()) {
-    return realIp.trim();
+const firstForwardedValue = (value: string | null) => {
+  if (!value) return "";
+  const [firstValue] = value.split(",");
+  return (firstValue || "").trim();
+};
+
+const getClientIp = (req: Request) => {
+  const trustedIpHeaders = [
+    "cf-connecting-ip",
+    "fly-client-ip",
+    "x-vercel-forwarded-for",
+    "x-envoy-external-address",
+  ];
+
+  for (const headerName of trustedIpHeaders) {
+    const candidate = firstForwardedValue(req.headers.get(headerName));
+    if (isLikelyIp(candidate)) {
+      return candidate;
+    }
   }
 
   return "unknown";
@@ -55,18 +98,18 @@ const parseRetrySeconds = (value: unknown, fallback = DEFAULT_RETRY_SECONDS) => 
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", { headers: buildCorsHeaders(req) });
   }
 
   if (req.method !== "POST") {
-    return jsonResponse({ authenticated: false, code: "method_not_allowed" }, 405);
+    return jsonResponse(req, { authenticated: false, code: "method_not_allowed" }, 405);
   }
 
   let requestBody: LoginRequestBody;
   try {
     requestBody = (await req.json()) as LoginRequestBody;
   } catch {
-    return jsonResponse({ authenticated: false, code: "invalid_payload" }, 400);
+    return jsonResponse(req, { authenticated: false, code: "invalid_payload" }, 400);
   }
 
   const email = normalizeEmail(requestBody?.email || "");
@@ -74,11 +117,11 @@ Deno.serve(async (req) => {
   const captchaToken = String(requestBody?.captchaToken || "").trim();
 
   if (!email || !isValidEmail(email) || !password) {
-    return jsonResponse({ authenticated: false, code: "invalid_credentials" }, 400);
+    return jsonResponse(req, { authenticated: false, code: "invalid_credentials" }, 400);
   }
 
   if (!captchaToken) {
-    return jsonResponse({ authenticated: false, code: "captcha_required" }, 400);
+    return jsonResponse(req, { authenticated: false, code: "captcha_required" }, 400);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -87,23 +130,26 @@ Deno.serve(async (req) => {
 
   if (!supabaseUrl || !serviceRoleKey || !anonKey) {
     console.error("Missing required env config for secure-login function");
-    return jsonResponse({ authenticated: false, code: "service_unavailable" }, 503);
+    return jsonResponse(req, { authenticated: false, code: "service_unavailable" }, 503);
   }
 
   const clientIp = getClientIp(req);
 
-  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
-    global: {
-      headers: {
-        "x-forwarded-for": clientIp,
-        "x-real-ip": clientIp,
-      },
-    },
+  const supabaseAdminOptions: Record<string, unknown> = {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  });
+  };
+  if (clientIp !== "unknown") {
+    supabaseAdminOptions.global = {
+      headers: {
+        "cf-connecting-ip": clientIp,
+      },
+    };
+  }
+
+  const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, supabaseAdminOptions);
 
   const supabaseAuth = createClient(supabaseUrl, anonKey, {
     auth: {
@@ -125,11 +171,11 @@ Deno.serve(async (req) => {
     lockoutStatus = data;
   } catch (error) {
     console.error("check_login_lockout rpc failed:", error);
-    return jsonResponse({ authenticated: false, code: "service_unavailable" }, 503);
+    return jsonResponse(req, { authenticated: false, code: "service_unavailable" }, 503);
   }
 
   if (lockoutStatus?.locked === true) {
-    return jsonResponse({
+    return jsonResponse(req, {
       authenticated: false,
       code: "locked",
       seconds_remaining: parseRetrySeconds(lockoutStatus?.seconds_remaining),
@@ -147,7 +193,7 @@ Deno.serve(async (req) => {
   if (signInError || !signInData?.session || !signInData?.user) {
     const errorText = String(signInError?.message || "").toLowerCase();
     if (errorText.includes("captcha")) {
-      return jsonResponse({ authenticated: false, code: "captcha_failed" }, 400);
+      return jsonResponse(req, { authenticated: false, code: "captcha_failed" }, 400);
     }
 
     let attemptResult: any = null;
@@ -163,11 +209,11 @@ Deno.serve(async (req) => {
       attemptResult = data;
     } catch (error) {
       console.error("record_failed_login rpc failed:", error);
-      return jsonResponse({ authenticated: false, code: "invalid_credentials" }, 401);
+      return jsonResponse(req, { authenticated: false, code: "invalid_credentials" }, 401);
     }
 
     if (attemptResult?.locked === true) {
-      return jsonResponse({
+      return jsonResponse(req, {
         authenticated: false,
         code: "locked",
         seconds_remaining: parseRetrySeconds(attemptResult?.seconds_remaining),
@@ -175,7 +221,7 @@ Deno.serve(async (req) => {
     }
 
     if (attemptResult?.ip_limited === true) {
-      return jsonResponse({
+      return jsonResponse(req, {
         authenticated: false,
         code: "ip_limited",
         seconds_remaining: parseRetrySeconds(attemptResult?.seconds_remaining),
@@ -183,7 +229,7 @@ Deno.serve(async (req) => {
     }
 
     const attemptsRemaining = Number(attemptResult?.attempts_remaining);
-    return jsonResponse({
+    return jsonResponse(req, {
       authenticated: false,
       code: "invalid_credentials",
       attempts_remaining: Number.isFinite(attemptsRemaining) ? attemptsRemaining : null,
@@ -213,19 +259,19 @@ Deno.serve(async (req) => {
     if (profileError) {
       console.error("access_enabled lookup failed:", profileError);
       // Fail closed — deny login if we cannot verify access status.
-      return jsonResponse({ authenticated: false, code: "service_unavailable" }, 503);
+      return jsonResponse(req, { authenticated: false, code: "service_unavailable" }, 503);
     }
 
     // access_enabled defaults to true; only block when explicitly false.
     if (profile?.access_enabled === false) {
-      return jsonResponse({ authenticated: false, code: "access_disabled" }, 403);
+      return jsonResponse(req, { authenticated: false, code: "access_disabled" }, 403);
     }
   } catch (error) {
     console.error("access_enabled check failed:", error);
-    return jsonResponse({ authenticated: false, code: "service_unavailable" }, 503);
+    return jsonResponse(req, { authenticated: false, code: "service_unavailable" }, 503);
   }
 
-  return jsonResponse({
+  return jsonResponse(req, {
     authenticated: true,
     user: {
       id: signInData.user.id,

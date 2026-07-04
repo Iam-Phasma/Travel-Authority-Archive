@@ -484,6 +484,12 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     const renderFileList = () => {
         if (!scanFileList) return;
         const files = Array.from(scanFileInput.files);
+        const escapeHtml = (value) => String(value)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/\"/g, "&quot;")
+            .replace(/'/g, "&#39;");
         if (files.length === 0) {
             scanFileList.hidden = true;
             scanFileList.innerHTML = "";
@@ -492,7 +498,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         scanFileList.hidden = false;
         scanFileList.innerHTML = files.map((f, i) => {
             const isPdf = f.type === "application/pdf";
-            const safeName = f.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            const safeName = escapeHtml(f.name);
             return `<li class="scan-file-item">
                 <span class="scan-file-type-badge ${isPdf ? "is-pdf" : "is-img"}">${isPdf ? "PDF" : "IMG"}</span>
                 <span class="scan-file-name" title="${safeName}">${safeName}</span>
