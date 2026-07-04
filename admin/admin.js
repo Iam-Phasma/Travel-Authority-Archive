@@ -952,6 +952,53 @@ window.initHeaderButtons = () => {
 
   headerButtonsInitialized = true;
 
+  const headerDraftRequiredFieldConfigs = [
+    {
+      label: "Purpose",
+      isMissing: () => !draftTaPurposeInput?.value.trim(),
+      focus: () => draftTaPurposeInput?.focus(),
+      errorTarget:
+        draftTaPurposeInput?.closest(".input-wrap") || draftTaPurposeInput,
+      input: draftTaPurposeInput,
+    },
+    {
+      label: "Destination",
+      isMissing: () => !draftTaDestinationInput?.value.trim(),
+      focus: () => draftTaDestinationInput?.focus(),
+      errorTarget:
+        draftTaDestinationInput?.closest(".input-wrap") ||
+        draftTaDestinationInput,
+      input: draftTaDestinationInput,
+    },
+    {
+      label: "Travel Date",
+      isMissing: () => !draftTaTravelDateInput?.value,
+      focus: () => draftTaTravelDateInput?.focus(),
+      errorTarget:
+        draftTaTravelDateInput?.closest(".input-wrap") || draftTaTravelDateInput,
+      input: draftTaTravelDateInput,
+    },
+    {
+      label: "Officials",
+      isMissing: () => headerDraftSelectedEmployees.length === 0,
+      focus: () => draftTaOfficialsDisplay?.focus(),
+      errorTarget: draftTaOfficialsDisplay,
+      input: draftTaOfficialsDisplay,
+    },
+  ];
+
+  const getHeaderDraftMissingRequiredFields = (focusFirstMissing = false) => {
+    const missingConfigs = headerDraftRequiredFieldConfigs.filter((config) =>
+      config.isMissing(),
+    );
+
+    if (focusFirstMissing) {
+      missingConfigs[0]?.focus();
+    }
+
+    return missingConfigs;
+  };
+
   const closeDraftTaModal = () => {
     if (!draftTaModal) return;
     headerDraftEmployeesMultiSelect?.closeDropdown();
@@ -996,7 +1043,6 @@ window.initHeaderButtons = () => {
     // Clear selected officials
     headerDraftSelectedEmployees.length = 0;
     headerDraftEmployeesMultiSelect?.updateDisplay();
-
     // Focus back on purpose input
     draftTaPurposeInput?.focus();
   };
@@ -1233,27 +1279,18 @@ window.initHeaderButtons = () => {
 
   if (draftTaCreateBtn) {
     draftTaCreateBtn.addEventListener("click", () => {
-      // Validate required fields
-      if (!draftTaPurposeInput?.value.trim()) {
-        alert("Please enter the purpose of travel.");
-        draftTaPurposeInput?.focus();
-        return;
-      }
-
-      if (!draftTaDestinationInput?.value.trim()) {
-        alert("Please enter the destination.");
-        draftTaDestinationInput?.focus();
-        return;
-      }
-
-      if (!draftTaTravelDateInput?.value) {
-        alert("Please select the travel date.");
-        draftTaTravelDateInput?.focus();
-        return;
-      }
-
-      if (headerDraftSelectedEmployees.length === 0) {
-        alert("Please select at least one official.");
+      const missingConfigs = getHeaderDraftMissingRequiredFields(true);
+      if (missingConfigs.length > 0) {
+        if (window.showAppAlert) {
+          void window.showAppAlert(
+            "Complete Required Fields",
+            `Please complete the following required fields:\n\n${missingConfigs.map((config) => `- ${config.label}`).join("\n")}`,
+          );
+        } else {
+          alert(
+            `Please complete the following required fields:\n\n${missingConfigs.map((config) => `- ${config.label}`).join("\n")}`,
+          );
+        }
         return;
       }
 
@@ -1270,7 +1307,6 @@ window.initHeaderButtons = () => {
         draftTaTravelEndInput?.focus();
         return;
       }
-
       // Format dates
       const formatDate = (dateStr) => {
         if (!dateStr) return "";
@@ -2513,7 +2549,44 @@ viewPanelLoaded.then(() => {
       confirmModal.addEventListener("click", handleClickOutside);
     });
   };
+  const showAlertModal = (title, message, confirmLabel = "OK") => {
+    return new Promise((resolve) => {
+      confirmModalTitle.textContent = title;
+      confirmModalMessage.textContent = message;
+      confirmModalMessage.style.whiteSpace = "pre-line";
+      cancelConfirmBtn.style.display = "none";
+      const originalConfirmText = confirmConfirmBtn.textContent;
+      confirmConfirmBtn.textContent = confirmLabel;
+      confirmModal.classList.add("show");
+
+      const closeModal = (result) => {
+        confirmModal.classList.remove("show");
+        cleanup();
+        resolve(result);
+      };
+
+      const handleConfirm = () => closeModal(true);
+      const handleClickOutside = (e) => {
+        if (e.target === confirmModal) {
+          closeModal(false);
+        }
+      };
+
+      const cleanup = () => {
+        confirmConfirmBtn.removeEventListener("click", handleConfirm);
+        confirmModal.removeEventListener("click", handleClickOutside);
+        cancelConfirmBtn.style.display = "";
+        confirmConfirmBtn.textContent = originalConfirmText;
+        confirmModalMessage.style.whiteSpace = "";
+      };
+
+      confirmConfirmBtn.addEventListener("click", handleConfirm);
+      confirmModal.addEventListener("click", handleClickOutside);
+    });
+  };
   window.adminShowConfirmation = showConfirmation;
+  window.adminShowAlert = showAlertModal;
+  window.showAppAlert = showAlertModal;
 
   window.flatpickr(updateTravelDateInput, {
     dateFormat: "Y-m-d",

@@ -38,6 +38,56 @@ window.initDraftTaPanel = (supabase) => {
         return div.innerHTML;
     };
 
+    const requiredFieldConfigs = [
+        {
+            label: 'Purpose',
+            isMissing: () => !purposeInput?.value.trim(),
+            focus: () => purposeInput?.focus(),
+            errorTarget: purposeInput?.closest('.input-wrap') || purposeInput,
+            input: purposeInput,
+        },
+        {
+            label: 'Destination',
+            isMissing: () => !destinationInput?.value.trim(),
+            focus: () => destinationInput?.focus(),
+            errorTarget: destinationInput?.closest('.input-wrap') || destinationInput,
+            input: destinationInput,
+        },
+        {
+            label: 'Travel Date',
+            isMissing: () => !travelDateInput?.value,
+            focus: () => travelDateInput?.focus(),
+            errorTarget: travelDateInput?.closest('.input-wrap') || travelDateInput,
+            input: travelDateInput,
+        },
+        {
+            label: 'Officials',
+            isMissing: () => selectedEmployees.length === 0,
+            focus: () => officialsDisplay?.focus(),
+            errorTarget: officialsDisplay,
+            input: officialsDisplay,
+        },
+    ];
+
+    const getMissingRequiredFields = (focusFirstMissing = false) => {
+        const missingConfigs = requiredFieldConfigs.filter((config) => config.isMissing());
+
+        if (focusFirstMissing) {
+            missingConfigs[0]?.focus();
+        }
+
+        return missingConfigs;
+    };
+
+    const showRequiredFieldsWarning = (missingConfigs) => {
+        const message = `Please complete the following required fields:\n\n${missingConfigs.map((config) => `- ${config.label}`).join('\n')}`;
+        if (window.showAppAlert) {
+            void window.showAppAlert('Complete Required Fields', message);
+            return;
+        }
+        alert(message);
+    };
+
     // ── Officials multiselect ──────────────────────────────────────────────
     const createMultiSelect = () => {
         if (!officialsDisplay || !officialsDropdown || !officialsSearch || !officialsOptions) return null;
@@ -382,10 +432,11 @@ window.initDraftTaPanel = (supabase) => {
 
     // ── Create TA ────────────────────────────────────────────────────────────
     createBtn?.addEventListener('click', () => {
-        if (!purposeInput?.value.trim())     { alert('Please enter the purpose of travel.'); purposeInput?.focus(); return; }
-        if (!destinationInput?.value.trim()) { alert('Please enter the destination.'); destinationInput?.focus(); return; }
-        if (!travelDateInput?.value)         { alert('Please select the travel date.'); travelDateInput?.focus(); return; }
-        if (selectedEmployees.length === 0)  { alert('Please select at least one official.'); return; }
+        const missingConfigs = getMissingRequiredFields(true);
+        if (missingConfigs.length > 0) {
+            showRequiredFieldsWarning(missingConfigs);
+            return;
+        }
 
         const travelDate   = travelDateInput.value;
         const travelEnd    = travelEndInput?.value || '';
@@ -399,7 +450,6 @@ window.initDraftTaPanel = (supabase) => {
             travelEndInput?.focus();
             return;
         }
-
         const formatDate = (dateStr) => {
             if (!dateStr) return '';
             return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
