@@ -3026,6 +3026,12 @@ document.addEventListener("click", (e) => {
 const init = async () => {
   await requireUser();
 
+  const savedDashTab = localStorage.getItem("dashActiveTab");
+  const hasSavedPane = savedDashTab
+    ? document.getElementById(`tab-${savedDashTab}`)
+    : null;
+  switchDashTab(hasSavedPane ? savedDashTab : "insights");
+
   // Set up realtime subscription now that the session is confirmed
   setupRealtimeSubscription();
 
@@ -4113,7 +4119,3 @@ document.querySelectorAll(".dash-sidebar-tab").forEach((tab) => {
     switchDashTab(tab.getAttribute("data-tab"));
   });
 });
-
-// Restore last active tab on load
-const savedDashTab = localStorage.getItem("dashActiveTab");
-if (savedDashTab) switchDashTab(savedDashTab);
