@@ -306,11 +306,9 @@ window.initDraftTaPanel = (supabase) => {
     };
 
     const validateDates = () => {
-        if (travelDateInput?.value && travelEndInput?.value && travelEndInput.value < travelDateInput.value) {
-            travelEndInput.setCustomValidity('Travel end date cannot be before travel date');
-        } else {
-            travelEndInput?.setCustomValidity('');
-        }
+        const travelDate = travelDateInput?.value;
+        const travelEnd = travelEndInput?.value;
+        return !(travelDate && travelEnd && travelEnd < travelDate);
     };
 
     travelDateInput?.addEventListener('change', validateDates);
@@ -326,7 +324,7 @@ window.initDraftTaPanel = (supabase) => {
         if (dateRequestInput?._flatpickr) dateRequestInput._flatpickr.setDate(new Date(), true);
         else if (dateRequestInput) dateRequestInput.value = getTodayLocalISO();
         if (travelDateInput?._flatpickr)  travelDateInput._flatpickr.clear();
-        if (travelEndInput?._flatpickr)   { travelEndInput._flatpickr.clear(); travelEndInput.setCustomValidity(''); }
+        if (travelEndInput?._flatpickr)   { travelEndInput._flatpickr.clear(); }
         selectedEmployees.length = 0;
         multiSelect?.updateDisplay();
         purposeInput?.focus();
@@ -439,15 +437,19 @@ window.initDraftTaPanel = (supabase) => {
         }
 
         const travelDate   = travelDateInput.value;
-        const travelEnd    = travelEndInput?.value || '';
+        const selectedTravelEnd = travelEndInput?.value || '';
+        const travelEnd = selectedTravelEnd && selectedTravelEnd !== travelDate ? selectedTravelEnd : '';
         const dateRequest  = dateRequestInput?.value || getTodayLocalISO();
         const travelType   = travelTypeSelect?.value || 'official_business';
         const fundingOption= fundingOptionSelect?.value || 'reimbursement';
         const isoControlNo = isoControlInput?.value.trim() || 'AD-HRS-F010-00';
 
-        if (travelDate && travelEnd && travelEnd < travelDate) {
-            alert('Travel end date cannot be before travel date.');
-            travelEndInput?.focus();
+        if (travelDate && selectedTravelEnd && selectedTravelEnd < travelDate) {
+            if (window.showAppAlert) {
+                void window.showAppAlert('Invalid Travel End', 'Travel end date cannot be before travel date.');
+            } else {
+                alert('Travel end date cannot be before travel date.');
+            }
             return;
         }
         const formatDate = (dateStr) => {
