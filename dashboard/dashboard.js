@@ -8,6 +8,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabaseConfig } from "../config.js";
 import { initAutoLogout } from "../auto-logout.js";
+import "../pwa-update.js";
 
 // Expose globals for non-module scripts (draft-ta-panel.js, draft-location-picker.js, ta-generator.js)
 window.Chart = Chart;
