@@ -2,6 +2,7 @@ import "@lottiefiles/dotlottie-wc";
 import zxcvbn from "zxcvbn";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseConfig } from "./config.js";
+import "./pwa-update.js";
 
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 
