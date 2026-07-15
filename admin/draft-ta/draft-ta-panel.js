@@ -320,7 +320,7 @@ window.initDraftTaPanel = (supabase) => {
         if (destinationInput)   destinationInput.value = '';
         if (travelTypeSelect)   travelTypeSelect.value = 'official_business';
         if (fundingOptionSelect) fundingOptionSelect.value = 'reimbursement';
-        if (isoControlInput)    isoControlInput.value = 'AD-HRS-F010-00';
+        if (isoControlInput)    isoControlInput.value = 'AD-HRS-F010-01';
         if (dateRequestInput?._flatpickr) dateRequestInput._flatpickr.setDate(new Date(), true);
         else if (dateRequestInput) dateRequestInput.value = getTodayLocalISO();
         if (travelDateInput?._flatpickr)  travelDateInput._flatpickr.clear();
@@ -442,7 +442,7 @@ window.initDraftTaPanel = (supabase) => {
         const dateRequest  = dateRequestInput?.value || getTodayLocalISO();
         const travelType   = travelTypeSelect?.value || 'official_business';
         const fundingOption= fundingOptionSelect?.value || 'reimbursement';
-        const isoControlNo = isoControlInput?.value.trim() || 'AD-HRS-F010-00';
+        const isoControlNo = isoControlInput?.value.trim() || 'AD-HRS-F010-01';
 
         if (travelDate && selectedTravelEnd && selectedTravelEnd < travelDate) {
             if (window.showAppAlert) {
