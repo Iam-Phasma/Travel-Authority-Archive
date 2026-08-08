@@ -15,6 +15,7 @@ window.L = L;
 
 // Initialize Supabase
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+let currentAdminUserId = "";
 
 const markCurrentUserOffline = async () => {
   try {
@@ -313,6 +314,7 @@ const requireAdmin = async () => {
   }
 
   const user = sessionData.session.user;
+  currentAdminUserId = user.id;
 
   // CRITICAL: Verify admin/super role from database (not localStorage which can be manipulated)
   const role = await getUserRole(user.id);
@@ -2348,6 +2350,15 @@ viewPanelLoaded.then(() => {
     by: "ta",
     order: "desc",
   };
+  const ADMIN_COLUMNS_DEFAULT = {
+    ta_number: true,
+    purpose: true,
+    destination: true,
+    officials: true,
+    travel_end: true,
+    file: true,
+  };
+  let adminActiveColumns = { ...ADMIN_COLUMNS_DEFAULT };
   let adminEmployeesListForFilter = [];
   window.adminEmployeesListForFilter = adminEmployeesListForFilter;
 
@@ -2370,6 +2381,68 @@ viewPanelLoaded.then(() => {
 
   const saveAdminSortToStorage = () => {
     localStorage.setItem("adminSort", JSON.stringify(adminActiveSort));
+  };
+
+  const getAdminColumnsStorageKey = () => {
+    return `adminColumns:${currentAdminUserId || "anonymous"}`;
+  };
+
+  const saveAdminColumnsToStorage = () => {
+    localStorage.setItem(
+      getAdminColumnsStorageKey(),
+      JSON.stringify(adminActiveColumns),
+    );
+  };
+
+  const loadAdminColumnsFromStorage = () => {
+    const saved = localStorage.getItem(getAdminColumnsStorageKey());
+    adminActiveColumns = { ...ADMIN_COLUMNS_DEFAULT };
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      Object.keys(ADMIN_COLUMNS_DEFAULT).forEach((key) => {
+        if (typeof parsed?.[key] === "boolean") {
+          adminActiveColumns[key] = parsed[key];
+        }
+      });
+    } catch (error) {
+      console.error("Failed to parse saved admin columns:", error);
+    }
+  };
+
+  const applyAdminColumnVisibility = () => {
+    const table = document.querySelector("#view-panel .data-table");
+    if (!table) return;
+
+    Object.entries(adminActiveColumns).forEach(([columnKey, isVisible]) => {
+      table.querySelectorAll(`[data-col="${columnKey}"]`).forEach((cell) => {
+        cell.style.display = isVisible ? "" : "none";
+      });
+    });
+  };
+
+  const syncAdminColumnInputs = () => {
+    document
+      .querySelectorAll('#admin-filter-columns-list input[data-column-key]')
+      .forEach((input) => {
+        const columnKey = input.getAttribute("data-column-key");
+        if (!columnKey || !(columnKey in adminActiveColumns)) return;
+        input.checked = adminActiveColumns[columnKey];
+      });
+  };
+
+  const initAdminColumnControls = () => {
+    document
+      .querySelectorAll('#admin-filter-columns-list input[data-column-key]')
+      .forEach((input) => {
+        input.addEventListener("change", () => {
+          const columnKey = input.getAttribute("data-column-key");
+          if (!columnKey || !(columnKey in adminActiveColumns)) return;
+          adminActiveColumns[columnKey] = input.checked;
+          saveAdminColumnsToStorage();
+          applyAdminColumnVisibility();
+        });
+      });
   };
 
   const loadAdminSortFromStorage = () => {
@@ -2778,13 +2851,13 @@ viewPanelLoaded.then(() => {
                         </svg>
                     </button>
                 </td>
-                <td>${escapeHtml(row.ta_number) || "-"}</td>
-                <td><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
+                <td data-col="ta_number">${escapeHtml(row.ta_number) || "-"}</td>
+                <td data-col="purpose"><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
+                <td data-col="destination" style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
+                <td data-col="officials" style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
                 <td>${dateText}</td>
-                <td>${untilText}</td>
-                <td>
+                <td data-col="travel_end">${untilText}</td>
+                <td data-col="file">
                     ${
                       hasFile
                         ? `<a class="file-link open-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>`
@@ -2948,6 +3021,7 @@ viewPanelLoaded.then(() => {
     if (!adminCurrentDisplayRows.length) {
       viewBody.innerHTML =
         '<tr><td colspan="8">No records match the current filters.</td></tr>';
+      applyAdminColumnVisibility();
       if (viewMoreBtn) viewMoreBtn.style.display = "none";
       return;
     }
@@ -2956,6 +3030,7 @@ viewPanelLoaded.then(() => {
       .slice(0, adminRenderedCount)
       .map((row, i) => buildAdminRowHtml(row, i))
       .join("");
+    applyAdminColumnVisibility();
     bindAdminRowEvents(Array.from(viewBody.querySelectorAll("tr")));
     if (viewMoreBtn)
       viewMoreBtn.style.display =
@@ -2973,6 +3048,7 @@ viewPanelLoaded.then(() => {
       .join("");
     const newTrs = Array.from(temp.querySelectorAll("tr"));
     newTrs.forEach((tr) => viewBody.appendChild(tr));
+    applyAdminColumnVisibility();
     bindAdminRowEvents(newTrs);
     adminRenderedCount = to;
     updateViewFooter();
@@ -3353,6 +3429,7 @@ viewPanelLoaded.then(() => {
   const adminFilterMatchAllCheckbox = document.getElementById(
     "admin-filter-match-all",
   );
+  initAdminColumnControls();
 
   // Load employees for admin filter
   const loadAdminEmployeesForFilter = async () => {
@@ -4281,6 +4358,9 @@ viewPanelLoaded.then(() => {
   const restoreAdminTableState = () => {
     loadAdminFiltersFromStorage();
     loadAdminSortFromStorage();
+    loadAdminColumnsFromStorage();
+    syncAdminColumnInputs();
+    applyAdminColumnVisibility();
 
     if (adminFilterTaNumberInput) {
       adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";

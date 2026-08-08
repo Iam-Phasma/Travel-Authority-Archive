@@ -132,6 +132,35 @@
                             <input type="text" id="filter-travel-date" placeholder="Select date">
                         </div>
                     </div>
+                    <details class="filter-columns" id="filter-columns-block">
+                        <summary class="filter-columns-summary">Columns</summary>
+                        <div class="filter-columns-list" id="filter-columns-list">
+                            <label class="checkbox-label" for="filter-col-ta-number">
+                                <input type="checkbox" id="filter-col-ta-number" data-column-key="ta_number" checked>
+                                <span>TA Number</span>
+                            </label>
+                            <label class="checkbox-label" for="filter-col-purpose">
+                                <input type="checkbox" id="filter-col-purpose" data-column-key="purpose" checked>
+                                <span>Purpose</span>
+                            </label>
+                            <label class="checkbox-label" for="filter-col-destination">
+                                <input type="checkbox" id="filter-col-destination" data-column-key="destination" checked>
+                                <span>Destination</span>
+                            </label>
+                            <label class="checkbox-label" for="filter-col-officials">
+                                <input type="checkbox" id="filter-col-officials" data-column-key="officials" checked>
+                                <span>Officials</span>
+                            </label>
+                            <label class="checkbox-label" for="filter-col-travel-end">
+                                <input type="checkbox" id="filter-col-travel-end" data-column-key="travel_end" checked>
+                                <span>Travel End</span>
+                            </label>
+                            <label class="checkbox-label" for="filter-col-file">
+                                <input type="checkbox" id="filter-col-file" data-column-key="file" checked>
+                                <span>File</span>
+                            </label>
+                        </div>
+                    </details>
                     <div class="filter-actions">
                         <button id="clear-filter-btn" class="filter-btn clear-btn" type="button">Reset Filter</button>
                         <button id="apply-filter-btn" class="filter-btn apply-btn" type="button">Apply Filter</button>
@@ -168,13 +197,13 @@
                     <thead>
                         <tr>
                             <th scope="col">View</th>
-                            <th scope="col">TA Number</th>
-                            <th scope="col">Purpose</th>
-                            <th scope="col">Destination</th>
-                            <th scope="col">Officials</th>
+                            <th scope="col" data-col="ta_number">TA Number</th>
+                            <th scope="col" data-col="purpose">Purpose</th>
+                            <th scope="col" data-col="destination">Destination</th>
+                            <th scope="col" data-col="officials">Officials</th>
                             <th scope="col">Travel Date</th>
-                            <th scope="col">Travel End</th>
-                            <th scope="col">File</th>
+                            <th scope="col" data-col="travel_end">Travel End</th>
+                            <th scope="col" data-col="file">File</th>
                         </tr>
                     </thead>
                     <tbody id="ta-body">
