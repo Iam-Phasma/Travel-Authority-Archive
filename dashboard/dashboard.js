@@ -1282,6 +1282,7 @@ const requireUser = async () => {
   }
 
   const user = sessionData.session.user;
+  currentDashboardUserId = user.id;
 
   // Clear persisted table state once per new authenticated session.
   try {
@@ -1333,6 +1334,7 @@ const taStatus = document.getElementById("ta-status");
 const taLastUpdated = document.getElementById("ta-last-updated");
 const taMoreBtn = document.getElementById("ta-lazy-sentinel");
 let dashboardUserRole = "user";
+let currentDashboardUserId = "";
 let taRows = [];
 let currentDisplayRows = [];
 let renderedCount = 0;
@@ -1350,6 +1352,15 @@ let activeSort = {
   by: "ta",
   order: "desc",
 };
+const DASHBOARD_COLUMNS_DEFAULT = {
+  ta_number: true,
+  purpose: true,
+  destination: true,
+  officials: true,
+  travel_end: true,
+  file: true,
+};
+let activeDashboardColumns = { ...DASHBOARD_COLUMNS_DEFAULT };
 let employeesListForFilter = [];
 let insightsHeightObserver = null;
 let insightsHeightFrame = null;
@@ -2063,6 +2074,68 @@ const saveSortToStorage = () => {
   localStorage.setItem("dashboardSort", JSON.stringify(activeSort));
 };
 
+const getDashboardColumnsStorageKey = () => {
+  return `dashboardColumns:${currentDashboardUserId || "anonymous"}`;
+};
+
+const saveDashboardColumnsToStorage = () => {
+  localStorage.setItem(
+    getDashboardColumnsStorageKey(),
+    JSON.stringify(activeDashboardColumns),
+  );
+};
+
+const loadDashboardColumnsFromStorage = () => {
+  const saved = localStorage.getItem(getDashboardColumnsStorageKey());
+  activeDashboardColumns = { ...DASHBOARD_COLUMNS_DEFAULT };
+  if (!saved) return;
+  try {
+    const parsed = JSON.parse(saved);
+    Object.keys(DASHBOARD_COLUMNS_DEFAULT).forEach((key) => {
+      if (typeof parsed?.[key] === "boolean") {
+        activeDashboardColumns[key] = parsed[key];
+      }
+    });
+  } catch (error) {
+    console.error("Failed to parse dashboard columns settings:", error);
+  }
+};
+
+const applyDashboardColumnVisibility = () => {
+  const table = document.querySelector("#ta-panel .data-table");
+  if (!table) return;
+
+  Object.entries(activeDashboardColumns).forEach(([columnKey, isVisible]) => {
+    table.querySelectorAll(`[data-col="${columnKey}"]`).forEach((cell) => {
+      cell.style.display = isVisible ? "" : "none";
+    });
+  });
+};
+
+const syncDashboardColumnInputs = () => {
+  document
+    .querySelectorAll('#filter-columns-list input[data-column-key]')
+    .forEach((input) => {
+      const columnKey = input.getAttribute("data-column-key");
+      if (!columnKey || !(columnKey in activeDashboardColumns)) return;
+      input.checked = activeDashboardColumns[columnKey];
+    });
+};
+
+const initDashboardColumnControls = () => {
+  document
+    .querySelectorAll('#filter-columns-list input[data-column-key]')
+    .forEach((input) => {
+      input.addEventListener("change", () => {
+        const columnKey = input.getAttribute("data-column-key");
+        if (!columnKey || !(columnKey in activeDashboardColumns)) return;
+        activeDashboardColumns[columnKey] = input.checked;
+        saveDashboardColumnsToStorage();
+        applyDashboardColumnVisibility();
+      });
+    });
+};
+
 const loadSortFromStorage = () => {
   const saved = localStorage.getItem("dashboardSort");
   if (saved) {
@@ -2445,13 +2518,13 @@ const buildDashRowHtml = (row, globalIndex, batchIndex) => {
                         </svg>
                     </button>
                 </td>
-                <td>${escapeHtml(row.ta_number) || "-"}</td>
-                <td><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
+                <td data-col="ta_number">${escapeHtml(row.ta_number) || "-"}</td>
+                <td data-col="purpose"><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
+                <td data-col="destination" style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
+                <td data-col="officials" style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
                 <td>${dateText}</td>
-                <td>${untilText}</td>
-                <td>
+                <td data-col="travel_end">${untilText}</td>
+                <td data-col="file">
                     ${
                       hasFile
                         ? `<a class="file-link row-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>`
@@ -2528,6 +2601,7 @@ const renderRows = (rows) => {
   if (!currentDisplayRows.length) {
     taBody.innerHTML =
       '<tr><td colspan="8">No records match the current filters.</td></tr>';
+    applyDashboardColumnVisibility();
     if (taMoreBtn) taMoreBtn.style.display = "none";
     return;
   }
@@ -2536,6 +2610,7 @@ const renderRows = (rows) => {
     .slice(0, renderedCount)
     .map((row, i) => buildDashRowHtml(row, i, i))
     .join("");
+  applyDashboardColumnVisibility();
   bindDashRowEvents(Array.from(taBody.querySelectorAll("tr")));
   if (taMoreBtn)
     taMoreBtn.style.display =
@@ -2553,6 +2628,7 @@ const loadMoreDashRows = () => {
     .join("");
   const newTrs = Array.from(temp.querySelectorAll("tr"));
   newTrs.forEach((tr) => taBody.appendChild(tr));
+  applyDashboardColumnVisibility();
   bindDashRowEvents(newTrs);
   renderedCount = to;
   updateTaFooter();
@@ -3056,6 +3132,10 @@ const init = async () => {
   // Load saved filters and sort from localStorage
   loadFiltersFromStorage();
   loadSortFromStorage();
+  loadDashboardColumnsFromStorage();
+  initDashboardColumnControls();
+  syncDashboardColumnInputs();
+  applyDashboardColumnVisibility();
 
   // Restore UI state from loaded filters/sort
   if (filterTaNumberInput) {

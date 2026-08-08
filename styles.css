@@ -2798,6 +2798,55 @@ button:hover {
   margin-bottom: 16px;
 }
 
+.filter-columns {
+  border: 1px solid rgba(15, 26, 31, 0.12);
+  border-radius: 12px;
+  background: rgba(248, 250, 252, 0.7);
+  margin-bottom: 14px;
+}
+
+.filter-columns-summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+  padding: 10px 12px;
+}
+
+.filter-columns-summary::-webkit-details-marker {
+  display: none;
+}
+
+.filter-columns-summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid rgba(15, 26, 31, 0.65);
+  border-bottom: 2px solid rgba(15, 26, 31, 0.65);
+  transform: rotate(45deg);
+  transition: transform 180ms ease;
+  margin-left: 8px;
+}
+
+.filter-columns[open] .filter-columns-summary::after {
+  transform: rotate(225deg);
+}
+
+.filter-columns-list {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 12px;
+}
+
+.filter-columns-list .checkbox-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
 .filter-field {
   display: flex;
   flex-direction: column;
