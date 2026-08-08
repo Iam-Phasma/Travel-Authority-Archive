@@ -38,6 +38,83 @@ window.initDraftTaPanel = (supabase) => {
         return div.innerHTML;
     };
 
+    const draftTaStorageKey = `draftTaPanelState:${document.getElementById('dash-draft-ta-panel') ? 'dashboard' : 'admin'}`;
+
+    const persistDraftTaState = () => {
+        const state = {
+            purpose: purposeInput?.value || '',
+            destination: destinationInput?.value || '',
+            travelType: travelTypeSelect?.value || '',
+            fundingOption: fundingOptionSelect?.value || '',
+            dateRequested: dateRequestInput?.value || '',
+            travelDate: travelDateInput?.value || '',
+            travelEnd: travelEndInput?.value || '',
+            isoControlNo: isoControlInput?.value || '',
+            officials: selectedEmployees.slice(),
+        };
+
+        try {
+            sessionStorage.setItem(draftTaStorageKey, JSON.stringify(state));
+        } catch (error) {
+            console.warn('Draft TA panel: unable to persist form state', error);
+        }
+    };
+
+    const restoreDraftTaState = () => {
+        try {
+            const raw = sessionStorage.getItem(draftTaStorageKey);
+            if (!raw) return;
+
+            const parsed = JSON.parse(raw);
+            if (!parsed || typeof parsed !== 'object') return;
+
+            if (purposeInput && typeof parsed.purpose === 'string') purposeInput.value = parsed.purpose;
+            if (destinationInput && typeof parsed.destination === 'string') destinationInput.value = parsed.destination;
+            if (travelTypeSelect && typeof parsed.travelType === 'string') travelTypeSelect.value = parsed.travelType;
+            if (fundingOptionSelect && typeof parsed.fundingOption === 'string') fundingOptionSelect.value = parsed.fundingOption;
+            if (isoControlInput && typeof parsed.isoControlNo === 'string') isoControlInput.value = parsed.isoControlNo;
+
+            if (dateRequestInput?.value === '' && typeof parsed.dateRequested === 'string' && parsed.dateRequested) {
+                dateRequestInput.value = parsed.dateRequested;
+            }
+
+            if (travelDateInput?.value === '' && typeof parsed.travelDate === 'string' && parsed.travelDate) {
+                travelDateInput.value = parsed.travelDate;
+            }
+            if (travelEndInput?.value === '' && typeof parsed.travelEnd === 'string' && parsed.travelEnd) {
+                travelEndInput.value = parsed.travelEnd;
+            }
+
+            if (Array.isArray(parsed.officials)) {
+                selectedEmployees = parsed.officials.slice();
+            }
+
+            if (dateRequestInput?._flatpickr && typeof parsed.dateRequested === 'string' && parsed.dateRequested) {
+                dateRequestInput._flatpickr.setDate(parsed.dateRequested, true);
+            }
+            if (travelDateInput?._flatpickr && typeof parsed.travelDate === 'string' && parsed.travelDate) {
+                travelDateInput._flatpickr.setDate(parsed.travelDate, true);
+            }
+            if (travelEndInput?._flatpickr && typeof parsed.travelEnd === 'string' && parsed.travelEnd) {
+                travelEndInput._flatpickr.setDate(parsed.travelEnd, true);
+            }
+
+            validateDates();
+            multiSelect?.updateDisplay();
+            multiSelect?.renderOptions();
+        } catch (error) {
+            console.warn('Draft TA panel: unable to restore form state', error);
+        }
+    };
+
+    const clearStoredDraftTaState = () => {
+        try {
+            sessionStorage.removeItem(draftTaStorageKey);
+        } catch (error) {
+            console.warn('Draft TA panel: unable to clear form state', error);
+        }
+    };
+
     const requiredFieldConfigs = [
         {
             label: 'Purpose',
@@ -115,7 +192,7 @@ window.initDraftTaPanel = (supabase) => {
                 btn.addEventListener('click', e => {
                     e.stopPropagation();
                     const idx = selectedEmployees.indexOf(btn.getAttribute('data-name'));
-                    if (idx > -1) { selectedEmployees.splice(idx, 1); updateDisplay(); renderOptions(); }
+                    if (idx > -1) { selectedEmployees.splice(idx, 1); updateDisplay(); renderOptions(); persistDraftTaState(); }
                 });
             });
         };
@@ -151,7 +228,7 @@ window.initDraftTaPanel = (supabase) => {
                             const resolvedName = existing ? existing.name : nameToAdd;
                             if (!selectedEmployees.includes(resolvedName)) selectedEmployees.push(resolvedName);
                             officialsSearch.value = '';
-                            updateDisplay(); renderOptions();
+                            updateDisplay(); renderOptions(); persistDraftTaState();
                         });
                     }
                 } else {
@@ -186,6 +263,7 @@ window.initDraftTaPanel = (supabase) => {
                     officialsSearch.value = '';
                     updateDisplay();
                     renderOptions();
+                    persistDraftTaState();
                 });
             });
 
@@ -207,6 +285,7 @@ window.initDraftTaPanel = (supabase) => {
                         officialsSearch.value = '';
                         updateDisplay();
                         renderOptions();
+                        persistDraftTaState();
                     }
                 });
             });
@@ -230,6 +309,7 @@ window.initDraftTaPanel = (supabase) => {
             selectedEmployees.length = 0;
             updateDisplay();
             renderOptions();
+            persistDraftTaState();
             officialsSearch.focus();
         });
 
@@ -327,6 +407,7 @@ window.initDraftTaPanel = (supabase) => {
         if (travelEndInput?._flatpickr)   { travelEndInput._flatpickr.clear(); }
         selectedEmployees.length = 0;
         multiSelect?.updateDisplay();
+        clearStoredDraftTaState();
         purposeInput?.focus();
     };
 
@@ -484,10 +565,29 @@ window.initDraftTaPanel = (supabase) => {
         }
     });
 
+    const bindDraftTaAutosave = () => {
+        purposeInput?.addEventListener('input', persistDraftTaState);
+        destinationInput?.addEventListener('input', persistDraftTaState);
+        travelTypeSelect?.addEventListener('change', persistDraftTaState);
+        fundingOptionSelect?.addEventListener('change', persistDraftTaState);
+        isoControlInput?.addEventListener('input', persistDraftTaState);
+        dateRequestInput?.addEventListener('change', persistDraftTaState);
+        travelDateInput?.addEventListener('change', () => {
+            validateDates();
+            persistDraftTaState();
+        });
+        travelEndInput?.addEventListener('change', () => {
+            validateDates();
+            persistDraftTaState();
+        });
+        window.addEventListener('beforeunload', persistDraftTaState);
+    };
+
     // ── Init ───────────────────────────────────────────────────────────────
     const init = async () => {
         if (panelInitialized) return;
         panelInitialized = true;
+        bindDraftTaAutosave();
         // Init Flatpickr date pickers (matching Upload panel options)
         if (window.flatpickr) {
             if (travelDateInput)  window.flatpickr(travelDateInput, { ...flatpickrOpts, onChange: validateDates });
@@ -497,6 +597,7 @@ window.initDraftTaPanel = (supabase) => {
         setDateDefault();
         await loadEmployees();
         multiSelect = createMultiSelect();
+        restoreDraftTaState();
         multiSelect?.updateDisplay();
         multiSelect?.renderOptions();
     };
