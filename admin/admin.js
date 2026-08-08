@@ -90,6 +90,13 @@ const viewPanelLoaded = Promise.all([
   .then(([panelHTML, modalsHTML]) => {
     document.getElementById("view-panel-container").innerHTML = panelHTML;
     document.getElementById("view-modals-container").innerHTML = modalsHTML;
+    if (
+      typeof window.applyAdminMatchAllFilterVisibility === "function" &&
+      typeof window.getHideMatchAllFilter === "function"
+    ) {
+      window.applyAdminMatchAllFilterVisibility(window.getHideMatchAllFilter());
+    }
+    window.dispatchEvent(new Event("admin-view-panel-ready"));
     return true;
   })
   .catch((error) => {
@@ -2338,8 +2345,8 @@ viewPanelLoaded.then(() => {
     matchAll: true,
   };
   let adminActiveSort = {
-    by: "",
-    order: "asc",
+    by: "ta",
+    order: "desc",
   };
   let adminEmployeesListForFilter = [];
   window.adminEmployeesListForFilter = adminEmployeesListForFilter;
@@ -2370,7 +2377,10 @@ viewPanelLoaded.then(() => {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        adminActiveSort = { ...adminActiveSort, ...parsed };
+        const resolvedBy = parsed.by && parsed.by !== "" ? parsed.by : adminActiveSort.by;
+        const resolvedOrder =
+          parsed.order && parsed.order !== "" ? parsed.order : adminActiveSort.order;
+        adminActiveSort = { ...adminActiveSort, by: resolvedBy, order: resolvedOrder };
       } catch (e) {
         console.error("Failed to parse saved admin sort:", e);
       }
@@ -2393,7 +2403,8 @@ viewPanelLoaded.then(() => {
       adminActiveFilters.matchAll === false;
 
     // Check if sort is active
-    const isSortActive = adminActiveSort.by !== "";
+    const isSortActive =
+      adminActiveSort.by !== "ta" || adminActiveSort.order !== "desc";
 
     if (adminFilterToggleBtn) {
       if (isFilterActive) {
@@ -3623,10 +3634,10 @@ viewPanelLoaded.then(() => {
   });
 
   adminClearSortBtn.addEventListener("click", () => {
-    adminActiveSort.by = "";
-    adminActiveSort.order = "asc";
+    adminActiveSort.by = "ta";
+    adminActiveSort.order = "desc";
     adminSortBySelect.value = "ta";
-    adminSortOrderSelect.value = "asc";
+    adminSortOrderSelect.value = "desc";
     saveAdminSortToStorage();
     updateAdminButtonStates();
     renderViewRows(viewRows);
@@ -4292,7 +4303,7 @@ viewPanelLoaded.then(() => {
 
     if (adminSortBySelect) adminSortBySelect.value = adminActiveSort.by || "ta";
     if (adminSortOrderSelect)
-      adminSortOrderSelect.value = adminActiveSort.order || "asc";
+      adminSortOrderSelect.value = adminActiveSort.order || "desc";
 
     loadAdminEmployeesForFilter();
 
