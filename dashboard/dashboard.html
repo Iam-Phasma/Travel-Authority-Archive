@@ -132,35 +132,6 @@
                             <input type="text" id="filter-travel-date" placeholder="Select date">
                         </div>
                     </div>
-                    <details class="filter-columns" id="filter-columns-block">
-                        <summary class="filter-columns-summary">Columns</summary>
-                        <div class="filter-columns-list" id="filter-columns-list">
-                            <label class="checkbox-label" for="filter-col-ta-number">
-                                <input type="checkbox" id="filter-col-ta-number" data-column-key="ta_number" checked>
-                                <span>TA Number</span>
-                            </label>
-                            <label class="checkbox-label" for="filter-col-purpose">
-                                <input type="checkbox" id="filter-col-purpose" data-column-key="purpose" checked>
-                                <span>Purpose</span>
-                            </label>
-                            <label class="checkbox-label" for="filter-col-destination">
-                                <input type="checkbox" id="filter-col-destination" data-column-key="destination" checked>
-                                <span>Destination</span>
-                            </label>
-                            <label class="checkbox-label" for="filter-col-officials">
-                                <input type="checkbox" id="filter-col-officials" data-column-key="officials" checked>
-                                <span>Officials</span>
-                            </label>
-                            <label class="checkbox-label" for="filter-col-travel-end">
-                                <input type="checkbox" id="filter-col-travel-end" data-column-key="travel_end" checked>
-                                <span>Travel End</span>
-                            </label>
-                            <label class="checkbox-label" for="filter-col-file">
-                                <input type="checkbox" id="filter-col-file" data-column-key="file" checked>
-                                <span>File</span>
-                            </label>
-                        </div>
-                    </details>
                     <div class="filter-actions">
                         <button id="clear-filter-btn" class="filter-btn clear-btn" type="button">Reset Filter</button>
                         <button id="apply-filter-btn" class="filter-btn apply-btn" type="button">Apply Filter</button>
@@ -500,6 +471,40 @@
                             <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
                         </span>
                     </label>
+                </div>
+                <div class="settings-section">
+                    <details class="filter-columns" id="settings-columns-block">
+                        <summary class="filter-columns-summary">
+                            <span class="filter-columns-summary-title">Columns</span>
+                            <span class="filter-columns-summary-desc">Choose which columns are visible in the Files table.</span>
+                        </summary>
+                        <div class="filter-columns-list" id="settings-columns-list">
+                            <label class="checkbox-label" for="settings-col-ta-number">
+                                <input type="checkbox" id="settings-col-ta-number" data-column-key="ta_number" checked>
+                                <span>TA Number</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-purpose">
+                                <input type="checkbox" id="settings-col-purpose" data-column-key="purpose" checked>
+                                <span>Purpose</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-destination">
+                                <input type="checkbox" id="settings-col-destination" data-column-key="destination" checked>
+                                <span>Destination</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-officials">
+                                <input type="checkbox" id="settings-col-officials" data-column-key="officials" checked>
+                                <span>Officials</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-travel-end">
+                                <input type="checkbox" id="settings-col-travel-end" data-column-key="travel_end" checked>
+                                <span>Travel End</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-file">
+                                <input type="checkbox" id="settings-col-file" data-column-key="file" checked>
+                                <span>File</span>
+                            </label>
+                        </div>
+                    </details>
                 </div>
             </div>
             <div class="modal-actions">

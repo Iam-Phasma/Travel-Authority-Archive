@@ -2801,20 +2801,37 @@ button:hover {
 .filter-columns {
   border: 1px solid rgba(15, 26, 31, 0.12);
   border-radius: 12px;
-  background: rgba(248, 250, 252, 0.7);
+  background: rgba(248, 250, 252, 0.88);
   margin-bottom: 14px;
 }
 
 .filter-columns-summary {
   list-style: none;
   cursor: pointer;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas:
+    "title arrow"
+    "desc arrow";
+  column-gap: 10px;
+  row-gap: 4px;
   align-items: center;
-  justify-content: space-between;
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--ink);
   padding: 10px 12px;
+}
+
+.filter-columns-summary-title {
+  grid-area: title;
+}
+
+.filter-columns-summary-desc {
+  grid-area: desc;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: rgba(15, 26, 31, 0.6);
+  font-weight: 500;
 }
 
 .filter-columns-summary::-webkit-details-marker {
@@ -2823,6 +2840,7 @@ button:hover {
 
 .filter-columns-summary::after {
   content: "";
+  grid-area: arrow;
   width: 8px;
   height: 8px;
   border-right: 2px solid rgba(15, 26, 31, 0.65);
@@ -2838,13 +2856,75 @@ button:hover {
 
 .filter-columns-list {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   padding: 0 12px 12px;
 }
 
+.filter-columns-desc {
+  margin: 0 12px 10px;
+  font-size: 0.8rem;
+  color: rgba(15, 26, 31, 0.6);
+  line-height: 1.35;
+}
+
 .filter-columns-list .checkbox-label {
+  display: flex !important;
+  width: 100%;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 26, 31, 0.12);
+  background: rgba(255, 255, 255, 0.9);
   font-size: 0.85rem;
   font-weight: 600;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+.filter-columns-list .checkbox-label:hover {
+  background: rgba(47, 111, 228, 0.08);
+  border-color: rgba(47, 111, 228, 0.28);
+}
+
+.filter-columns-list .checkbox-label input[type="checkbox"] {
+  flex-shrink: 0;
+}
+
+.filter-columns-list .checkbox-label span {
+  line-height: 1.2;
+}
+
+.settings-section .filter-columns {
+  border: 0;
+  background: transparent;
+  margin-bottom: 0;
+}
+
+.settings-section .filter-columns-summary {
+  padding: 2px 0 8px;
+}
+
+.settings-section .filter-columns-list {
+  padding: 0;
+}
+
+.settings-section .filter-columns-list .checkbox-label {
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.settings-section .filter-columns-list .checkbox-label:hover {
+  background: transparent;
+  border-color: transparent;
+}
+
+@media (max-width: 560px) {
+  .filter-columns-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .filter-field {

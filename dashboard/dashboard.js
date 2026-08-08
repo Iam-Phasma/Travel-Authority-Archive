@@ -2114,7 +2114,7 @@ const applyDashboardColumnVisibility = () => {
 
 const syncDashboardColumnInputs = () => {
   document
-    .querySelectorAll('#filter-columns-list input[data-column-key]')
+    .querySelectorAll('#settings-columns-list input[data-column-key]')
     .forEach((input) => {
       const columnKey = input.getAttribute("data-column-key");
       if (!columnKey || !(columnKey in activeDashboardColumns)) return;
@@ -2124,7 +2124,7 @@ const syncDashboardColumnInputs = () => {
 
 const initDashboardColumnControls = () => {
   document
-    .querySelectorAll('#filter-columns-list input[data-column-key]')
+    .querySelectorAll('#settings-columns-list input[data-column-key]')
     .forEach((input) => {
       input.addEventListener("change", () => {
         const columnKey = input.getAttribute("data-column-key");
