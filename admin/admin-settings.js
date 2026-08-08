@@ -12,6 +12,22 @@ const ALLOW_EMPTY_UPLOAD_KEY = 'adminAllowEmptyUpload';
 const getAllowEmptyUpload = () => localStorage.getItem(ALLOW_EMPTY_UPLOAD_KEY) === 'true';
 window.getAllowEmptyUpload = getAllowEmptyUpload;
 
+// Hide match-all filter option in files filter panel
+const HIDE_MATCH_ALL_FILTER_KEY = 'adminHideMatchAllFilter';
+const getHideMatchAllFilter = () => {
+    const saved = localStorage.getItem(HIDE_MATCH_ALL_FILTER_KEY);
+    return saved === null ? true : saved === 'true';
+};
+window.getHideMatchAllFilter = getHideMatchAllFilter;
+
+window.applyAdminMatchAllFilterVisibility = (hide) => {
+    const filterMode = document.getElementById('admin-filter-mode');
+    if (filterMode) {
+        filterMode.style.display = hide ? 'none' : '';
+        filterMode.toggleAttribute('hidden', hide);
+    }
+};
+
 window.applyDemoCheckboxVisibility = (visible) => {
     // Upload panel demo checkbox wrapper
     const uploadDemoWrapper = document.getElementById('is-demo-checkbox')?.closest('.demo-field-wrapper');
@@ -61,6 +77,21 @@ if (settingsAllowEmptyUpload) {
         localStorage.setItem(ALLOW_EMPTY_UPLOAD_KEY, settingsAllowEmptyUpload.checked);
     });
 }
+
+const settingsHideMatchAllFilter = document.getElementById('settings-hide-match-all-filter');
+if (settingsHideMatchAllFilter) {
+    settingsHideMatchAllFilter.checked = getHideMatchAllFilter();
+    settingsHideMatchAllFilter.addEventListener('change', () => {
+        const hide = settingsHideMatchAllFilter.checked;
+        localStorage.setItem(HIDE_MATCH_ALL_FILTER_KEY, hide);
+        window.applyAdminMatchAllFilterVisibility(hide);
+    });
+}
+
+window.applyAdminMatchAllFilterVisibility(getHideMatchAllFilter());
+window.addEventListener('admin-view-panel-ready', () => {
+    window.applyAdminMatchAllFilterVisibility(getHideMatchAllFilter());
+});
 
 if (settingsScanOrphansBtn && settingsDeleteOrphansBtn && settingsOrphanStatus) {
     const setDeleteBtnVisible = (visible) => {

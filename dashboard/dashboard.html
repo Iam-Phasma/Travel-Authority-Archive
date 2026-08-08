@@ -106,7 +106,7 @@
             <div id="filter-panel" class="filter-panel">
                 <div class="filter-content">
                     <h3>Filter Options</h3>
-                    <div class="filter-mode">
+                    <div class="filter-mode" id="filter-mode">
                         <label class="checkbox-label">
                             <input type="checkbox" id="filter-match-all" checked>
                             <span>Match all filters (AND)</span>
@@ -145,7 +145,7 @@
                         <div class="filter-field">
                             <label for="sort-by">Sort by</label>
                             <select id="sort-by" class="filter-select">
-                                <option value="ta">TA Number</option>
+                                <option value="ta" selected>TA Number</option>
                                 <option value="travel-date">Travel Date</option>
                             </select>
                         </div>
@@ -153,7 +153,7 @@
                             <label for="sort-order">Order</label>
                             <select id="sort-order" class="filter-select">
                                 <option value="asc">Oldest First</option>
-                                <option value="desc">Newest First</option>
+                                <option value="desc" selected>Newest First</option>
                             </select>
                         </div>
                     </div>
@@ -459,7 +459,20 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <h3>Settings</h3>
-            <p>Settings functionality will be available soon.</p>
+            <div class="settings-list">
+                <div class="settings-section">
+                    <label class="settings-toggle-item" for="settings-hide-match-all-filter">
+                        <span class="settings-toggle-info">
+                            <span class="settings-toggle-title">Hide match-all filter</span>
+                            <span class="settings-toggle-desc">Remove the match-all option and spacing from the Files filter panel</span>
+                        </span>
+                        <span class="settings-toggle-wrap">
+                            <input type="checkbox" class="settings-toggle-input" id="settings-hide-match-all-filter" checked>
+                            <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
+                        </span>
+                    </label>
+                </div>
+            </div>
             <div class="modal-actions">
                 <button class="modal-btn cancel" id="close-settings">Close</button>
             </div>

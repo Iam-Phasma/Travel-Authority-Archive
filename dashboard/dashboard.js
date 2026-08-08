@@ -1347,8 +1347,8 @@ let activeFilters = {
   matchAll: true,
 };
 let activeSort = {
-  by: "",
-  order: "asc",
+  by: "ta",
+  order: "desc",
 };
 let employeesListForFilter = [];
 let insightsHeightObserver = null;
@@ -2029,6 +2029,20 @@ const initInsightsLayoutSync = () => {
 };
 
 // Helper functions for localStorage persistence
+const FILTER_MATCH_ALL_VISIBILITY_KEY = "dashboardHideMatchAllFilter";
+
+const getDashboardHideMatchAllFilter = () => {
+  const saved = localStorage.getItem(FILTER_MATCH_ALL_VISIBILITY_KEY);
+  return saved === null ? true : saved === "true";
+};
+
+const applyDashboardMatchAllFilterVisibility = (hide) => {
+  const filterMode = document.getElementById("filter-mode");
+  if (!filterMode) return;
+  filterMode.style.display = hide ? "none" : "";
+  filterMode.toggleAttribute("hidden", hide);
+};
+
 const saveFiltersToStorage = () => {
   localStorage.setItem("dashboardFilters", JSON.stringify(activeFilters));
 };
@@ -2054,7 +2068,10 @@ const loadSortFromStorage = () => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      activeSort = { ...activeSort, ...parsed };
+      const resolvedBy = parsed.by && parsed.by !== "" ? parsed.by : activeSort.by;
+      const resolvedOrder =
+        parsed.order && parsed.order !== "" ? parsed.order : activeSort.order;
+      activeSort = { ...activeSort, by: resolvedBy, order: resolvedOrder };
     } catch (e) {
       console.error("Failed to parse saved sort:", e);
     }
@@ -2075,7 +2092,7 @@ const updateButtonStates = () => {
     activeFilters.matchAll === false;
 
   // Check if sort is active
-  const isSortActive = activeSort.by !== "";
+  const isSortActive = activeSort.by !== "ta" || activeSort.order !== "desc";
 
   if (filterToggleBtn) {
     if (isFilterActive) {
@@ -2994,10 +3011,10 @@ applySortBtn.addEventListener("click", () => {
 });
 
 clearSortBtn.addEventListener("click", () => {
-  activeSort.by = "";
-  activeSort.order = "asc";
+  activeSort.by = "ta";
+  activeSort.order = "desc";
   sortBySelect.value = "ta";
-  sortOrderSelect.value = "asc";
+  sortOrderSelect.value = "desc";
   saveSortToStorage();
   updateButtonStates();
   renderRows(taRows);
@@ -3058,7 +3075,7 @@ const init = async () => {
       activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;
 
   if (sortBySelect) sortBySelect.value = activeSort.by || "ta";
-  if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "asc";
+  if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "desc";
 
   await loadEmployeesForFilter();
   await loadTravelAuthorities(true);
