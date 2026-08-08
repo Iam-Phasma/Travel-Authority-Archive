@@ -2423,7 +2423,7 @@ viewPanelLoaded.then(() => {
 
   const syncAdminColumnInputs = () => {
     document
-      .querySelectorAll('#admin-filter-columns-list input[data-column-key]')
+      .querySelectorAll('#admin-settings-columns-list input[data-column-key]')
       .forEach((input) => {
         const columnKey = input.getAttribute("data-column-key");
         if (!columnKey || !(columnKey in adminActiveColumns)) return;
@@ -2433,7 +2433,7 @@ viewPanelLoaded.then(() => {
 
   const initAdminColumnControls = () => {
     document
-      .querySelectorAll('#admin-filter-columns-list input[data-column-key]')
+      .querySelectorAll('#admin-settings-columns-list input[data-column-key]')
       .forEach((input) => {
         input.addEventListener("change", () => {
           const columnKey = input.getAttribute("data-column-key");
