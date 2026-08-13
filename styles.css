@@ -3120,6 +3120,19 @@ button:hover {
   box-shadow: none;
 }
 
+.officials-count-indicator {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.84em;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.officials-count-indicator em {
+  font-style: italic;
+  font-weight: 400;
+}
+
 .multiselect-dropdown {
   position: absolute;
   top: 100%;
