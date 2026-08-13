@@ -176,11 +176,6 @@ window.initDraftTaPanel = (supabase) => {
                 <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12h4m-2 2v-4M4 18v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Zm8-10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
             </svg>`;
 
-        const selectAllRemoveIcon = `
-            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12h4M4 18v-1a3 3 0 0 1 3-3h4a3 3 0 0 1 3 3v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1Zm8-10a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
-            </svg>`;
-
         // persisted CHED-only toggle
         let chedOnly = localStorage.getItem('draftTaChedOnly') === '1';
         const settingsBtn = document.getElementById('panel-draft-ta-officials-settings-btn');
@@ -230,10 +225,11 @@ window.initDraftTaPanel = (supabase) => {
             const filtered = getFilteredEmployees();
             const hasFiltered = filtered.length > 0;
             const allFilteredSelected = hasFiltered && filtered.every((emp) => selectedEmployees.includes(emp.name));
-            officialsSelectAll.disabled = !hasFiltered;
-            officialsSelectAll.title = allFilteredSelected ? 'Remove all listed' : 'Add all listed';
-            officialsSelectAll.setAttribute('aria-label', allFilteredSelected ? 'Remove all listed officials' : 'Add all listed officials');
-            officialsSelectAll.innerHTML = allFilteredSelected ? selectAllRemoveIcon : selectAllAddIcon;
+            const shouldDisable = !hasFiltered || allFilteredSelected;
+            officialsSelectAll.disabled = shouldDisable;
+            officialsSelectAll.title = allFilteredSelected ? 'All listed officials already selected' : 'Add all listed';
+            officialsSelectAll.setAttribute('aria-label', allFilteredSelected ? 'All listed officials already selected' : 'Add all listed officials');
+            officialsSelectAll.innerHTML = selectAllAddIcon;
         };
 
         const renderOptions = () => {
@@ -343,22 +339,12 @@ window.initDraftTaPanel = (supabase) => {
 
             let changed = false;
 
-            const allFilteredSelected = filtered.every((emp) => selectedEmployees.includes(emp.name));
-            if (allFilteredSelected) {
-                const namesToRemove = new Set(filtered.map((emp) => emp.name));
-                const nextSelected = selectedEmployees.filter((name) => !namesToRemove.has(name));
-                if (nextSelected.length !== selectedEmployees.length) {
-                    selectedEmployees = nextSelected;
+            filtered.forEach((emp) => {
+                if (!selectedEmployees.includes(emp.name)) {
+                    selectedEmployees.push(emp.name);
                     changed = true;
                 }
-            } else {
-                filtered.forEach((emp) => {
-                    if (!selectedEmployees.includes(emp.name)) {
-                        selectedEmployees.push(emp.name);
-                        changed = true;
-                    }
-                });
-            }
+            });
 
             if (changed) {
                 updateDisplay();
