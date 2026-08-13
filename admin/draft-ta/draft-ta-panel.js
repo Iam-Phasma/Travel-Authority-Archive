@@ -594,10 +594,10 @@ window.initDraftTaPanel = (supabase) => {
             if (travelEndInput)   window.flatpickr(travelEndInput,  { ...flatpickrOpts, onChange: validateDates });
             if (dateRequestInput) window.flatpickr(dateRequestInput, flatpickrOpts);
         }
-        setDateDefault();
         await loadEmployees();
         multiSelect = createMultiSelect();
         restoreDraftTaState();
+        setDateDefault();
         multiSelect?.updateDisplay();
         multiSelect?.renderOptions();
     };
