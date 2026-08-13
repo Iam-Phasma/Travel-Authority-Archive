@@ -3130,7 +3130,7 @@ button:hover {
   border-radius: 12px;
   border: 1px solid rgba(15, 26, 31, 0.12);
   box-shadow: 0 8px 24px rgba(15, 26, 31, 0.15);
-  max-height: 280px;
+  max-height: 380px;
   overflow: hidden;
   z-index: 1000;
   opacity: 0;
@@ -3171,9 +3171,35 @@ button:hover {
 }
 
 .multiselect-options {
-  max-height: 220px;
+  max-height: 288px;
   overflow-y: auto;
   padding-bottom: 8px;
+}
+
+.multiselect-select-all {
+  padding: 0;
+  background: rgba(29, 122, 75, 0.14);
+  color: #1d7a4b;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.multiselect-select-all:hover {
+  background: rgba(29, 122, 75, 0.24);
+}
+
+.multiselect-select-all svg {
+  width: 18px;
+  height: 18px;
 }
 
 .multiselect-option {
