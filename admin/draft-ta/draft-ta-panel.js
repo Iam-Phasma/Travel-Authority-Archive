@@ -578,7 +578,7 @@ window.initDraftTaPanel = (supabase) => {
 
     // ── Create TA ────────────────────────────────────────────────────────────
     createBtn?.addEventListener('click', () => {
-        const missingConfigs = getMissingRequiredFields(true);
+        const missingConfigs = getMissingRequiredFields(false);
         if (missingConfigs.length > 0) {
             showRequiredFieldsWarning(missingConfigs);
             return;
