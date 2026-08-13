@@ -3210,6 +3210,15 @@ button:hover {
   background: rgba(29, 122, 75, 0.24);
 }
 
+.multiselect-select-all:disabled {
+  opacity: 0.42;
+  cursor: not-allowed;
+}
+
+.multiselect-select-all:disabled:hover {
+  background: rgba(29, 122, 75, 0.14);
+}
+
 .multiselect-select-all svg {
   width: 18px;
   height: 18px;
