@@ -14,6 +14,7 @@ window.initDraftTaPanel = (supabase) => {
     const officialsDropdown  = document.getElementById('panel-draft-ta-officials-dropdown');
     const officialsSearch    = document.getElementById('panel-draft-ta-officials-search');
     const officialsOptions   = document.getElementById('panel-draft-ta-officials-options');
+    const officialsCountIndicator = document.getElementById('panel-draft-ta-officials-count');
     const officialsSelectAll = document.getElementById('panel-draft-ta-officials-select-all');
     const officialsClearAll   = document.getElementById('panel-draft-ta-officials-clear-all');
     const clearBtn           = document.getElementById('panel-draft-ta-clear');
@@ -194,7 +195,12 @@ window.initDraftTaPanel = (supabase) => {
         const updateDisplay = () => {
             if (selectedEmployees.length === 0) {
                 officialsDisplay.innerHTML = '<span class="multiselect-placeholder">Select officials...</span>';
+                if (officialsCountIndicator) officialsCountIndicator.innerHTML = '<em>0 selected</em>';
                 return;
+            }
+            if (officialsCountIndicator) {
+                const count = selectedEmployees.length;
+                officialsCountIndicator.innerHTML = `<em>${count} selected</em>`;
             }
             officialsDisplay.innerHTML = selectedEmployees.map(name =>
                 `<span class="multiselect-tag">${escapeHtml(name)}<button type="button" class="multiselect-remove" data-name="${escapeHtml(name)}">&times;</button></span>`
