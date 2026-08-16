@@ -5,6 +5,7 @@
 window.initDraftTaPanel = (supabase) => {
     const purposeInput       = document.getElementById('panel-draft-ta-purpose');
     const destinationInput   = document.getElementById('panel-draft-ta-destination');
+    const destinationQuality = document.getElementById('panel-draft-ta-destination-quality');
     const travelTypeSelect   = document.getElementById('panel-draft-ta-travel-type');
     const fundingOptionSelect= document.getElementById('panel-draft-ta-funding-option');
     const dateRequestInput   = document.getElementById('panel-draft-ta-date-request');
@@ -32,6 +33,26 @@ window.initDraftTaPanel = (supabase) => {
     const getTodayLocalISO = () => {
         const now = new Date();
         return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    };
+
+    const updateDestinationQuality = () => {
+        if (!destinationQuality) return;
+
+        const destination = destinationInput?.value.trim() || '';
+        if (!destination) {
+            destinationQuality.hidden = true;
+            return;
+        }
+
+        const hasAdministrativeTerm = /\b(province|city|municipality|barangay|region|district|ncr|barmm|metro manila)\b/i.test(destination);
+        const hasKnownProvince = /\b(cavite|laguna|batangas|rizal|quezon)\b/i.test(destination);
+        const hasAdministrativeDetail = hasAdministrativeTerm || hasKnownProvince;
+
+        destinationQuality.textContent = hasAdministrativeDetail
+            ? 'Administrative location detail detected.'
+            : 'Consider adding a city or municipality and province or region.';
+        destinationQuality.classList.toggle('is-complete', hasAdministrativeDetail);
+        destinationQuality.hidden = false;
     };
 
     const escapeHtml = (str) => {
@@ -461,6 +482,7 @@ window.initDraftTaPanel = (supabase) => {
         selectedEmployees.length = 0;
         multiSelect?.updateDisplay();
         clearStoredDraftTaState();
+        updateDestinationQuality();
         purposeInput?.focus();
     };
 
@@ -524,11 +546,15 @@ window.initDraftTaPanel = (supabase) => {
                 const d = await r.json();
                 const a = d.address || {};
                 const parts = [
+                    a.barangay || a.suburb || a.village || a.neighbourhood || a.hamlet || a.quarter,
                     a.city || a.town || a.municipality || a.village || a.county,
-                    a.state || a.region || a.province,
-                    a.country
+                    a.province || a.county || a.state_district,
+                    a.region || a.state
                 ].filter(Boolean);
-                return parts.length ? parts.join(', ') : (d.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+                const uniqueParts = [...new Map(
+                    parts.map((part) => [String(part).toLowerCase(), part])
+                ).values()];
+                return uniqueParts.length ? uniqueParts.join(', ') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             } catch {
                 return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             }
@@ -620,7 +646,10 @@ window.initDraftTaPanel = (supabase) => {
 
     const bindDraftTaAutosave = () => {
         purposeInput?.addEventListener('input', persistDraftTaState);
-        destinationInput?.addEventListener('input', persistDraftTaState);
+        destinationInput?.addEventListener('input', () => {
+            persistDraftTaState();
+            updateDestinationQuality();
+        });
         travelTypeSelect?.addEventListener('change', persistDraftTaState);
         fundingOptionSelect?.addEventListener('change', persistDraftTaState);
         isoControlInput?.addEventListener('input', persistDraftTaState);
@@ -650,6 +679,7 @@ window.initDraftTaPanel = (supabase) => {
         await loadEmployees();
         multiSelect = createMultiSelect();
         restoreDraftTaState();
+        updateDestinationQuality();
         setDateDefault();
         multiSelect?.updateDisplay();
         multiSelect?.renderOptions();
