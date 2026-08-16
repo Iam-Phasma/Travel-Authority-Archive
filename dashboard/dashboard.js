@@ -3887,46 +3887,26 @@ const initDestinationsChart = async () => {
 
     let regionRows = null;
     let regionEntries = null;
-    let usedPsgc = false;
 
     const loadRegionData = async () => {
       if (regionRows && regionEntries) {
         return;
       }
 
-      const [{ data, error }, psgcEntries] = await Promise.all([
-        supabase
-          .from("travel_authorities")
-          .select("destination")
-          .eq("is_demo", false),
-        loadPsgcEntries().catch((err) => {
-          console.warn(
-            "PSGC API unavailable, using local classification data:",
-            err,
-          );
-          return null;
-        }),
-      ]);
+      const { data, error } = await supabase
+        .from("travel_authorities")
+        .select("destination")
+        .eq("is_demo", false);
 
       if (error) throw error;
       regionRows = data || [];
-      usedPsgc = !!psgcEntries;
-      regionEntries = psgcEntries
-        ? psgcEntries.regionEntries
-        : FALLBACK_REGION_ENTRIES;
+      regionEntries = FALLBACK_REGION_ENTRIES;
     };
 
     const dataBadge = document.getElementById("dest-data-badge");
-    const updateBadge = (view) => {
+    const updateBadge = () => {
       if (!dataBadge) return;
-      if (view !== "region" || !usedPsgc) {
-        dataBadge.hidden = true;
-        return;
-      }
-      dataBadge.textContent = "PSGC API";
-      dataBadge.className = "dest-data-badge dest-data-badge--api";
-      dataBadge.href = "https://psgc.rootscratch.com/";
-      dataBadge.hidden = false;
+      dataBadge.hidden = true;
     };
 
     let destChart = null;
@@ -4017,7 +3997,7 @@ const initDestinationsChart = async () => {
 
       const { labels, data, colors } =
         view === "region" ? await buildRegionData() : buildProvinceData();
-      updateBadge(view);
+      updateBadge();
 
       if (!labels.length) {
         canvas.parentElement.innerHTML =
