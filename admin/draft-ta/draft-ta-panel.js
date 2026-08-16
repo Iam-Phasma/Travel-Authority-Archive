@@ -65,13 +65,26 @@ window.initDraftTaPanel = (supabase) => {
         });
     };
 
-    const formatMapDestination = (address, displayName) => {
+    const formatMapDestination = (address, displayName, resultName = '') => {
+        const placeName = [
+            resultName,
+            address.name,
+            address.amenity,
+            address.office,
+            address.shop,
+            address.tourism,
+            address.leisure,
+            address.building
+        ].find((value) => {
+            const normalized = String(value || '').trim().toLowerCase();
+            return normalized && normalized !== 'yes' && normalized !== 'building';
+        }) || '';
         const barangay = address.barangay || address.suburb || address.village || address.neighbourhood || address.hamlet || address.quarter || '';
         const city = address.city || address.municipality || address.town || '';
         const region = address.region || address.state || '';
         const province = address.province || address.county || address.state_district || deriveProvinceFromDisplayName(displayName, { barangay, city, region });
 
-        return uniqueDestinationParts([barangay, city, province, region]).join(', ');
+        return uniqueDestinationParts([placeName, barangay, city, province, region]).join(', ');
     };
 
     const deriveProvinceFromDisplayName = (displayName, context) => {
@@ -615,7 +628,7 @@ window.initDraftTaPanel = (supabase) => {
                 );
                 const d = await r.json();
                 const a = d.address || {};
-                return formatMapDestination(a, d.display_name || '') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                return formatMapDestination(a, d.display_name || '', d.name || d.namedetails?.name) || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             } catch {
                 return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             }
@@ -638,7 +651,7 @@ window.initDraftTaPanel = (supabase) => {
             selectedEl.textContent = 'Looking up location...';
             selectedEl.classList.remove('has-location');
             confirmBtn.disabled = true;
-            selectedLocation = formatMapDestination(result.address || {}, result.display_name || '') || await reverseGeocode(lat, lng);
+            selectedLocation = formatMapDestination(result.address || {}, result.display_name || '', result.name || result.namedetails?.name) || await reverseGeocode(lat, lng);
             if (!document.getElementById('draft-ta-map-modal')) return;
             selectedEl.textContent = selectedLocation;
             selectedEl.classList.add('has-location');
@@ -658,6 +671,7 @@ window.initDraftTaPanel = (supabase) => {
             searchUrl.searchParams.set('q', query);
             searchUrl.searchParams.set('countrycodes', 'ph');
             searchUrl.searchParams.set('addressdetails', '1');
+            searchUrl.searchParams.set('namedetails', '1');
             searchUrl.searchParams.set('limit', '20');
 
             try {
