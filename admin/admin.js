@@ -127,7 +127,7 @@ const employeePanelLoaded = Promise.all([
   });
 
 // Load draft-ta panel
-const draftTaPanelLoaded = fetch("draft-ta/draft-ta-panel.html")
+const draftTaPanelLoaded = fetch("draft-ta/draft-ta-panel.html?v=20260816-1")
   .then((r) => r.text())
   .then((panelHTML) => {
     document.getElementById("draft-ta-panel-container").innerHTML = panelHTML;
