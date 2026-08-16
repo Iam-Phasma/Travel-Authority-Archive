@@ -4268,6 +4268,7 @@ viewPanelLoaded.then(() => {
           ta_number: taNumber,
           purpose: purpose,
           destination: destination,
+          province: window.classifyDestinationProvince?.(destination) ?? "Others",
           employees: employees,
           travel_date: travelDate,
           travel_until: travelUntil,

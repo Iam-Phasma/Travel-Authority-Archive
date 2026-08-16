@@ -3881,32 +3881,42 @@ const initDestinationsChart = async () => {
   ];
 
   try {
-    // Fetch travel authorities and PSGC geographic data in parallel
-    const [{ data: tas, error: taError }, psgcEntries] = await Promise.all([
-      supabase
-        .from("travel_authorities")
-        .select("destination")
-        .eq("is_demo", false),
-      loadPsgcEntries().catch((err) => {
-        console.warn(
-          "PSGC API unavailable, using local classification data:",
-          err,
-        );
-        return null;
-      }),
-    ]);
+    const { data: provinceCounts, error: provinceCountsError } =
+      await supabase.rpc("get_travel_authority_province_counts");
+    if (provinceCountsError) throw provinceCountsError;
 
-    if (taError) throw taError;
+    let regionRows = null;
+    let regionEntries = null;
+    let usedPsgc = false;
 
-    const REGION_ENTRIES = psgcEntries
-      ? psgcEntries.regionEntries
-      : FALLBACK_REGION_ENTRIES;
-    const CALABARZON_ENTRIES = psgcEntries
-      ? psgcEntries.calabarzonEntries
-      : FALLBACK_CALABARZON_ENTRIES;
+    const loadRegionData = async () => {
+      if (regionRows && regionEntries) {
+        return;
+      }
+
+      const [{ data, error }, psgcEntries] = await Promise.all([
+        supabase
+          .from("travel_authorities")
+          .select("destination")
+          .eq("is_demo", false),
+        loadPsgcEntries().catch((err) => {
+          console.warn(
+            "PSGC API unavailable, using local classification data:",
+            err,
+          );
+          return null;
+        }),
+      ]);
+
+      if (error) throw error;
+      regionRows = data || [];
+      usedPsgc = !!psgcEntries;
+      regionEntries = psgcEntries
+        ? psgcEntries.regionEntries
+        : FALLBACK_REGION_ENTRIES;
+    };
 
     const dataBadge = document.getElementById("dest-data-badge");
-    const usedPsgc = !!psgcEntries;
     const updateBadge = (view) => {
       if (!dataBadge) return;
       if (view !== "region" || !usedPsgc) {
@@ -3963,25 +3973,39 @@ const initDestinationsChart = async () => {
         .join("");
     };
 
-    const buildData = (entries, palette) => {
-      const counts = {};
-      (tas || []).forEach((ta) => {
-        const label = classifyDest(ta.destination, entries);
-        counts[label] = (counts[label] || 0) + 1;
-      });
+    const formatCounts = (counts, palette) => {
       const sorted = Object.entries(counts)
-        .filter(([k]) => k !== "Others")
-        .sort((a, b) => b[1] - a[1]);
-      if (counts["Others"]) sorted.push(["Others", counts["Others"]]);
-      const labels = sorted.map((e) => e[0]);
-      const data = sorted.map((e) => e[1]);
-      const colors = labels.map((l, i) =>
-        l === "Others" ? "#94a3b8" : palette[i % palette.length],
+        .filter(([label]) => label !== "Others")
+        .sort(([, firstCount], [, secondCount]) => secondCount - firstCount);
+      if (counts.Others) sorted.push(["Others", counts.Others]);
+      const labels = sorted.map(([label]) => label);
+      const data = sorted.map(([, count]) => count);
+      const colors = labels.map((label, index) =>
+        label === "Others" ? "#94a3b8" : palette[index % palette.length],
       );
       return { labels, data, colors };
     };
 
-    const renderChart = (view) => {
+    const buildProvinceData = () => {
+      const counts = {};
+      (provinceCounts || []).forEach(({ province, total }) => {
+        const label = province || "Others";
+        counts[label] = (counts[label] || 0) + Number(total);
+      });
+      return formatCounts(counts, CALABARZON_PALETTE);
+    };
+
+    const buildRegionData = async () => {
+      await loadRegionData();
+      const counts = {};
+      regionRows.forEach((ta) => {
+        const label = classifyDest(ta.destination, regionEntries);
+        counts[label] = (counts[label] || 0) + 1;
+      });
+      return formatCounts(counts, REGION_PALETTE);
+    };
+
+    const renderChart = async (view) => {
       if (title) {
         title.textContent =
           DESTINATION_TITLES[view] || DESTINATION_TITLES.region;
@@ -3990,11 +4014,10 @@ const initDestinationsChart = async () => {
         subtitle.textContent =
           DESTINATION_SUBTITLES[view] || DESTINATION_SUBTITLES.region;
       }
-      updateBadge(view);
 
-      const entries = view === "region" ? REGION_ENTRIES : CALABARZON_ENTRIES;
-      const palette = view === "region" ? REGION_PALETTE : CALABARZON_PALETTE;
-      const { labels, data, colors } = buildData(entries, palette);
+      const { labels, data, colors } =
+        view === "region" ? await buildRegionData() : buildProvinceData();
+      updateBadge(view);
 
       if (!labels.length) {
         canvas.parentElement.innerHTML =
@@ -4049,7 +4072,7 @@ const initDestinationsChart = async () => {
       queueInsightsLayoutSync();
     };
 
-    renderChart("calabarzon");
+    await renderChart("calabarzon");
     syncSegmentedControl(
       document.querySelector(".dest-switcher[data-segmented-control]"),
     );
@@ -4061,7 +4084,9 @@ const initDestinationsChart = async () => {
           .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         syncSegmentedControl(btn.closest("[data-segmented-control]"));
-        renderChart(btn.dataset.view);
+        void renderChart(btn.dataset.view).catch((error) => {
+          console.error("Destinations chart error:", error);
+        });
       });
     });
   } catch (e) {
