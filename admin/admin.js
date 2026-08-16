@@ -2989,8 +2989,8 @@ viewPanelLoaded.then(() => {
             const safeFileUrl = safeUrl(record.file_url);
             viewFileLink.href = safeFileUrl;
             viewFileLink.dataset.fileUrl = safeFileUrl;
-            viewFileLink.dataset.fileName = record.file_name || "Open file";
-            viewFileLink.textContent = record.file_name || "Open file";
+            viewFileLink.dataset.fileName = record.file_name || "Download";
+            viewFileLink.textContent = "Download";
             updateViewFileSize(safeFileUrl);
           } else {
             viewFileLink.href = "#";

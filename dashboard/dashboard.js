@@ -1389,8 +1389,8 @@ const openViewModalForRecord = async (record) => {
     const safeFileUrl = record.file_url;
     viewFileLink.href = safeFileUrl;
     viewFileLink.dataset.fileUrl = safeFileUrl;
-    viewFileLink.dataset.fileName = record.file_name || "Open file";
-    viewFileLink.textContent = record.file_name || "Open file";
+    viewFileLink.dataset.fileName = record.file_name || "Download";
+    viewFileLink.textContent = "Download";
     await updateViewFileSize(safeFileUrl);
   } else {
     viewFileLink.href = "#";
@@ -2054,6 +2054,20 @@ const applyDashboardMatchAllFilterVisibility = (hide) => {
   filterMode.toggleAttribute("hidden", hide);
 };
 
+const settingsHideMatchAllFilter = document.getElementById(
+  "settings-hide-match-all-filter",
+);
+if (settingsHideMatchAllFilter) {
+  settingsHideMatchAllFilter.checked = getDashboardHideMatchAllFilter();
+  settingsHideMatchAllFilter.addEventListener("change", () => {
+    const hide = settingsHideMatchAllFilter.checked;
+    localStorage.setItem(FILTER_MATCH_ALL_VISIBILITY_KEY, hide);
+    applyDashboardMatchAllFilterVisibility(hide);
+  });
+}
+
+applyDashboardMatchAllFilterVisibility(getDashboardHideMatchAllFilter());
+
 const saveFiltersToStorage = () => {
   localStorage.setItem("dashboardFilters", JSON.stringify(activeFilters));
 };
@@ -2575,8 +2589,8 @@ const bindDashRowEvents = (trs) => {
           const safeFileUrl = safeUrl(record.file_url);
           viewFileLink.href = safeFileUrl;
           viewFileLink.dataset.fileUrl = safeFileUrl;
-          viewFileLink.dataset.fileName = record.file_name || "Open file";
-          viewFileLink.textContent = record.file_name || "Open file";
+          viewFileLink.dataset.fileName = record.file_name || "Download";
+          viewFileLink.textContent = "Download";
           updateViewFileSize(safeFileUrl);
         } else {
           viewFileLink.href = "#";
