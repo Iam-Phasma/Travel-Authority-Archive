@@ -55,6 +55,49 @@ window.initDraftTaPanel = (supabase) => {
         destinationQuality.hidden = false;
     };
 
+    const uniqueDestinationParts = (parts) => {
+        const seen = new Set();
+        return parts.filter((part) => {
+            const value = String(part || '').trim();
+            if (!value || seen.has(value.toLowerCase())) return false;
+            seen.add(value.toLowerCase());
+            return true;
+        });
+    };
+
+    const formatMapDestination = (address, displayName) => {
+        const barangay = address.barangay || address.suburb || address.village || address.neighbourhood || address.hamlet || address.quarter || '';
+        const city = address.city || address.municipality || address.town || '';
+        const region = address.region || address.state || '';
+        const province = address.province || address.county || address.state_district || deriveProvinceFromDisplayName(displayName, { barangay, city, region });
+
+        return uniqueDestinationParts([barangay, city, province, region]).join(', ');
+    };
+
+    const deriveProvinceFromDisplayName = (displayName, context) => {
+        const parts = String(displayName || '').split(',').map((part) => part.trim()).filter(Boolean);
+        const contextParts = new Set(Object.values(context).map((part) => String(part || '').trim().toLowerCase()).filter(Boolean));
+        const cityIndex = parts.findIndex((part) => part.toLowerCase() === String(context.city || '').trim().toLowerCase());
+
+        if (cityIndex > -1) {
+            for (let index = cityIndex + 1; index < parts.length; index += 1) {
+                const candidate = parts[index];
+                const normalized = candidate.toLowerCase();
+                if (!contextParts.has(normalized) && normalized !== 'philippines' && normalized !== 'pilipinas' && !/^[0-9\-]+$/.test(normalized)) {
+                    return candidate;
+                }
+            }
+        }
+
+        const regionIndex = parts.findIndex((part) => part.toLowerCase() === String(context.region || '').trim().toLowerCase());
+        if (regionIndex > 0) {
+            const candidate = parts[regionIndex - 1];
+            if (!contextParts.has(candidate.toLowerCase())) return candidate;
+        }
+
+        return '';
+    };
+
     const escapeHtml = (str) => {
         const div = document.createElement('div');
         div.appendChild(document.createTextNode(String(str ?? '')));
@@ -500,9 +543,20 @@ window.initDraftTaPanel = (supabase) => {
             <div class="map-picker-backdrop"></div>
             <div class="map-picker-dialog">
                 <div class="map-picker-header">
-                    <h3>Pick Destination</h3>
+                    <div class="map-picker-heading">
+                        <h3>Pick Destination</h3>
+                        <p class="map-picker-hint">Click anywhere on the map to pin your destination.</p>
+                    </div>
+                    <div class="map-picker-search">
+                        <div class="map-picker-search-input-wrap">
+                            <input id="draft-ta-map-search" class="map-picker-search-input" type="search" placeholder="Search destination" aria-label="Search for a destination" autocomplete="off">
+                            <button id="draft-ta-map-search-clear" class="map-picker-search-clear" type="button" aria-label="Clear destination search" title="Clear destination search" hidden>
+                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m6 6 12 12M18 6 6 18"/></svg>
+                            </button>
+                        </div>
+                        <div id="draft-ta-map-search-results" class="map-picker-search-results" hidden></div>
+                    </div>
                 </div>
-                <p class="map-picker-hint">Click anywhere on the map to pin your destination.</p>
                 <div id="draft-ta-leaflet-map" class="map-picker-map"></div>
                 <div class="map-picker-footer">
                     <span class="map-picker-selected" id="draft-ta-map-selected">No location selected</span>
@@ -518,6 +572,13 @@ window.initDraftTaPanel = (supabase) => {
         let leafletMap = null;
         let marker = null;
         let selectedLocation = null;
+        let searchTimer = null;
+        let searchRequestId = 0;
+
+        const searchInput = document.getElementById('draft-ta-map-search');
+        const searchClearButton = document.getElementById('draft-ta-map-search-clear');
+        const searchPanel = modal.querySelector('.map-picker-search');
+        const searchResults = document.getElementById('draft-ta-map-search-results');
 
         const closeModal = () => {
             modal.remove();
@@ -537,6 +598,15 @@ window.initDraftTaPanel = (supabase) => {
         }).addTo(leafletMap);
         setTimeout(() => leafletMap && leafletMap.invalidateSize(), 120);
 
+        const clearSearchResults = () => {
+            searchResults.innerHTML = '';
+            searchResults.hidden = true;
+        };
+
+        const updateSearchClearButton = () => {
+            searchClearButton.hidden = !searchInput.value;
+        };
+
         const reverseGeocode = async (lat, lng) => {
             try {
                 const r = await fetch(
@@ -545,20 +615,120 @@ window.initDraftTaPanel = (supabase) => {
                 );
                 const d = await r.json();
                 const a = d.address || {};
-                const parts = [
-                    a.barangay || a.suburb || a.village || a.neighbourhood || a.hamlet || a.quarter,
-                    a.city || a.town || a.municipality || a.village || a.county,
-                    a.province || a.county || a.state_district,
-                    a.region || a.state
-                ].filter(Boolean);
-                const uniqueParts = [...new Map(
-                    parts.map((part) => [String(part).toLowerCase(), part])
-                ).values()];
-                return uniqueParts.length ? uniqueParts.join(', ') : `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+                return formatMapDestination(a, d.display_name || '') || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             } catch {
                 return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
             }
         };
+
+        const selectSearchResult = async (result) => {
+            const lat = Number(result.lat);
+            const lng = Number(result.lon);
+            if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
+
+            clearSearchResults();
+            searchInput.value = result.display_name || searchInput.value;
+            updateSearchClearButton();
+            leafletMap.setView([lat, lng], 15);
+            if (marker) marker.remove();
+            marker = window.L.marker([lat, lng]).addTo(leafletMap);
+
+            const selectedEl = document.getElementById('draft-ta-map-selected');
+            const confirmBtn = document.getElementById('draft-ta-map-confirm');
+            selectedEl.textContent = 'Looking up location...';
+            selectedEl.classList.remove('has-location');
+            confirmBtn.disabled = true;
+            selectedLocation = formatMapDestination(result.address || {}, result.display_name || '') || await reverseGeocode(lat, lng);
+            if (!document.getElementById('draft-ta-map-modal')) return;
+            selectedEl.textContent = selectedLocation;
+            selectedEl.classList.add('has-location');
+            confirmBtn.disabled = false;
+        };
+
+        const searchLocations = async () => {
+            const query = searchInput.value.trim();
+            if (!query) {
+                clearSearchResults();
+                return;
+            }
+
+            const requestId = ++searchRequestId;
+            const searchUrl = new URL('https://nominatim.openstreetmap.org/search');
+            searchUrl.searchParams.set('format', 'jsonv2');
+            searchUrl.searchParams.set('q', query);
+            searchUrl.searchParams.set('countrycodes', 'ph');
+            searchUrl.searchParams.set('addressdetails', '1');
+            searchUrl.searchParams.set('limit', '20');
+
+            try {
+                const response = await fetch(searchUrl.toString(), { headers: { Accept: 'application/json' } });
+                if (!response.ok) throw new Error('Search is unavailable right now.');
+                const results = await response.json();
+                if (requestId !== searchRequestId) return;
+
+                searchResults.innerHTML = '';
+                if (!Array.isArray(results) || !results.length) {
+                    searchResults.innerHTML = '<p class="map-picker-search-empty">No matching places found in the Philippines.</p>';
+                } else {
+                    const fragment = document.createDocumentFragment();
+                    results.forEach((result) => {
+                        const button = document.createElement('button');
+                        button.type = 'button';
+                        button.className = 'map-picker-search-result';
+                        button.textContent = result.display_name || 'Unnamed location';
+                        button.addEventListener('click', () => { void selectSearchResult(result); });
+                        fragment.appendChild(button);
+                    });
+                    searchResults.appendChild(fragment);
+                }
+                searchResults.hidden = !searchPanel.contains(document.activeElement);
+            } catch (error) {
+                if (requestId !== searchRequestId) return;
+                searchResults.innerHTML = `<p class="map-picker-search-empty">${error.message || 'Search failed. Try another keyword.'}</p>`;
+                searchResults.hidden = !searchPanel.contains(document.activeElement);
+            }
+        };
+
+        searchInput.addEventListener('input', () => {
+            window.clearTimeout(searchTimer);
+            updateSearchClearButton();
+            if (!searchInput.value.trim()) {
+                searchRequestId += 1;
+                clearSearchResults();
+                return;
+            }
+            searchTimer = window.setTimeout(() => { void searchLocations(); }, 300);
+        });
+        searchClearButton.addEventListener('click', () => {
+            window.clearTimeout(searchTimer);
+            searchRequestId += 1;
+            searchInput.value = '';
+            updateSearchClearButton();
+            clearSearchResults();
+            searchInput.focus();
+        });
+        searchInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                window.clearTimeout(searchTimer);
+                void searchLocations();
+            }
+        });
+        searchPanel.addEventListener('focusin', () => {
+            if (searchResults.children.length) {
+                searchResults.hidden = false;
+            } else if (searchInput.value.trim()) {
+                void searchLocations();
+            }
+        });
+        searchPanel.addEventListener('focusout', () => {
+            window.setTimeout(() => {
+                if (!searchPanel.contains(document.activeElement)) {
+                    searchResults.hidden = true;
+                }
+            }, 0);
+        });
+        updateSearchClearButton();
 
         leafletMap.on('click', async (e) => {
             const { lat, lng } = e.latlng;
