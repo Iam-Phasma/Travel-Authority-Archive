@@ -25,10 +25,13 @@ window.initDraftTaPanel = (supabase) => {
 
     if (!purposeInput) return; // panel not in DOM yet
 
+    if (purposeInput._draftTaPanelInitPromise) {
+        return purposeInput._draftTaPanelInitPromise;
+    }
+
     let employeesList = [];
     let selectedEmployees = [];
     let multiSelect = null;
-    let panelInitialized = false;
 
     const getTodayLocalISO = () => {
         const now = new Date();
@@ -851,8 +854,6 @@ window.initDraftTaPanel = (supabase) => {
 
     // ── Init ───────────────────────────────────────────────────────────────
     const init = async () => {
-        if (panelInitialized) return;
-        panelInitialized = true;
         bindDraftTaAutosave();
         // Init Flatpickr date pickers (matching Upload panel options)
         if (window.flatpickr) {
@@ -860,8 +861,10 @@ window.initDraftTaPanel = (supabase) => {
             if (travelEndInput)   window.flatpickr(travelEndInput,  { ...flatpickrOpts, onChange: validateDates });
             if (dateRequestInput) window.flatpickr(dateRequestInput, flatpickrOpts);
         }
-        await loadEmployees();
         multiSelect = createMultiSelect();
+        multiSelect?.updateDisplay();
+        multiSelect?.renderOptions();
+        await loadEmployees();
         restoreDraftTaState();
         updateDestinationQuality();
         setDateDefault();
@@ -871,5 +874,6 @@ window.initDraftTaPanel = (supabase) => {
 
     // Expose so callers can re-trigger if needed
     window.draftTaPanelInit = init;
-    void init();
+    purposeInput._draftTaPanelInitPromise = init();
+    return purposeInput._draftTaPanelInitPromise;
 };
