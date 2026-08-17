@@ -659,7 +659,7 @@ body.dashboard-page::before {
   width: var(--seg-pill-w);
   height: var(--seg-pill-h);
   border-radius: 9px;
-  background: linear-gradient(180deg, #ffffff 0%, #f5f8ff 100%);
+  background: #ffffff;
   transform: translateX(var(--seg-pill-x));
   transition:
     transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
