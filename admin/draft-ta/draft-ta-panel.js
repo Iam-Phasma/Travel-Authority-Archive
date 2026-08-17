@@ -38,6 +38,40 @@ window.initDraftTaPanel = (supabase) => {
         return new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
     };
 
+    const autoResizeTextarea = (textarea) => {
+        if (!textarea || textarea.dataset.manualResize === 'true') return;
+
+        const styles = window.getComputedStyle(textarea);
+        const lineHeight = parseFloat(styles.lineHeight) || 24;
+        const verticalPadding = (parseFloat(styles.paddingTop) || 0) + (parseFloat(styles.paddingBottom) || 0);
+        const maxHeight = lineHeight * 5 + verticalPadding;
+
+        textarea.style.height = 'auto';
+        const nextHeight = Math.min(textarea.scrollHeight, maxHeight);
+        textarea.style.height = `${nextHeight}px`;
+        textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+        textarea.dataset.autoHeight = String(nextHeight);
+    };
+
+    const bindTextareaAutoResize = (textarea) => {
+        if (!textarea) return;
+
+        let resizeStartHeight = 0;
+        textarea.addEventListener('pointerdown', () => {
+            resizeStartHeight = textarea.getBoundingClientRect().height;
+        });
+        window.addEventListener('pointerup', () => {
+            if (!resizeStartHeight) return;
+            if (Math.abs(textarea.getBoundingClientRect().height - resizeStartHeight) > 2) {
+                textarea.dataset.manualResize = 'true';
+                textarea.style.overflowY = 'auto';
+            }
+            resizeStartHeight = 0;
+        });
+        textarea.addEventListener('input', () => autoResizeTextarea(textarea));
+        autoResizeTextarea(textarea);
+    };
+
     const updateDestinationQuality = () => {
         if (!destinationQuality) return;
 
@@ -181,6 +215,8 @@ window.initDraftTaPanel = (supabase) => {
                 travelEndInput._flatpickr.setDate(parsed.travelEnd, true);
             }
 
+            autoResizeTextarea(purposeInput);
+            autoResizeTextarea(destinationInput);
             validateDates();
             multiSelect?.updateDisplay();
             multiSelect?.renderOptions();
@@ -538,6 +574,11 @@ window.initDraftTaPanel = (supabase) => {
         else if (dateRequestInput) dateRequestInput.value = getTodayLocalISO();
         if (travelDateInput?._flatpickr)  travelDateInput._flatpickr.clear();
         if (travelEndInput?._flatpickr)   { travelEndInput._flatpickr.clear(); }
+        [purposeInput, destinationInput].forEach((textarea) => {
+            if (!textarea) return;
+            delete textarea.dataset.manualResize;
+            autoResizeTextarea(textarea);
+        });
         selectedEmployees.length = 0;
         multiSelect?.updateDisplay();
         clearStoredDraftTaState();
@@ -855,6 +896,8 @@ window.initDraftTaPanel = (supabase) => {
     // ── Init ───────────────────────────────────────────────────────────────
     const init = async () => {
         bindDraftTaAutosave();
+        bindTextareaAutoResize(purposeInput);
+        bindTextareaAutoResize(destinationInput);
         // Init Flatpickr date pickers (matching Upload panel options)
         if (window.flatpickr) {
             if (travelDateInput)  window.flatpickr(travelDateInput, { ...flatpickrOpts, onChange: validateDates });
