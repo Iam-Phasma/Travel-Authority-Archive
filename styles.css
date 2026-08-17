@@ -509,7 +509,7 @@ input[type="file"] {
   outline: none;
   box-sizing: border-box;
   min-height: calc(1.5em + 28px);
-  max-height: 144px;
+  max-height: none;
   overflow-y: auto;
   transition: height 120ms ease;
 }
