@@ -3990,13 +3990,31 @@ const initDestinationsChart = async () => {
     };
 
     const buildRegionData = async () => {
-      await loadRegionData();
-      const counts = {};
-      regionRows.forEach((ta) => {
-        const label = classifyDest(ta.destination, regionEntries);
-        counts[label] = (counts[label] || 0) + 1;
-      });
-      return formatCounts(counts, REGION_PALETTE);
+      try {
+        const { data, error } = await supabase.rpc(
+          "get_travel_authority_region_counts",
+        );
+        if (error) throw error;
+
+        const counts = {};
+        (data || []).forEach(({ region, total }) => {
+          const label = region || "Others";
+          counts[label] = Number(total);
+        });
+        return formatCounts(counts, REGION_PALETTE);
+      } catch (error) {
+        console.warn(
+          "Falling back to client-side region classification:",
+          error,
+        );
+        await loadRegionData();
+        const counts = {};
+        regionRows.forEach((ta) => {
+          const label = classifyDest(ta.destination, regionEntries);
+          counts[label] = (counts[label] || 0) + 1;
+        });
+        return formatCounts(counts, REGION_PALETTE);
+      }
     };
 
     const renderChart = async (view) => {
