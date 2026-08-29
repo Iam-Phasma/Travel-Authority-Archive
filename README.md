@@ -2,6 +2,8 @@
 
 Internal web application for managing travel authority records. This repository contains the app source, supporting SQL, and deployment assets.
 
+Open: https://iam-phasma.github.io/Travel-Authority-Archive/
+
 ## Project Notes
 
 - The app is built with Vite, HTML, CSS, and vanilla JavaScript.
