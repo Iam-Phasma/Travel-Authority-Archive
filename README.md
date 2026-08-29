@@ -2,26 +2,12 @@
 
 Internal web application for managing travel authority records. This repository contains the app source, supporting SQL, and deployment assets.
 
-## Local Development
-
-```bash
-npm install
-npm run dev
-```
-
-## Build
-
-```bash
-npm run build
-npm run preview
-```
-
 ## Project Notes
 
 - The app is built with Vite, HTML, CSS, and vanilla JavaScript.
-- Backend services and environment-specific configuration live outside the frontend entry points.
+- Back-end services and environment-specific configuration live outside the front-end entry points.
 - Keep secrets and production-specific values out of source control.
-- Review the SQL and Supabase function files before making backend changes.
+- Review the SQL and Supabase function files before making back-end changes.
 
 ## Repository Layout
 
@@ -33,7 +19,3 @@ npm run preview
 - `supabase/functions/` - server-side functions
 - `scripts/` - build and maintenance utilities
 
-## Maintenance
-
-- Review `DESIGN-SYSTEM.md` after UI changes.
-- Re-test auth, routing, and record flows after backend updates.
