@@ -4,6 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Dashboard</title>
+    <script>
+        (function () {
+            var productionUrl = "%VITE_PRODUCTION_URL%".trim();
+            var isGitHubPagesHost = location.hostname === "iam-phasma.github.io";
+            if (!isGitHubPagesHost) return;
+            if (!productionUrl || productionUrl.indexOf("VITE_PRODUCTION_URL") !== -1) return;
+
+            var targetBase = productionUrl.replace(/\/+$/, "");
+            var repoBase = "/Travel-Authority-Archive";
+            var currentPath = location.pathname.startsWith(repoBase)
+                ? location.pathname.slice(repoBase.length)
+                : location.pathname;
+            if (!currentPath) currentPath = "/";
+
+            var targetUrl = targetBase + currentPath + location.search + location.hash;
+            if (targetUrl !== location.href) {
+                location.replace(targetUrl);
+            }
+        })();
+    </script>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
     <!-- fullcalendar CSS — kept as CDN (global build) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
