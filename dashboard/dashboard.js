@@ -2378,7 +2378,14 @@ const setFileLinkLoading = (linkEl, loading) => {
 
 const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
   const safeFileUrl = safeUrl(fileUrl);
-  if (safeFileUrl === "#") return;
+  if (safeFileUrl === "#") {
+    console.warn("[file-open] Invalid or unsupported file URL", {
+      fileUrl,
+      fileName,
+    });
+    showToast("This file link is invalid or missing.", "error", 3600);
+    return;
+  }
 
   setFileLinkLoading(triggerEl, true);
 
@@ -2387,20 +2394,32 @@ const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
   let openedTab = null;
   try {
     openedTab = window.open("", "_blank");
-    if (openedTab) {
-      openedTab.opener = null;
-    }
   } catch (error) {
     openedTab = null;
+  }
+  if (openedTab) {
+    try {
+      openedTab.opener = null;
+    } catch (error) {
+      // Keep the tab reference even if opener cannot be changed.
+    }
   }
 
   try {
     const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+    console.info("[file-open] Opening file", {
+      fileName,
+      isCompressed,
+      url: safeFileUrl,
+    });
 
     // If compressed, reconstruct the original file before opening.
     if (isCompressed) {
       try {
         const response = await fetch(safeFileUrl, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`Download failed (${response.status})`);
+        }
         const mimeType = getReconstructedMimeType(fileName);
         const rebuiltBlob = await decompressGzipToBlob(response, mimeType);
 
@@ -2411,18 +2430,18 @@ const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
         } else {
           const fallbackTab = window.open(objectUrl, "_blank", "noopener");
           if (!fallbackTab) {
-            showToast(
-              "Popup blocked. Allow popups for this site to open downloads in a new tab.",
-              "warning",
-              3600,
-            );
+            window.location.assign(objectUrl);
           }
         }
 
         setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
         return;
       } catch (error) {
-        console.error("Failed to decompress file:", error);
+        console.error("[file-open] Failed to reconstruct compressed file", {
+          url: safeFileUrl,
+          fileName,
+          error,
+        });
         showToast(
           "Could not reconstruct compressed file. Opening original download.",
           "warning",
@@ -2439,11 +2458,7 @@ const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
     } else {
       const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
       if (!fallbackTab) {
-        showToast(
-          "Popup blocked. Allow popups for this site to open downloads in a new tab.",
-          "warning",
-          3600,
-        );
+        window.location.assign(safeFileUrl);
       }
     }
   } finally {
@@ -2484,18 +2499,6 @@ const updateViewFileSize = async (fileUrl) => {
   ) {
     return;
   }
-      if (openedTab && !openedTab.closed) {
-        openedTab.location.href = safeFileUrl;
-      } else {
-        const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
-        if (!fallbackTab) {
-          showToast(
-            "Popup blocked. Allow popups for this site to open downloads in a new tab.",
-            "warning",
-            3600,
-          );
-        }
-      }
   viewFileSize.textContent = size
     ? formatFileSize(size)
     : "File size: Unavailable";
