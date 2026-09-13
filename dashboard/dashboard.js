@@ -2371,7 +2371,11 @@ const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
         } else {
           const fallbackTab = window.open(objectUrl, "_blank", "noopener");
           if (!fallbackTab) {
-            window.location.assign(objectUrl);
+            showToast(
+              "Popup blocked. Allow popups for this site to open downloads in a new tab.",
+              "warning",
+              3600,
+            );
           }
         }
 
@@ -2429,7 +2433,11 @@ const updateViewFileSize = async (fileUrl) => {
       } else {
         const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
         if (!fallbackTab) {
-          window.location.assign(safeFileUrl);
+          showToast(
+            "Popup blocked. Allow popups for this site to open downloads in a new tab.",
+            "warning",
+            3600,
+          );
         }
       }
   viewFileSize.textContent = size

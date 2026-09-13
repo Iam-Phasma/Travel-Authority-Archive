@@ -2613,7 +2613,11 @@ viewPanelLoaded.then(() => {
           } else {
             const fallbackTab = window.open(objectUrl, "_blank", "noopener");
             if (!fallbackTab) {
-              window.location.assign(objectUrl);
+                showToast(
+                  "Popup blocked. Allow popups for this site to open downloads in a new tab.",
+                  "warning",
+                  3600,
+                );
             }
           }
 
@@ -2632,7 +2636,11 @@ viewPanelLoaded.then(() => {
       } else {
         const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
         if (!fallbackTab) {
-          window.location.assign(safeFileUrl);
+          showToast(
+            "Popup blocked. Allow popups for this site to open downloads in a new tab.",
+            "warning",
+            3600,
+          );
         }
       }
 
