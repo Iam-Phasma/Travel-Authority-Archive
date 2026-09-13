@@ -2571,6 +2571,18 @@ viewPanelLoaded.then(() => {
 
     setFileLinkLoading(triggerEl, true);
 
+    // Open a tab synchronously within the click gesture so later async work
+    // (gzip decompression) does not get blocked by popup protection.
+    let openedTab = null;
+    try {
+      openedTab = window.open("", "_blank");
+      if (openedTab) {
+        openedTab.opener = null;
+      }
+    } catch (error) {
+      openedTab = null;
+    }
+
     try {
       // Check if browser supports DecompressionStream (most modern desktop browsers)
       const supportsDecompression = typeof DecompressionStream === "function";
@@ -2595,7 +2607,15 @@ viewPanelLoaded.then(() => {
           const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
 
           const objectUrl = URL.createObjectURL(rebuiltBlob);
-          window.open(objectUrl, "_blank", "noopener");
+
+          if (openedTab && !openedTab.closed) {
+            openedTab.location.href = objectUrl;
+          } else {
+            const fallbackTab = window.open(objectUrl, "_blank", "noopener");
+            if (!fallbackTab) {
+              window.location.assign(objectUrl);
+            }
+          }
 
           setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
           return;
@@ -2607,7 +2627,14 @@ viewPanelLoaded.then(() => {
 
       // For non-compressed files or when decompression not supported/failed:
       // Open the file URL in a new tab
-      window.open(safeFileUrl, "_blank", "noopener");
+      if (openedTab && !openedTab.closed) {
+        openedTab.location.href = safeFileUrl;
+      } else {
+        const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
+        if (!fallbackTab) {
+          window.location.assign(safeFileUrl);
+        }
+      }
 
       if (isCompressed && !supportsDecompression) {
         showToast(
