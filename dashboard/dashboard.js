@@ -6,6 +6,7 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { ungzip } from "pako";
 import { supabaseConfig } from "../config.js";
 import { initAutoLogout } from "../auto-logout.js";
 import "../pwa-update.js";
@@ -2249,8 +2250,22 @@ const fetchFileSizeBytes = async (url) => {
   if (!url || url === "#") return null;
   if (fileSizeCache.has(url)) return fileSizeCache.get(url);
 
+  const FETCH_TIMEOUT_MS = 8000;
+  const timedFetch = async (resource, init = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(resource, {
+        ...init,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    const headResponse = await fetch(url, {
+    const headResponse = await timedFetch(url, {
       method: "HEAD",
       cache: "no-store",
     });
@@ -2265,16 +2280,33 @@ const fetchFileSizeBytes = async (url) => {
   }
 
   try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    const size = blob.size;
-    if (Number.isFinite(size) && size > 0) {
-      fileSizeCache.set(url, size);
-      return size;
+    const rangeResponse = await timedFetch(url, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Range: "bytes=0-0" },
+    });
+
+    if (rangeResponse.ok || rangeResponse.status === 206) {
+      const contentRange = rangeResponse.headers.get("content-range");
+      const contentLength = rangeResponse.headers.get("content-length");
+
+      if (contentRange) {
+        const totalMatch = contentRange.match(/\/(\d+)$/);
+        const totalSize = Number(totalMatch?.[1]);
+        if (Number.isFinite(totalSize) && totalSize > 0) {
+          fileSizeCache.set(url, totalSize);
+          return totalSize;
+        }
+      }
+
+      const fallbackSize = Number(contentLength);
+      if (Number.isFinite(fallbackSize) && fallbackSize > 0) {
+        fileSizeCache.set(url, fallbackSize);
+        return fallbackSize;
+      }
     }
   } catch (error) {
-    console.warn("Blob size lookup failed:", error);
+    console.warn("Range size lookup failed:", error);
   }
 
   return null;
@@ -2294,6 +2326,24 @@ const getReconstructedMimeType = (fileName = "") => {
   if (lower.endsWith(".png")) return "image/png";
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   return "application/octet-stream";
+};
+
+const decompressGzipToBlob = async (response, mimeType) => {
+  if (!response.ok) {
+    throw new Error(`Download failed (${response.status})`);
+  }
+
+  if (typeof DecompressionStream === "function" && response.body) {
+    const decompressedStream = response.body.pipeThrough(
+      new DecompressionStream("gzip"),
+    );
+    const decompressedBlob = await new Response(decompressedStream).blob();
+    return new Blob([decompressedBlob], { type: mimeType });
+  }
+
+  const compressedBuffer = await response.arrayBuffer();
+  const decompressedBytes = ungzip(new Uint8Array(compressedBuffer));
+  return new Blob([decompressedBytes], { type: mimeType });
 };
 
 const setFileLinkLoading = (linkEl, loading) => {
@@ -2345,24 +2395,14 @@ const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
   }
 
   try {
-    // Check if browser supports DecompressionStream (most modern desktop browsers)
-    const supportsDecompression = typeof DecompressionStream === "function";
     const isCompressed = isGzipFileLink(safeFileUrl, fileName);
 
-    // If compressed and browser supports decompression, decompress before opening
-    if (isCompressed && supportsDecompression) {
+    // If compressed, reconstruct the original file before opening.
+    if (isCompressed) {
       try {
         const response = await fetch(safeFileUrl, { cache: "no-store" });
-        if (!response.ok || !response.body) {
-          throw new Error(`Download failed (${response.status})`);
-        }
-
-        const decompressedStream = response.body.pipeThrough(
-          new DecompressionStream("gzip"),
-        );
-        const decompressedBlob = await new Response(decompressedStream).blob();
         const mimeType = getReconstructedMimeType(fileName);
-        const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+        const rebuiltBlob = await decompressGzipToBlob(response, mimeType);
 
         const objectUrl = URL.createObjectURL(rebuiltBlob);
 
@@ -2383,13 +2423,29 @@ const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
         return;
       } catch (error) {
         console.error("Failed to decompress file:", error);
+        showToast(
+          "Could not reconstruct compressed file. Opening original download.",
+          "warning",
+          3200,
+        );
         // Fall through to opening the URL directly
       }
     }
 
     // For non-compressed files or when decompression not supported/failed:
     // Open the file URL in a new tab
-    window.open(safeFileUrl, "_blank", "noopener");
+    if (openedTab && !openedTab.closed) {
+      openedTab.location.href = safeFileUrl;
+    } else {
+      const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
+      if (!fallbackTab) {
+        showToast(
+          "Popup blocked. Allow popups for this site to open downloads in a new tab.",
+          "warning",
+          3600,
+        );
+      }
+    }
   } finally {
     setFileLinkLoading(triggerEl, false);
   }
