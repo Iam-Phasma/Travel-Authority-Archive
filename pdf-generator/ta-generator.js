@@ -16,7 +16,7 @@ const generateTAPDF = (formData) => {
     // Column positions for section 2
     const officeCol = margin + 2;
     const nameTitleX = margin + 2;
-    const approvedByName = 'DR. ROGELIO T. GALERA JR., CESO III';
+    const approvedByName = 'DR. FREDDIE B. BULAUAN';
     
     // Master right-column divider X — all right-side vertical lines align here
     doc.setFont('helvetica', 'bold');
@@ -294,16 +294,16 @@ const generateTAPDF = (formData) => {
 
         yPos += approvalNameTopGap;
         doc.setFont('helvetica', 'bold');
-        doc.text('DR. FREDDIE B. BULAUAN', margin + 2, yPos);
+        doc.text('JUN A. MAGBANUA', margin + 2, yPos);
         doc.text('DANICA A. DE SILVA', midDivX + 2, yPos);
         doc.text(approvedByName, rightDivX + 2, yPos);
         
         yPos += 4;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text('Chief Administrative Officer', margin + 2, yPos);
+        doc.text('Supervising Administrative Officer', margin + 2, yPos);
         doc.text('Accountant III', midDivX + 2, yPos);
-        doc.text('Director IV', rightDivX + 2, yPos);
+        doc.text('OIC, Director IV', rightDivX + 2, yPos);
 
         yPos += approvalBottomGap;
 
