@@ -1332,7 +1332,6 @@ setInterval(validateSession, 30000);
 
 const taBody = document.getElementById("ta-body");
 const taStatus = document.getElementById("ta-status");
-const taLastUpdated = document.getElementById("ta-last-updated");
 const taMoreBtn = document.getElementById("ta-lazy-sentinel");
 let dashboardUserRole = "user";
 let currentDashboardUserId = "";
@@ -1340,7 +1339,6 @@ let taRows = [];
 let currentDisplayRows = [];
 let renderedCount = 0;
 const LAZY_BATCH_SIZE = 50;
-let latestKnownTimestamp = null;
 const currentYear = new Date().getFullYear().toString();
 let activeFilters = {
   taNumber: "",
@@ -2796,24 +2794,6 @@ const loadTravelAuthorities = async (reset = false) => {
     }
 
     taRows = data || [];
-    latestKnownTimestamp = taRows[0]?.created_at || latestKnownTimestamp;
-    if (taLastUpdated && latestKnownTimestamp) {
-      const diff = Date.now() - new Date(latestKnownTimestamp).getTime();
-      const mins = Math.floor(diff / 60000);
-      const hrs = Math.floor(diff / 3600000);
-      const days = Math.floor(diff / 86400000);
-      const rel =
-        mins < 1
-          ? "just now"
-          : mins < 60
-            ? `${mins}m ago`
-            : hrs < 24
-              ? `${hrs}h ago`
-              : days === 1
-                ? "yesterday"
-                : `${days} days ago`;
-      taLastUpdated.textContent = `Last record added ${rel}`;
-    }
     renderRows(taRows);
     renderAgendaTracker();
     updateTaFooter();
