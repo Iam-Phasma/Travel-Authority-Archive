@@ -382,7 +382,7 @@ body.dashboard-page::before {
 
 .dash-content #ta-panel .data-table tbody tr.row-enter {
   opacity: 0;
-  transform: translate(-8px, -6px);
+  transform: translateY(-6px);
   animation: filesRowEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--row-enter-delay, 0ms);
 }
@@ -390,7 +390,7 @@ body.dashboard-page::before {
 @keyframes filesRowEnter {
   from {
     opacity: 0;
-    transform: translate(-8px, -6px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;

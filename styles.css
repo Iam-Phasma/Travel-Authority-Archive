@@ -1757,7 +1757,7 @@ button:hover {
 .view-btn {
   padding: 9px 14px;
   border-radius: var(--radius-sm);
-  background: var(--hover-sea-subtle);
+  background: transparent;
   color: var(--sea);
   border: none;
   cursor: pointer;

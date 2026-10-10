@@ -669,7 +669,7 @@ body.dashboard-page::before {
 
 .admin-panels #view-panel .data-table tbody tr.row-enter {
   opacity: 0;
-  transform: translate(-8px, -6px);
+  transform: translateY(-6px);
   animation: adminRowEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--row-enter-delay, 0ms);
 }
@@ -677,7 +677,7 @@ body.dashboard-page::before {
 @keyframes adminRowEnter {
   from {
     opacity: 0;
-    transform: translate(-8px, -6px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;

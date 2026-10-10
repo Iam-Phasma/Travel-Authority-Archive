@@ -2726,6 +2726,7 @@ const renderRows = (rows) => {
 };
 
 const loadMoreDashRows = () => {
+  if (recordsLoading) return;
   if (renderedCount >= currentDisplayRows.length) return;
   const from = renderedCount;
   const to = Math.min(renderedCount + LAZY_BATCH_SIZE, currentDisplayRows.length);
@@ -2768,9 +2769,15 @@ const updateTaFooter = () => {
   }
 };
 
+let recordsLoading = false;
 const loadTravelAuthorities = async (reset = false) => {
+  if (recordsLoading) return;
+  recordsLoading = true;
   if (reset) {
     taRows = [];
+    currentDisplayRows = [];
+    renderedCount = 0;
+    if (taMoreBtn) taMoreBtn.style.display = "none";
     taBody.innerHTML = '<tr><td colspan="7">Loading records...</td></tr>';
   }
 
@@ -2815,6 +2822,8 @@ const loadTravelAuthorities = async (reset = false) => {
     console.error("Dashboard load error:", error);
     taBody.innerHTML = '<tr><td colspan="7">Unable to load records.</td></tr>';
     taStatus.textContent = "Failed to load travel authorities.";
+  } finally {
+    recordsLoading = false;
   }
 };
 // Infinite scroll: auto-load more rows when sentinel scrolls into view

@@ -3123,6 +3123,7 @@ viewPanelLoaded.then(() => {
   };
 
   const loadMoreAdminRows = () => {
+    if (recordsLoading) return;
     if (adminRenderedCount >= adminCurrentDisplayRows.length) return;
     const from = adminRenderedCount;
     const to = Math.min(adminRenderedCount + ADMIN_LAZY_BATCH_SIZE, adminCurrentDisplayRows.length);
@@ -3223,9 +3224,15 @@ viewPanelLoaded.then(() => {
     }
   };
 
+  let recordsLoading = false;
   const loadTravelAuthorities = async (reset = false) => {
+    if (recordsLoading) return;
+    recordsLoading = true;
     if (reset) {
       viewRows = [];
+      adminCurrentDisplayRows = [];
+      adminRenderedCount = 0;
+      if (viewMoreBtn) viewMoreBtn.style.display = "none";
       viewBody.innerHTML = '<tr><td colspan="8">Loading records...</td></tr>';
     }
 
@@ -3270,6 +3277,8 @@ viewPanelLoaded.then(() => {
       viewBody.innerHTML =
         '<tr><td colspan="9">Unable to load records.</td></tr>';
       viewStatus.textContent = "Failed to load travel authorities.";
+    } finally {
+      recordsLoading = false;
     }
   };
 
