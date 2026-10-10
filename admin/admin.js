@@ -5,6 +5,7 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { ungzip } from "pako";
 import { supabaseConfig } from "../config.js";
 import { initAutoLogout } from "../auto-logout.js";
 import "../pwa-update.js";
@@ -15,6 +16,7 @@ window.L = L;
 
 // Initialize Supabase
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+let currentAdminUserId = "";
 
 const markCurrentUserOffline = async () => {
   try {
@@ -90,6 +92,13 @@ const viewPanelLoaded = Promise.all([
   .then(([panelHTML, modalsHTML]) => {
     document.getElementById("view-panel-container").innerHTML = panelHTML;
     document.getElementById("view-modals-container").innerHTML = modalsHTML;
+    if (
+      typeof window.applyAdminMatchAllFilterVisibility === "function" &&
+      typeof window.getHideMatchAllFilter === "function"
+    ) {
+      window.applyAdminMatchAllFilterVisibility(window.getHideMatchAllFilter());
+    }
+    window.dispatchEvent(new Event("admin-view-panel-ready"));
     return true;
   })
   .catch((error) => {
@@ -119,7 +128,7 @@ const employeePanelLoaded = Promise.all([
   });
 
 // Load draft-ta panel
-const draftTaPanelLoaded = fetch("draft-ta/draft-ta-panel.html")
+const draftTaPanelLoaded = fetch("draft-ta/draft-ta-panel.html?v=20260816-1")
   .then((r) => r.text())
   .then((panelHTML) => {
     document.getElementById("draft-ta-panel-container").innerHTML = panelHTML;
@@ -306,6 +315,7 @@ const requireAdmin = async () => {
   }
 
   const user = sessionData.session.user;
+  currentAdminUserId = user.id;
 
   // CRITICAL: Verify admin/super role from database (not localStorage which can be manipulated)
   const role = await getUserRole(user.id);
@@ -1833,8 +1843,22 @@ const fetchFileSizeBytes = async (url) => {
   if (!url || url === "#") return null;
   if (fileSizeCache.has(url)) return fileSizeCache.get(url);
 
+  const FETCH_TIMEOUT_MS = 8000;
+  const timedFetch = async (resource, init = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(resource, {
+        ...init,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    const headResponse = await fetch(url, {
+    const headResponse = await timedFetch(url, {
       method: "HEAD",
       cache: "no-store",
     });
@@ -1849,16 +1873,33 @@ const fetchFileSizeBytes = async (url) => {
   }
 
   try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    const size = blob.size;
-    if (Number.isFinite(size) && size > 0) {
-      fileSizeCache.set(url, size);
-      return size;
+    const rangeResponse = await timedFetch(url, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Range: "bytes=0-0" },
+    });
+
+    if (rangeResponse.ok || rangeResponse.status === 206) {
+      const contentRange = rangeResponse.headers.get("content-range");
+      const contentLength = rangeResponse.headers.get("content-length");
+
+      if (contentRange) {
+        const totalMatch = contentRange.match(/\/(\d+)$/);
+        const totalSize = Number(totalMatch?.[1]);
+        if (Number.isFinite(totalSize) && totalSize > 0) {
+          fileSizeCache.set(url, totalSize);
+          return totalSize;
+        }
+      }
+
+      const fallbackSize = Number(contentLength);
+      if (Number.isFinite(fallbackSize) && fallbackSize > 0) {
+        fileSizeCache.set(url, fallbackSize);
+        return fallbackSize;
+      }
     }
   } catch (error) {
-    console.warn("Blob size lookup failed:", error);
+    console.warn("Range size lookup failed:", error);
   }
 
   return null;
@@ -2338,9 +2379,18 @@ viewPanelLoaded.then(() => {
     matchAll: true,
   };
   let adminActiveSort = {
-    by: "",
-    order: "asc",
+    by: "ta",
+    order: "desc",
   };
+  const ADMIN_COLUMNS_DEFAULT = {
+    ta_number: true,
+    purpose: true,
+    destination: true,
+    officials: true,
+    travel_end: true,
+    file: true,
+  };
+  let adminActiveColumns = { ...ADMIN_COLUMNS_DEFAULT };
   let adminEmployeesListForFilter = [];
   window.adminEmployeesListForFilter = adminEmployeesListForFilter;
 
@@ -2365,12 +2415,77 @@ viewPanelLoaded.then(() => {
     localStorage.setItem("adminSort", JSON.stringify(adminActiveSort));
   };
 
+  const getAdminColumnsStorageKey = () => {
+    return `adminColumns:${currentAdminUserId || "anonymous"}`;
+  };
+
+  const saveAdminColumnsToStorage = () => {
+    localStorage.setItem(
+      getAdminColumnsStorageKey(),
+      JSON.stringify(adminActiveColumns),
+    );
+  };
+
+  const loadAdminColumnsFromStorage = () => {
+    const saved = localStorage.getItem(getAdminColumnsStorageKey());
+    adminActiveColumns = { ...ADMIN_COLUMNS_DEFAULT };
+    if (!saved) return;
+    try {
+      const parsed = JSON.parse(saved);
+      Object.keys(ADMIN_COLUMNS_DEFAULT).forEach((key) => {
+        if (typeof parsed?.[key] === "boolean") {
+          adminActiveColumns[key] = parsed[key];
+        }
+      });
+    } catch (error) {
+      console.error("Failed to parse saved admin columns:", error);
+    }
+  };
+
+  const applyAdminColumnVisibility = () => {
+    const table = document.querySelector("#view-panel .data-table");
+    if (!table) return;
+
+    Object.entries(adminActiveColumns).forEach(([columnKey, isVisible]) => {
+      table.querySelectorAll(`[data-col="${columnKey}"]`).forEach((cell) => {
+        cell.style.display = isVisible ? "" : "none";
+      });
+    });
+  };
+
+  const syncAdminColumnInputs = () => {
+    document
+      .querySelectorAll('#admin-settings-columns-list input[data-column-key]')
+      .forEach((input) => {
+        const columnKey = input.getAttribute("data-column-key");
+        if (!columnKey || !(columnKey in adminActiveColumns)) return;
+        input.checked = adminActiveColumns[columnKey];
+      });
+  };
+
+  const initAdminColumnControls = () => {
+    document
+      .querySelectorAll('#admin-settings-columns-list input[data-column-key]')
+      .forEach((input) => {
+        input.addEventListener("change", () => {
+          const columnKey = input.getAttribute("data-column-key");
+          if (!columnKey || !(columnKey in adminActiveColumns)) return;
+          adminActiveColumns[columnKey] = input.checked;
+          saveAdminColumnsToStorage();
+          applyAdminColumnVisibility();
+        });
+      });
+  };
+
   const loadAdminSortFromStorage = () => {
     const saved = localStorage.getItem("adminSort");
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        adminActiveSort = { ...adminActiveSort, ...parsed };
+        const resolvedBy = parsed.by && parsed.by !== "" ? parsed.by : adminActiveSort.by;
+        const resolvedOrder =
+          parsed.order && parsed.order !== "" ? parsed.order : adminActiveSort.order;
+        adminActiveSort = { ...adminActiveSort, by: resolvedBy, order: resolvedOrder };
       } catch (e) {
         console.error("Failed to parse saved admin sort:", e);
       }
@@ -2393,7 +2508,8 @@ viewPanelLoaded.then(() => {
       adminActiveFilters.matchAll === false;
 
     // Check if sort is active
-    const isSortActive = adminActiveSort.by !== "";
+    const isSortActive =
+      adminActiveSort.by !== "ta" || adminActiveSort.order !== "desc";
 
     if (adminFilterToggleBtn) {
       if (isFilterActive) {
@@ -2451,6 +2567,24 @@ viewPanelLoaded.then(() => {
     return "application/octet-stream";
   };
 
+  const decompressGzipToBlob = async (response, mimeType) => {
+    if (!response.ok) {
+      throw new Error(`Download failed (${response.status})`);
+    }
+
+    if (typeof DecompressionStream === "function" && response.body) {
+      const decompressedStream = response.body.pipeThrough(
+        new DecompressionStream("gzip"),
+      );
+      const decompressedBlob = await new Response(decompressedStream).blob();
+      return new Blob([decompressedBlob], { type: mimeType });
+    }
+
+    const compressedBuffer = await response.arrayBuffer();
+    const decompressedBytes = ungzip(new Uint8Array(compressedBuffer));
+    return new Blob([decompressedBytes], { type: mimeType });
+  };
+
   const setFileLinkLoading = (linkEl, loading) => {
     if (!(linkEl instanceof HTMLElement)) return;
 
@@ -2483,54 +2617,89 @@ viewPanelLoaded.then(() => {
 
   const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
     const safeFileUrl = safeUrl(fileUrl);
-    if (safeFileUrl === "#") return;
+    if (safeFileUrl === "#") {
+      console.warn("[file-open] Invalid or unsupported file URL", {
+        fileUrl,
+        fileName,
+      });
+      showToast("This file link is invalid or missing.", "error", 3600);
+      return;
+    }
 
     setFileLinkLoading(triggerEl, true);
 
+    // Open a tab synchronously within the click gesture so later async work
+    // (gzip decompression) does not get blocked by popup protection.
+    let openedTab = null;
     try {
-      // Check if browser supports DecompressionStream (most modern desktop browsers)
-      const supportsDecompression = typeof DecompressionStream === "function";
-      const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+      openedTab = window.open("", "_blank");
+    } catch (error) {
+      openedTab = null;
+    }
+    if (openedTab) {
+      try {
+        openedTab.opener = null;
+      } catch (error) {
+        // Keep the tab reference even if opener cannot be changed.
+      }
+    }
 
-      // If compressed and browser supports decompression, decompress before opening
-      if (isCompressed && supportsDecompression) {
+    try {
+      const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+      console.info("[file-open] Opening file", {
+        fileName,
+        isCompressed,
+        url: safeFileUrl,
+      });
+
+      // If compressed, reconstruct the original file before opening.
+      if (isCompressed) {
         try {
           showToast("Opening compressed file...", "info", 1800);
           const response = await fetch(safeFileUrl, { cache: "no-store" });
-          if (!response.ok || !response.body) {
+          if (!response.ok) {
             throw new Error(`Download failed (${response.status})`);
           }
-
-          const decompressedStream = response.body.pipeThrough(
-            new DecompressionStream("gzip"),
-          );
-          const decompressedBlob = await new Response(
-            decompressedStream,
-          ).blob();
           const mimeType = getReconstructedMimeType(fileName);
-          const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+          const rebuiltBlob = await decompressGzipToBlob(response, mimeType);
 
           const objectUrl = URL.createObjectURL(rebuiltBlob);
-          window.open(objectUrl, "_blank", "noopener");
+
+          if (openedTab && !openedTab.closed) {
+            openedTab.location.href = objectUrl;
+          } else {
+            const fallbackTab = window.open(objectUrl, "_blank", "noopener");
+            if (!fallbackTab) {
+              window.location.assign(objectUrl);
+            }
+          }
 
           setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
           return;
         } catch (error) {
-          console.error("Failed to decompress file:", error);
-          // Fall through to opening the URL directly
+          console.error("[file-open] Failed to reconstruct compressed file", {
+            url: safeFileUrl,
+            fileName,
+            error,
+          });
+            showToast(
+              "Could not reconstruct compressed file. Opening original download.",
+              "warning",
+              3200,
+            );
+            // Fall through to opening the URL directly
         }
       }
 
       // For non-compressed files or when decompression not supported/failed:
       // Open the file URL in a new tab
-      window.open(safeFileUrl, "_blank", "noopener");
-
-      if (isCompressed && !supportsDecompression) {
-        showToast(
-          "Opening file (note: compressed files may need external decompression on this browser)",
-          "info",
-          3000,
-        );
+      if (openedTab && !openedTab.closed) {
+        openedTab.location.href = safeFileUrl;
+      } else {
+        const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
+        if (!fallbackTab) {
+          window.location.assign(safeFileUrl);
+        }
       }
     } finally {
       setFileLinkLoading(triggerEl, false);
@@ -2767,13 +2936,13 @@ viewPanelLoaded.then(() => {
                         </svg>
                     </button>
                 </td>
-                <td>${escapeHtml(row.ta_number) || "-"}</td>
-                <td><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
+                <td data-col="ta_number">${escapeHtml(row.ta_number) || "-"}</td>
+                <td data-col="purpose"><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
+                <td data-col="destination" style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
+                <td data-col="officials" style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
                 <td>${dateText}</td>
-                <td>${untilText}</td>
-                <td>
+                <td data-col="travel_end">${untilText}</td>
+                <td data-col="file">
                     ${
                       hasFile
                         ? `<a class="file-link open-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>`
@@ -2905,8 +3074,8 @@ viewPanelLoaded.then(() => {
             const safeFileUrl = safeUrl(record.file_url);
             viewFileLink.href = safeFileUrl;
             viewFileLink.dataset.fileUrl = safeFileUrl;
-            viewFileLink.dataset.fileName = record.file_name || "Open file";
-            viewFileLink.textContent = record.file_name || "Open file";
+            viewFileLink.dataset.fileName = record.file_name || "Download";
+            viewFileLink.textContent = "Download";
             updateViewFileSize(safeFileUrl);
           } else {
             viewFileLink.href = "#";
@@ -2937,6 +3106,7 @@ viewPanelLoaded.then(() => {
     if (!adminCurrentDisplayRows.length) {
       viewBody.innerHTML =
         '<tr><td colspan="8">No records match the current filters.</td></tr>';
+      applyAdminColumnVisibility();
       if (viewMoreBtn) viewMoreBtn.style.display = "none";
       return;
     }
@@ -2945,6 +3115,7 @@ viewPanelLoaded.then(() => {
       .slice(0, adminRenderedCount)
       .map((row, i) => buildAdminRowHtml(row, i))
       .join("");
+    applyAdminColumnVisibility();
     bindAdminRowEvents(Array.from(viewBody.querySelectorAll("tr")));
     if (viewMoreBtn)
       viewMoreBtn.style.display =
@@ -2962,6 +3133,7 @@ viewPanelLoaded.then(() => {
       .join("");
     const newTrs = Array.from(temp.querySelectorAll("tr"));
     newTrs.forEach((tr) => viewBody.appendChild(tr));
+    applyAdminColumnVisibility();
     bindAdminRowEvents(newTrs);
     adminRenderedCount = to;
     updateViewFooter();
@@ -3342,6 +3514,7 @@ viewPanelLoaded.then(() => {
   const adminFilterMatchAllCheckbox = document.getElementById(
     "admin-filter-match-all",
   );
+  initAdminColumnControls();
 
   // Load employees for admin filter
   const loadAdminEmployeesForFilter = async () => {
@@ -3623,10 +3796,10 @@ viewPanelLoaded.then(() => {
   });
 
   adminClearSortBtn.addEventListener("click", () => {
-    adminActiveSort.by = "";
-    adminActiveSort.order = "asc";
+    adminActiveSort.by = "ta";
+    adminActiveSort.order = "desc";
     adminSortBySelect.value = "ta";
-    adminSortOrderSelect.value = "asc";
+    adminSortOrderSelect.value = "desc";
     saveAdminSortToStorage();
     updateAdminButtonStates();
     renderViewRows(viewRows);
@@ -4180,6 +4353,7 @@ viewPanelLoaded.then(() => {
           ta_number: taNumber,
           purpose: purpose,
           destination: destination,
+          province: window.classifyDestinationProvince?.(destination) ?? "Others",
           employees: employees,
           travel_date: travelDate,
           travel_until: travelUntil,
@@ -4270,6 +4444,9 @@ viewPanelLoaded.then(() => {
   const restoreAdminTableState = () => {
     loadAdminFiltersFromStorage();
     loadAdminSortFromStorage();
+    loadAdminColumnsFromStorage();
+    syncAdminColumnInputs();
+    applyAdminColumnVisibility();
 
     if (adminFilterTaNumberInput) {
       adminFilterTaNumberInput.value = adminActiveFilters.taNumber || "";
@@ -4292,7 +4469,7 @@ viewPanelLoaded.then(() => {
 
     if (adminSortBySelect) adminSortBySelect.value = adminActiveSort.by || "ta";
     if (adminSortOrderSelect)
-      adminSortOrderSelect.value = adminActiveSort.order || "asc";
+      adminSortOrderSelect.value = adminActiveSort.order || "desc";
 
     loadAdminEmployeesForFilter();
 

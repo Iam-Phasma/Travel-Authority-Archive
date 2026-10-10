@@ -4,11 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Dashboard</title>
+    <script>
+        (function () {
+            var productionUrl = "%VITE_PRODUCTION_URL%".trim();
+            var isGitHubPagesHost = location.hostname === "iam-phasma.github.io";
+            if (!isGitHubPagesHost) return;
+            if (!productionUrl || productionUrl.indexOf("VITE_PRODUCTION_URL") !== -1) return;
+
+            var targetBase = productionUrl.replace(/\/+$/, "");
+            var repoBase = "/Travel-Authority-Archive";
+            var currentPath = location.pathname.startsWith(repoBase)
+                ? location.pathname.slice(repoBase.length)
+                : location.pathname;
+            if (!currentPath) currentPath = "/";
+
+            var targetUrl = targetBase + currentPath + location.search + location.hash;
+            if (targetUrl !== location.href) {
+                location.replace(targetUrl);
+            }
+        })();
+    </script>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
     <!-- fullcalendar CSS — kept as CDN (global build) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css">
     <!-- flatpickr and leaflet CSS injected by Vite bundle -->
-    <link rel="stylesheet" href="../styles.css?v=20260321-3">
+    <link rel="stylesheet" href="../styles.css?v=20260321-11">
     <link rel="stylesheet" href="../header/header.css?v=20260509-4">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <link rel="stylesheet" href="dashboard.css?v=20260401">
@@ -106,7 +126,7 @@
             <div id="filter-panel" class="filter-panel">
                 <div class="filter-content">
                     <h3>Filter Options</h3>
-                    <div class="filter-mode">
+                    <div class="filter-mode" id="filter-mode">
                         <label class="checkbox-label">
                             <input type="checkbox" id="filter-match-all" checked>
                             <span>Match all filters (AND)</span>
@@ -145,7 +165,7 @@
                         <div class="filter-field">
                             <label for="sort-by">Sort by</label>
                             <select id="sort-by" class="filter-select">
-                                <option value="ta">TA Number</option>
+                                <option value="ta" selected>TA Number</option>
                                 <option value="travel-date">Travel Date</option>
                             </select>
                         </div>
@@ -153,7 +173,7 @@
                             <label for="sort-order">Order</label>
                             <select id="sort-order" class="filter-select">
                                 <option value="asc">Oldest First</option>
-                                <option value="desc">Newest First</option>
+                                <option value="desc" selected>Newest First</option>
                             </select>
                         </div>
                     </div>
@@ -168,13 +188,13 @@
                     <thead>
                         <tr>
                             <th scope="col">View</th>
-                            <th scope="col">TA Number</th>
-                            <th scope="col">Purpose</th>
-                            <th scope="col">Destination</th>
-                            <th scope="col">Officials</th>
+                            <th scope="col" data-col="ta_number">TA Number</th>
+                            <th scope="col" data-col="purpose">Purpose</th>
+                            <th scope="col" data-col="destination">Destination</th>
+                            <th scope="col" data-col="officials">Officials</th>
                             <th scope="col">Travel Date</th>
-                            <th scope="col">Travel End</th>
-                            <th scope="col">File</th>
+                            <th scope="col" data-col="travel_end">Travel End</th>
+                            <th scope="col" data-col="file">File</th>
                         </tr>
                     </thead>
                     <tbody id="ta-body">
@@ -286,14 +306,14 @@
                                     <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.3 7 13 7 13s7-7.7 7-13c0-3.9-3.1-7-7-7Zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5Z" /></svg></span>
                                     <textarea id="panel-draft-ta-destination" placeholder="Enter destination" maxlength="1000"></textarea>
                                 </div>
+                                <p id="panel-draft-ta-destination-quality" class="draft-destination-quality" aria-live="polite" hidden></p>
                                 <button type="button" class="map-pick-btn" id="panel-draft-ta-map-pick" title="Pick location on map">
                                     <svg viewBox="0 0 24 24"><path stroke="none" d="M0 0h24v24H0z" fill="none"/><path d="M12 11m-3 0a3 3 0 1 0 6 0a3 3 0 1 0 -6 0"/><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0z"/></svg>
                                     Pick on Map
                                 </button>
-                                <span class="map-pick-hint">Pinpoint a location to auto-fill destination</span>
                             </div>
                             <div>
-                                <label for="panel-draft-ta-officials-search">Officials <span class="required">*</span></label>
+                                <label for="panel-draft-ta-officials-search">Officials <span class="required">*</span> <span id="panel-draft-ta-officials-count" class="officials-count-indicator" aria-live="polite" aria-atomic="true"><em>0 selected</em></span></label>
                                 <div class="multiselect-wrapper">
                                     <div class="multiselect-display" id="panel-draft-ta-officials-display"><span class="multiselect-placeholder">Select officials...</span></div>
                                     <div class="multiselect-dropdown" id="panel-draft-ta-officials-dropdown">
@@ -303,6 +323,11 @@
                                                 <svg viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false">
                                                     <path d="M21 13v-2a1 1 0 0 0-1-1h-.757l-.707-1.707.535-.536a1 1 0 0 0 0-1.414l-1.414-1.414a1 1 0 0 0-1.414 0l-.536.535L14 4.757V4a1 1 0 0 0-1-1h-2a1 1 0 0 0-1 1v.757l-1.707.707-.536-.535a1 1 0 0 0-1.414 0L4.929 6.343a1 1 0 0 0 0 1.414l.536.536L4.757 10H4a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1h.757l.707 1.707-.535.536a1 1 0 0 0 0 1.414l1.414 1.414a1 1 0 0 0 1.414 0l.536-.535 1.707.707V20a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1v-.757l1.707-.708.536.536a1 1 0 0 0 1.414 0l1.414-1.414a1 1 0 0 0 0-1.414l-.535-.536.707-1.707H20a1 1 0 0 0 1-1Z"/>
                                                     <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/>
+                                                </svg>
+                                            </button>
+                                            <button type="button" class="multiselect-select-all icon-btn" id="panel-draft-ta-officials-select-all" title="Select all shown" aria-label="Select all shown officials">
+                                                <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-hidden="true" focusable="false">
+                                                    <path d="M20 6 9 17l-5-5" />
                                                 </svg>
                                             </button>
                                             <button type="button" class="multiselect-clear-all delete-employee-btn icon-btn" data-clear-all="true" id="panel-draft-ta-officials-clear-all" title="Clear all selected" aria-label="Clear all officials">
@@ -417,7 +442,7 @@
                     <div class="detail-row">
                         <span class="detail-label">File</span>
                         <div style="display: grid; gap: 4px;">
-                            <a class="file-link" id="view-file-link" href="#" target="_blank" rel="noopener">Open file</a>
+                            <a class="file-link" id="view-file-link" href="#" target="_blank" rel="noopener">Download</a>
                             <span class="detail-value" id="view-file-size">-</span>
                         </div>
                     </div>
@@ -437,7 +462,7 @@
     <script type="module" src="./dashboard.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
-    <script src="../admin/draft-ta/draft-ta-panel.js"></script>
+    <script src="../admin/draft-ta/draft-ta-panel.js?v=20260816-9"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
 
     <div id="footer-container"></div>
@@ -459,7 +484,54 @@
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <h3>Settings</h3>
-            <p>Settings functionality will be available soon.</p>
+            <div class="settings-list">
+                <div class="settings-section">
+                    <label class="settings-toggle-item" for="settings-hide-match-all-filter">
+                        <span class="settings-toggle-info">
+                            <span class="settings-toggle-title">Hide match-all filter</span>
+                            <span class="settings-toggle-desc">Remove the match-all option and spacing from the Files filter panel</span>
+                        </span>
+                        <span class="settings-toggle-wrap">
+                            <input type="checkbox" class="settings-toggle-input" id="settings-hide-match-all-filter" checked>
+                            <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="settings-section">
+                    <details class="filter-columns" id="settings-columns-block">
+                        <summary class="filter-columns-summary">
+                            <span class="filter-columns-summary-title">Columns</span>
+                            <span class="filter-columns-summary-desc">Choose which columns are visible in the Files table.</span>
+                        </summary>
+                        <div class="filter-columns-list" id="settings-columns-list">
+                            <label class="checkbox-label" for="settings-col-ta-number">
+                                <input type="checkbox" id="settings-col-ta-number" data-column-key="ta_number" checked>
+                                <span>TA Number</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-purpose">
+                                <input type="checkbox" id="settings-col-purpose" data-column-key="purpose" checked>
+                                <span>Purpose</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-destination">
+                                <input type="checkbox" id="settings-col-destination" data-column-key="destination" checked>
+                                <span>Destination</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-officials">
+                                <input type="checkbox" id="settings-col-officials" data-column-key="officials" checked>
+                                <span>Officials</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-travel-end">
+                                <input type="checkbox" id="settings-col-travel-end" data-column-key="travel_end" checked>
+                                <span>Travel End</span>
+                            </label>
+                            <label class="checkbox-label" for="settings-col-file">
+                                <input type="checkbox" id="settings-col-file" data-column-key="file" checked>
+                                <span>File</span>
+                            </label>
+                        </div>
+                    </details>
+                </div>
+            </div>
             <div class="modal-actions">
                 <button class="modal-btn cancel" id="close-settings">Close</button>
             </div>

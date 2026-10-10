@@ -42,7 +42,7 @@
     <div id="admin-filter-panel" class="filter-panel">
         <div class="filter-content">
             <h3>Filter Options</h3>
-            <div class="filter-mode">
+            <div class="filter-mode" id="admin-filter-mode">
                 <label class="checkbox-label">
                     <input type="checkbox" id="admin-filter-match-all" checked>
                     <span>Match all filters (AND)</span>
@@ -81,7 +81,7 @@
                 <div class="filter-field">
                     <label for="admin-sort-by">Sort by</label>
                     <select id="admin-sort-by" class="filter-select">
-                        <option value="ta">TA Number</option>
+                        <option value="ta" selected>TA Number</option>
                         <option value="travel-date">Travel Date</option>
                     </select>
                 </div>
@@ -89,7 +89,7 @@
                     <label for="admin-sort-order">Order</label>
                     <select id="admin-sort-order" class="filter-select">
                         <option value="asc">Oldest First</option>
-                        <option value="desc">Newest First</option>
+                        <option value="desc" selected>Newest First</option>
                     </select>
                 </div>
             </div>
@@ -126,13 +126,13 @@
             <thead>
                 <tr>
                     <th scope="col">View</th>
-                    <th scope="col">TA Number</th>
-                    <th scope="col">Purpose</th>
-                    <th scope="col">Destination</th>
-                    <th scope="col">Officials</th>
+                    <th scope="col" data-col="ta_number">TA Number</th>
+                    <th scope="col" data-col="purpose">Purpose</th>
+                    <th scope="col" data-col="destination">Destination</th>
+                    <th scope="col" data-col="officials">Officials</th>
                     <th scope="col">Travel Date</th>
-                    <th scope="col">Travel End</th>
-                    <th scope="col">File</th>
+                    <th scope="col" data-col="travel_end">Travel End</th>
+                    <th scope="col" data-col="file">File</th>
                     <th scope="col">Actions</th>
                 </tr>
             </thead>

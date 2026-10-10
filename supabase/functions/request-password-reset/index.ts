@@ -9,6 +9,7 @@ const baseCorsHeaders: Record<string, string> = {
 
 const DEFAULT_ALLOWED_ORIGINS = [
   "https://iam-phasma.github.io",
+  "https://*.vercel.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ];
@@ -28,10 +29,45 @@ const getAllowedOrigins = () => {
   return configured.length ? configured : DEFAULT_ALLOWED_ORIGINS;
 };
 
+const isAllowedOrigin = (requestOrigin: string, allowedOriginPattern: string) => {
+  if (!requestOrigin || !allowedOriginPattern) {
+    return false;
+  }
+
+  if (allowedOriginPattern === "*") {
+    return true;
+  }
+
+  if (requestOrigin === allowedOriginPattern) {
+    return true;
+  }
+
+  const wildcardPatternMatch = allowedOriginPattern.match(/^(https?):\/\/\*\.(.+)$/i);
+  if (!wildcardPatternMatch) {
+    return false;
+  }
+
+  try {
+    const requestUrl = new URL(requestOrigin);
+    const wildcardProtocol = `${wildcardPatternMatch[1].toLowerCase()}:`;
+    const wildcardHost = wildcardPatternMatch[2].toLowerCase();
+    const requestHost = requestUrl.hostname.toLowerCase();
+
+    if (requestUrl.protocol.toLowerCase() !== wildcardProtocol) {
+      return false;
+    }
+
+    return requestHost === wildcardHost || requestHost.endsWith(`.${wildcardHost}`);
+  } catch {
+    return false;
+  }
+};
+
 const buildCorsHeaders = (req: Request): Record<string, string> => {
   const requestOrigin = (req.headers.get("origin") || "").trim();
   const allowedOrigins = getAllowedOrigins();
-  const allowOrigin = requestOrigin && allowedOrigins.includes(requestOrigin)
+  const allowOrigin = requestOrigin
+    && allowedOrigins.some((originPattern) => isAllowedOrigin(requestOrigin, originPattern))
     ? requestOrigin
     : allowedOrigins[0] || "null";
 

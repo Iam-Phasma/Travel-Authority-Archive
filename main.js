@@ -4,7 +4,20 @@ import { createClient } from "@supabase/supabase-js";
 import { supabaseConfig } from "./config.js";
 import "./pwa-update.js";
 
-const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+let supabase = null;
+let supabaseInitError = null;
+
+try {
+  if (!supabaseConfig.url || !supabaseConfig.anonKey) {
+    throw new Error(
+      "Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY environment variable.",
+    );
+  }
+  supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
+} catch (error) {
+  supabaseInitError = error;
+  console.error("Supabase client initialization failed:", error);
+}
 
 const loginStatus = document.getElementById("login-status");
 const emailInput = document.getElementById("email");
@@ -32,6 +45,23 @@ const GENERIC_RESET_MESSAGE =
   "If the email is registered, a reset link will be sent.";
 const HCAPTCHA_BASE_WIDTH = 303;
 const HCAPTCHA_BASE_HEIGHT = 78;
+
+const showSupabaseConfigError = () => {
+  if (!loginStatus) return;
+  loginStatus.textContent =
+    "App configuration error: missing Supabase environment variables in deployment.";
+  loginStatus.classList.remove("status--success", "status--neutral", "hidden");
+  loginStatus.classList.add("status--error");
+};
+
+const requireSupabaseClient = () => {
+  if (supabase) return true;
+  if (supabaseInitError) {
+    console.warn("Supabase unavailable for this session.", supabaseInitError);
+  }
+  showSupabaseConfigError();
+  return false;
+};
 
 const applyHCaptchaScale = (containerId) => {
   const container = document.getElementById(containerId);
@@ -105,6 +135,13 @@ const loginViaEdgeFunction = async ({
   password,
   captchaToken,
 }) => {
+  if (!requireSupabaseClient()) {
+    return {
+      authenticated: false,
+      code: "service_unavailable",
+    };
+  }
+
   try {
     const { data, error } = await supabase.functions.invoke(
       "secure-login",
@@ -242,6 +279,10 @@ const getRedirectPage = async (userId) => {
 };
 
 const handleLogin = async () => {
+  if (!requireSupabaseClient()) {
+    return;
+  }
+
   const email = emailInput.value.trim();
   const password = passwordInput.value;
 
@@ -491,6 +532,8 @@ const handleLogin = async () => {
 };
 
 const redirectIfLoggedIn = async () => {
+  if (!supabase) return;
+
   const { data: sessionData } = await supabase.auth.getSession();
   const user = sessionData?.session?.user;
   if (!user) return;
@@ -540,6 +583,14 @@ const handlePasswordUpdate = async () => {
   const updatePasswordBtn = document.getElementById(
     "update-password-btn",
   );
+
+  if (!requireSupabaseClient()) {
+    updatePasswordStatus.textContent =
+      "App configuration error: Supabase is not available.";
+    updatePasswordStatus.classList.remove("status--success", "status--neutral", "hidden");
+    updatePasswordStatus.classList.add("status--error");
+    return;
+  }
 
   if (!newPassword || !confirmPassword) {
     updatePasswordStatus.textContent =
@@ -781,6 +832,8 @@ document
 
 // Initialize - check if in recovery mode first
 const initializePage = async () => {
+  if (!supabase) return;
+
   const isRecovery = await checkPasswordRecovery();
   if (!isRecovery) {
     // Only check login redirect if not in recovery mode
@@ -788,15 +841,19 @@ const initializePage = async () => {
   }
 };
 
-initializePage();
+if (supabase) {
+  initializePage();
 
-// Listen for auth state changes
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY") {
-    loginPanel.classList.add("hidden");
-    newPasswordPanel.classList.remove("hidden");
-  }
-});
+  // Listen for auth state changes
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "PASSWORD_RECOVERY") {
+      loginPanel.classList.add("hidden");
+      newPasswordPanel.classList.remove("hidden");
+    }
+  });
+} else {
+  showSupabaseConfigError();
+}
 
 // Password Reset Functionality
 const resetPasswordModal = document.getElementById(
@@ -864,6 +921,13 @@ const requestPasswordResetViaEdgeFunction = async ({
   captchaToken,
   redirectTo,
 }) => {
+  if (!requireSupabaseClient()) {
+    return {
+      accepted: false,
+      code: "service_unavailable",
+    };
+  }
+
   try {
     const { data, error } = await supabase.functions.invoke(
       "request-password-reset",
@@ -1076,6 +1140,25 @@ sendResetBtn.addEventListener("click", async () => {
     ) {
       resetStatus.textContent =
         "CAPTCHA verification failed. Please try again.";
+      resetStatus.classList.remove(
+        "status--success",
+        "status--neutral",
+        "hidden",
+        "status--shake",
+      );
+      resetStatus.classList.add("status--error");
+      void resetStatus.offsetWidth;
+      resetStatus.classList.add("status--shake");
+
+      if (resetCaptchaWidgetId !== null)
+        hcaptcha.reset(resetCaptchaWidgetId);
+      sendResetBtn.disabled = false;
+      return;
+    }
+
+    if (requestResult?.accepted === false) {
+      resetStatus.textContent =
+        "Unable to send reset link right now. Please contact support.";
       resetStatus.classList.remove(
         "status--success",
         "status--neutral",

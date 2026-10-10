@@ -13,6 +13,7 @@ const copyTargets = [
   "admin/upload",
   "admin/view",
   "admin/users",
+  "admin/destination-province.js",
   "admin/admin-settings.js",
   "404.html",
   "assets/Bagong_Pilipinas_logo.webp",

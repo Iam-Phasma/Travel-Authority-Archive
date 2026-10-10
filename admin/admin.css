@@ -617,16 +617,38 @@ body.dashboard-page::before {
   max-height: none;
   border-radius: 12px;
 }
-/* Hide all scrollbars on fill-height tables — scroll via trackpad/touch */
-.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar:vertical,
-.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar:horizontal,
-.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar:vertical,
-.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar:horizontal {
-  display: none;
+/* Re-introduce a thin, dark scrollbar visual on admin tables */
+.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar,
+.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar-track,
+.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar-track {
+  background: rgba(15, 26, 31, 0.08);
+  border-radius: 999px;
+}
+
+.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar-thumb,
+.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar-thumb {
+  background: rgba(55, 65, 81, 0.5);
+  border-radius: 999px;
+}
+
+.admin-panels #view-panel .table-wrap.max-rows-10::-webkit-scrollbar-thumb:hover,
+.admin-panels #users-panel .users-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: rgba(55, 65, 81, 0.68);
+}
+
+.admin-panels #view-panel .table-wrap.max-rows-10.is-scrolling::-webkit-scrollbar-thumb,
+.admin-panels #users-panel .users-table-wrap.is-scrolling::-webkit-scrollbar-thumb {
+  background: rgba(31, 41, 55, 0.78);
 }
 .admin-panels #view-panel .table-wrap.max-rows-10,
 .admin-panels #users-panel .users-table-wrap {
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(55, 65, 81, 0.5) transparent;
 }
 
 /* Header bg + sticky-first-col bg matching dashboard */

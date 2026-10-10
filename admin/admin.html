@@ -4,9 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CTAA - Admin</title>
+    <script>
+        (function () {
+            var productionUrl = "%VITE_PRODUCTION_URL%".trim();
+            var isGitHubPagesHost = location.hostname === "iam-phasma.github.io";
+            if (!isGitHubPagesHost) return;
+            if (!productionUrl || productionUrl.indexOf("VITE_PRODUCTION_URL") !== -1) return;
+
+            var targetBase = productionUrl.replace(/\/+$/, "");
+            var repoBase = "/Travel-Authority-Archive";
+            var currentPath = location.pathname.startsWith(repoBase)
+                ? location.pathname.slice(repoBase.length)
+                : location.pathname;
+            if (!currentPath) currentPath = "/";
+
+            var targetUrl = targetBase + currentPath + location.search + location.hash;
+            if (targetUrl !== location.href) {
+                location.replace(targetUrl);
+            }
+        })();
+    </script>
     <link rel="icon" type="image/webp" href="../assets/CHED-Logo.webp">
     <!-- flatpickr and leaflet CSS injected by Vite bundle -->
-    <link rel="stylesheet" href="../styles.css?v=20260321-3">
+    <link rel="stylesheet" href="../styles.css?v=20260321-11">
     <link rel="stylesheet" href="../header/header.css?v=20260509-4">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <!-- dotlottie-wc, supabase, flatpickr, leaflet bundled via Vite -->
@@ -145,10 +165,11 @@
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
+    <script src="destination-province.js"></script>
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
     <script src="upload/ocr.js"></script>
-    <script src="draft-ta/draft-ta-panel.js"></script>
+    <script src="draft-ta/draft-ta-panel.js?v=20260816-9"></script>
     <script src="../header/draft-location-picker.js?v=20260326-2"></script>
     <!-- Vite entry — includes supabase, flatpickr, leaflet, dotlottie-wc -->
     <script type="module" src="./admin.js"></script>
@@ -180,6 +201,52 @@
                             <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
                         </span>
                     </label>
+                </div>
+                <div class="settings-section">
+                    <label class="settings-toggle-item" for="settings-hide-match-all-filter">
+                        <span class="settings-toggle-info">
+                            <span class="settings-toggle-title">Hide match-all filter</span>
+                            <span class="settings-toggle-desc">Remove the match-all option and spacing from the Files filter panel</span>
+                        </span>
+                        <span class="settings-toggle-wrap">
+                            <input type="checkbox" class="settings-toggle-input" id="settings-hide-match-all-filter" checked>
+                            <span class="settings-toggle-track" aria-hidden="true"><span class="settings-toggle-thumb"></span></span>
+                        </span>
+                    </label>
+                </div>
+                <div class="settings-section">
+                    <details class="filter-columns" id="admin-settings-columns-block">
+                        <summary class="filter-columns-summary">
+                            <span class="filter-columns-summary-title">Columns</span>
+                            <span class="filter-columns-summary-desc">Choose which columns are visible in the Files table.</span>
+                        </summary>
+                        <div class="filter-columns-list" id="admin-settings-columns-list">
+                            <label class="checkbox-label" for="admin-settings-col-ta-number">
+                                <input type="checkbox" id="admin-settings-col-ta-number" data-column-key="ta_number" checked>
+                                <span>TA Number</span>
+                            </label>
+                            <label class="checkbox-label" for="admin-settings-col-purpose">
+                                <input type="checkbox" id="admin-settings-col-purpose" data-column-key="purpose" checked>
+                                <span>Purpose</span>
+                            </label>
+                            <label class="checkbox-label" for="admin-settings-col-destination">
+                                <input type="checkbox" id="admin-settings-col-destination" data-column-key="destination" checked>
+                                <span>Destination</span>
+                            </label>
+                            <label class="checkbox-label" for="admin-settings-col-officials">
+                                <input type="checkbox" id="admin-settings-col-officials" data-column-key="officials" checked>
+                                <span>Officials</span>
+                            </label>
+                            <label class="checkbox-label" for="admin-settings-col-travel-end">
+                                <input type="checkbox" id="admin-settings-col-travel-end" data-column-key="travel_end" checked>
+                                <span>Travel End</span>
+                            </label>
+                            <label class="checkbox-label" for="admin-settings-col-file">
+                                <input type="checkbox" id="admin-settings-col-file" data-column-key="file" checked>
+                                <span>File</span>
+                            </label>
+                        </div>
+                    </details>
                 </div>
                 <div class="settings-section settings-section--orphan-tools" id="settings-orphan-tools-section" style="display: none;">
                     <div class="settings-action-row">

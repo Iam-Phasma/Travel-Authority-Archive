@@ -6,6 +6,7 @@ import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { ungzip } from "pako";
 import { supabaseConfig } from "../config.js";
 import { initAutoLogout } from "../auto-logout.js";
 import "../pwa-update.js";
@@ -1282,6 +1283,7 @@ const requireUser = async () => {
   }
 
   const user = sessionData.session.user;
+  currentDashboardUserId = user.id;
 
   // Clear persisted table state once per new authenticated session.
   try {
@@ -1333,6 +1335,7 @@ const taStatus = document.getElementById("ta-status");
 const taLastUpdated = document.getElementById("ta-last-updated");
 const taMoreBtn = document.getElementById("ta-lazy-sentinel");
 let dashboardUserRole = "user";
+let currentDashboardUserId = "";
 let taRows = [];
 let currentDisplayRows = [];
 let renderedCount = 0;
@@ -1347,9 +1350,18 @@ let activeFilters = {
   matchAll: true,
 };
 let activeSort = {
-  by: "",
-  order: "asc",
+  by: "ta",
+  order: "desc",
 };
+const DASHBOARD_COLUMNS_DEFAULT = {
+  ta_number: true,
+  purpose: true,
+  destination: true,
+  officials: true,
+  travel_end: true,
+  file: true,
+};
+let activeDashboardColumns = { ...DASHBOARD_COLUMNS_DEFAULT };
 let employeesListForFilter = [];
 let insightsHeightObserver = null;
 let insightsHeightFrame = null;
@@ -1378,8 +1390,8 @@ const openViewModalForRecord = async (record) => {
     const safeFileUrl = record.file_url;
     viewFileLink.href = safeFileUrl;
     viewFileLink.dataset.fileUrl = safeFileUrl;
-    viewFileLink.dataset.fileName = record.file_name || "Open file";
-    viewFileLink.textContent = record.file_name || "Open file";
+    viewFileLink.dataset.fileName = record.file_name || "Download";
+    viewFileLink.textContent = "Download";
     await updateViewFileSize(safeFileUrl);
   } else {
     viewFileLink.href = "#";
@@ -2029,6 +2041,34 @@ const initInsightsLayoutSync = () => {
 };
 
 // Helper functions for localStorage persistence
+const FILTER_MATCH_ALL_VISIBILITY_KEY = "dashboardHideMatchAllFilter";
+
+const getDashboardHideMatchAllFilter = () => {
+  const saved = localStorage.getItem(FILTER_MATCH_ALL_VISIBILITY_KEY);
+  return saved === null ? true : saved === "true";
+};
+
+const applyDashboardMatchAllFilterVisibility = (hide) => {
+  const filterMode = document.getElementById("filter-mode");
+  if (!filterMode) return;
+  filterMode.style.display = hide ? "none" : "";
+  filterMode.toggleAttribute("hidden", hide);
+};
+
+const settingsHideMatchAllFilter = document.getElementById(
+  "settings-hide-match-all-filter",
+);
+if (settingsHideMatchAllFilter) {
+  settingsHideMatchAllFilter.checked = getDashboardHideMatchAllFilter();
+  settingsHideMatchAllFilter.addEventListener("change", () => {
+    const hide = settingsHideMatchAllFilter.checked;
+    localStorage.setItem(FILTER_MATCH_ALL_VISIBILITY_KEY, hide);
+    applyDashboardMatchAllFilterVisibility(hide);
+  });
+}
+
+applyDashboardMatchAllFilterVisibility(getDashboardHideMatchAllFilter());
+
 const saveFiltersToStorage = () => {
   localStorage.setItem("dashboardFilters", JSON.stringify(activeFilters));
 };
@@ -2049,12 +2089,77 @@ const saveSortToStorage = () => {
   localStorage.setItem("dashboardSort", JSON.stringify(activeSort));
 };
 
+const getDashboardColumnsStorageKey = () => {
+  return `dashboardColumns:${currentDashboardUserId || "anonymous"}`;
+};
+
+const saveDashboardColumnsToStorage = () => {
+  localStorage.setItem(
+    getDashboardColumnsStorageKey(),
+    JSON.stringify(activeDashboardColumns),
+  );
+};
+
+const loadDashboardColumnsFromStorage = () => {
+  const saved = localStorage.getItem(getDashboardColumnsStorageKey());
+  activeDashboardColumns = { ...DASHBOARD_COLUMNS_DEFAULT };
+  if (!saved) return;
+  try {
+    const parsed = JSON.parse(saved);
+    Object.keys(DASHBOARD_COLUMNS_DEFAULT).forEach((key) => {
+      if (typeof parsed?.[key] === "boolean") {
+        activeDashboardColumns[key] = parsed[key];
+      }
+    });
+  } catch (error) {
+    console.error("Failed to parse dashboard columns settings:", error);
+  }
+};
+
+const applyDashboardColumnVisibility = () => {
+  const table = document.querySelector("#ta-panel .data-table");
+  if (!table) return;
+
+  Object.entries(activeDashboardColumns).forEach(([columnKey, isVisible]) => {
+    table.querySelectorAll(`[data-col="${columnKey}"]`).forEach((cell) => {
+      cell.style.display = isVisible ? "" : "none";
+    });
+  });
+};
+
+const syncDashboardColumnInputs = () => {
+  document
+    .querySelectorAll('#settings-columns-list input[data-column-key]')
+    .forEach((input) => {
+      const columnKey = input.getAttribute("data-column-key");
+      if (!columnKey || !(columnKey in activeDashboardColumns)) return;
+      input.checked = activeDashboardColumns[columnKey];
+    });
+};
+
+const initDashboardColumnControls = () => {
+  document
+    .querySelectorAll('#settings-columns-list input[data-column-key]')
+    .forEach((input) => {
+      input.addEventListener("change", () => {
+        const columnKey = input.getAttribute("data-column-key");
+        if (!columnKey || !(columnKey in activeDashboardColumns)) return;
+        activeDashboardColumns[columnKey] = input.checked;
+        saveDashboardColumnsToStorage();
+        applyDashboardColumnVisibility();
+      });
+    });
+};
+
 const loadSortFromStorage = () => {
   const saved = localStorage.getItem("dashboardSort");
   if (saved) {
     try {
       const parsed = JSON.parse(saved);
-      activeSort = { ...activeSort, ...parsed };
+      const resolvedBy = parsed.by && parsed.by !== "" ? parsed.by : activeSort.by;
+      const resolvedOrder =
+        parsed.order && parsed.order !== "" ? parsed.order : activeSort.order;
+      activeSort = { ...activeSort, by: resolvedBy, order: resolvedOrder };
     } catch (e) {
       console.error("Failed to parse saved sort:", e);
     }
@@ -2075,7 +2180,7 @@ const updateButtonStates = () => {
     activeFilters.matchAll === false;
 
   // Check if sort is active
-  const isSortActive = activeSort.by !== "";
+  const isSortActive = activeSort.by !== "ta" || activeSort.order !== "desc";
 
   if (filterToggleBtn) {
     if (isFilterActive) {
@@ -2145,8 +2250,22 @@ const fetchFileSizeBytes = async (url) => {
   if (!url || url === "#") return null;
   if (fileSizeCache.has(url)) return fileSizeCache.get(url);
 
+  const FETCH_TIMEOUT_MS = 8000;
+  const timedFetch = async (resource, init = {}) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      return await fetch(resource, {
+        ...init,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  };
+
   try {
-    const headResponse = await fetch(url, {
+    const headResponse = await timedFetch(url, {
       method: "HEAD",
       cache: "no-store",
     });
@@ -2161,16 +2280,33 @@ const fetchFileSizeBytes = async (url) => {
   }
 
   try {
-    const response = await fetch(url, { cache: "no-store" });
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    const size = blob.size;
-    if (Number.isFinite(size) && size > 0) {
-      fileSizeCache.set(url, size);
-      return size;
+    const rangeResponse = await timedFetch(url, {
+      method: "GET",
+      cache: "no-store",
+      headers: { Range: "bytes=0-0" },
+    });
+
+    if (rangeResponse.ok || rangeResponse.status === 206) {
+      const contentRange = rangeResponse.headers.get("content-range");
+      const contentLength = rangeResponse.headers.get("content-length");
+
+      if (contentRange) {
+        const totalMatch = contentRange.match(/\/(\d+)$/);
+        const totalSize = Number(totalMatch?.[1]);
+        if (Number.isFinite(totalSize) && totalSize > 0) {
+          fileSizeCache.set(url, totalSize);
+          return totalSize;
+        }
+      }
+
+      const fallbackSize = Number(contentLength);
+      if (Number.isFinite(fallbackSize) && fallbackSize > 0) {
+        fileSizeCache.set(url, fallbackSize);
+        return fallbackSize;
+      }
     }
   } catch (error) {
-    console.warn("Blob size lookup failed:", error);
+    console.warn("Range size lookup failed:", error);
   }
 
   return null;
@@ -2190,6 +2326,24 @@ const getReconstructedMimeType = (fileName = "") => {
   if (lower.endsWith(".png")) return "image/png";
   if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   return "application/octet-stream";
+};
+
+const decompressGzipToBlob = async (response, mimeType) => {
+  if (!response.ok) {
+    throw new Error(`Download failed (${response.status})`);
+  }
+
+  if (typeof DecompressionStream === "function" && response.body) {
+    const decompressedStream = response.body.pipeThrough(
+      new DecompressionStream("gzip"),
+    );
+    const decompressedBlob = await new Response(decompressedStream).blob();
+    return new Blob([decompressedBlob], { type: mimeType });
+  }
+
+  const compressedBuffer = await response.arrayBuffer();
+  const decompressedBytes = ungzip(new Uint8Array(compressedBuffer));
+  return new Blob([decompressedBytes], { type: mimeType });
 };
 
 const setFileLinkLoading = (linkEl, loading) => {
@@ -2224,44 +2378,89 @@ const setFileLinkLoading = (linkEl, loading) => {
 
 const openStoredFile = async (fileUrl, fileName = "", triggerEl = null) => {
   const safeFileUrl = safeUrl(fileUrl);
-  if (safeFileUrl === "#") return;
+  if (safeFileUrl === "#") {
+    console.warn("[file-open] Invalid or unsupported file URL", {
+      fileUrl,
+      fileName,
+    });
+    showToast("This file link is invalid or missing.", "error", 3600);
+    return;
+  }
 
   setFileLinkLoading(triggerEl, true);
 
+  // Open a tab synchronously within the click gesture so later async work
+  // (gzip decompression) does not get blocked by popup protection.
+  let openedTab = null;
   try {
-    // Check if browser supports DecompressionStream (most modern desktop browsers)
-    const supportsDecompression = typeof DecompressionStream === "function";
-    const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+    openedTab = window.open("", "_blank");
+  } catch (error) {
+    openedTab = null;
+  }
+  if (openedTab) {
+    try {
+      openedTab.opener = null;
+    } catch (error) {
+      // Keep the tab reference even if opener cannot be changed.
+    }
+  }
 
-    // If compressed and browser supports decompression, decompress before opening
-    if (isCompressed && supportsDecompression) {
+  try {
+    const isCompressed = isGzipFileLink(safeFileUrl, fileName);
+    console.info("[file-open] Opening file", {
+      fileName,
+      isCompressed,
+      url: safeFileUrl,
+    });
+
+    // If compressed, reconstruct the original file before opening.
+    if (isCompressed) {
       try {
         const response = await fetch(safeFileUrl, { cache: "no-store" });
-        if (!response.ok || !response.body) {
+        if (!response.ok) {
           throw new Error(`Download failed (${response.status})`);
         }
-
-        const decompressedStream = response.body.pipeThrough(
-          new DecompressionStream("gzip"),
-        );
-        const decompressedBlob = await new Response(decompressedStream).blob();
         const mimeType = getReconstructedMimeType(fileName);
-        const rebuiltBlob = new Blob([decompressedBlob], { type: mimeType });
+        const rebuiltBlob = await decompressGzipToBlob(response, mimeType);
 
         const objectUrl = URL.createObjectURL(rebuiltBlob);
-        window.open(objectUrl, "_blank", "noopener");
+
+        if (openedTab && !openedTab.closed) {
+          openedTab.location.href = objectUrl;
+        } else {
+          const fallbackTab = window.open(objectUrl, "_blank", "noopener");
+          if (!fallbackTab) {
+            window.location.assign(objectUrl);
+          }
+        }
 
         setTimeout(() => URL.revokeObjectURL(objectUrl), 60 * 1000);
         return;
       } catch (error) {
-        console.error("Failed to decompress file:", error);
+        console.error("[file-open] Failed to reconstruct compressed file", {
+          url: safeFileUrl,
+          fileName,
+          error,
+        });
+        showToast(
+          "Could not reconstruct compressed file. Opening original download.",
+          "warning",
+          3200,
+        );
         // Fall through to opening the URL directly
       }
     }
 
     // For non-compressed files or when decompression not supported/failed:
     // Open the file URL in a new tab
-    window.open(safeFileUrl, "_blank", "noopener");
+    if (openedTab && !openedTab.closed) {
+      openedTab.location.href = safeFileUrl;
+    } else {
+      const fallbackTab = window.open(safeFileUrl, "_blank", "noopener");
+      if (!fallbackTab) {
+        window.location.assign(safeFileUrl);
+      }
+    }
   } finally {
     setFileLinkLoading(triggerEl, false);
   }
@@ -2300,7 +2499,6 @@ const updateViewFileSize = async (fileUrl) => {
   ) {
     return;
   }
-
   viewFileSize.textContent = size
     ? formatFileSize(size)
     : "File size: Unavailable";
@@ -2428,13 +2626,13 @@ const buildDashRowHtml = (row, globalIndex, batchIndex) => {
                         </svg>
                     </button>
                 </td>
-                <td>${escapeHtml(row.ta_number) || "-"}</td>
-                <td><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
-                <td style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
+                <td data-col="ta_number">${escapeHtml(row.ta_number) || "-"}</td>
+                <td data-col="purpose"><span class="truncate">${escapeHtml(row.purpose) || "-"}</span></td>
+                <td data-col="destination" style="text-align: left;"><span class="truncate">${escapeHtml(row.destination) || "-"}</span></td>
+                <td data-col="officials" style="text-align: left;"><span class="truncate">${escapeHtml(employeesText)}</span></td>
                 <td>${dateText}</td>
-                <td>${untilText}</td>
-                <td>
+                <td data-col="travel_end">${untilText}</td>
+                <td data-col="file">
                     ${
                       hasFile
                         ? `<a class="file-link row-file-link" href="${fileUrl}" data-file-url="${fileUrl}" data-file-name="${escapeHtml(safeName)}" target="_blank" rel="noopener">${escapeHtml(displayName)}</a>`
@@ -2485,8 +2683,8 @@ const bindDashRowEvents = (trs) => {
           const safeFileUrl = safeUrl(record.file_url);
           viewFileLink.href = safeFileUrl;
           viewFileLink.dataset.fileUrl = safeFileUrl;
-          viewFileLink.dataset.fileName = record.file_name || "Open file";
-          viewFileLink.textContent = record.file_name || "Open file";
+          viewFileLink.dataset.fileName = record.file_name || "Download";
+          viewFileLink.textContent = "Download";
           updateViewFileSize(safeFileUrl);
         } else {
           viewFileLink.href = "#";
@@ -2511,6 +2709,7 @@ const renderRows = (rows) => {
   if (!currentDisplayRows.length) {
     taBody.innerHTML =
       '<tr><td colspan="8">No records match the current filters.</td></tr>';
+    applyDashboardColumnVisibility();
     if (taMoreBtn) taMoreBtn.style.display = "none";
     return;
   }
@@ -2519,6 +2718,7 @@ const renderRows = (rows) => {
     .slice(0, renderedCount)
     .map((row, i) => buildDashRowHtml(row, i, i))
     .join("");
+  applyDashboardColumnVisibility();
   bindDashRowEvents(Array.from(taBody.querySelectorAll("tr")));
   if (taMoreBtn)
     taMoreBtn.style.display =
@@ -2536,6 +2736,7 @@ const loadMoreDashRows = () => {
     .join("");
   const newTrs = Array.from(temp.querySelectorAll("tr"));
   newTrs.forEach((tr) => taBody.appendChild(tr));
+  applyDashboardColumnVisibility();
   bindDashRowEvents(newTrs);
   renderedCount = to;
   updateTaFooter();
@@ -2994,10 +3195,10 @@ applySortBtn.addEventListener("click", () => {
 });
 
 clearSortBtn.addEventListener("click", () => {
-  activeSort.by = "";
-  activeSort.order = "asc";
+  activeSort.by = "ta";
+  activeSort.order = "desc";
   sortBySelect.value = "ta";
-  sortOrderSelect.value = "asc";
+  sortOrderSelect.value = "desc";
   saveSortToStorage();
   updateButtonStates();
   renderRows(taRows);
@@ -3039,6 +3240,10 @@ const init = async () => {
   // Load saved filters and sort from localStorage
   loadFiltersFromStorage();
   loadSortFromStorage();
+  loadDashboardColumnsFromStorage();
+  initDashboardColumnControls();
+  syncDashboardColumnInputs();
+  applyDashboardColumnVisibility();
 
   // Restore UI state from loaded filters/sort
   if (filterTaNumberInput) {
@@ -3058,7 +3263,7 @@ const init = async () => {
       activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;
 
   if (sortBySelect) sortBySelect.value = activeSort.by || "ta";
-  if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "asc";
+  if (sortOrderSelect) sortOrderSelect.value = activeSort.order || "desc";
 
   await loadEmployeesForFilter();
   await loadTravelAuthorities(true);
@@ -3784,42 +3989,32 @@ const initDestinationsChart = async () => {
   ];
 
   try {
-    // Fetch travel authorities and PSGC geographic data in parallel
-    const [{ data: tas, error: taError }, psgcEntries] = await Promise.all([
-      supabase
-        .from("travel_authorities")
-        .select("destination")
-        .eq("is_demo", false),
-      loadPsgcEntries().catch((err) => {
-        console.warn(
-          "PSGC API unavailable, using local classification data:",
-          err,
-        );
-        return null;
-      }),
-    ]);
+    const { data: provinceCounts, error: provinceCountsError } =
+      await supabase.rpc("get_travel_authority_province_counts");
+    if (provinceCountsError) throw provinceCountsError;
 
-    if (taError) throw taError;
+    let regionRows = null;
+    let regionEntries = null;
 
-    const REGION_ENTRIES = psgcEntries
-      ? psgcEntries.regionEntries
-      : FALLBACK_REGION_ENTRIES;
-    const CALABARZON_ENTRIES = psgcEntries
-      ? psgcEntries.calabarzonEntries
-      : FALLBACK_CALABARZON_ENTRIES;
-
-    const dataBadge = document.getElementById("dest-data-badge");
-    const usedPsgc = !!psgcEntries;
-    const updateBadge = (view) => {
-      if (!dataBadge) return;
-      if (view !== "region" || !usedPsgc) {
-        dataBadge.hidden = true;
+    const loadRegionData = async () => {
+      if (regionRows && regionEntries) {
         return;
       }
-      dataBadge.textContent = "PSGC API";
-      dataBadge.className = "dest-data-badge dest-data-badge--api";
-      dataBadge.href = "https://psgc.rootscratch.com/";
-      dataBadge.hidden = false;
+
+      const { data, error } = await supabase
+        .from("travel_authorities")
+        .select("destination")
+        .eq("is_demo", false);
+
+      if (error) throw error;
+      regionRows = data || [];
+      regionEntries = FALLBACK_REGION_ENTRIES;
+    };
+
+    const dataBadge = document.getElementById("dest-data-badge");
+    const updateBadge = () => {
+      if (!dataBadge) return;
+      dataBadge.hidden = true;
     };
 
     let destChart = null;
@@ -3866,25 +4061,57 @@ const initDestinationsChart = async () => {
         .join("");
     };
 
-    const buildData = (entries, palette) => {
-      const counts = {};
-      (tas || []).forEach((ta) => {
-        const label = classifyDest(ta.destination, entries);
-        counts[label] = (counts[label] || 0) + 1;
-      });
+    const formatCounts = (counts, palette) => {
       const sorted = Object.entries(counts)
-        .filter(([k]) => k !== "Others")
-        .sort((a, b) => b[1] - a[1]);
-      if (counts["Others"]) sorted.push(["Others", counts["Others"]]);
-      const labels = sorted.map((e) => e[0]);
-      const data = sorted.map((e) => e[1]);
-      const colors = labels.map((l, i) =>
-        l === "Others" ? "#94a3b8" : palette[i % palette.length],
+        .filter(([label]) => label !== "Others")
+        .sort(([, firstCount], [, secondCount]) => secondCount - firstCount);
+      if (counts.Others) sorted.push(["Others", counts.Others]);
+      const labels = sorted.map(([label]) => label);
+      const data = sorted.map(([, count]) => count);
+      const colors = labels.map((label, index) =>
+        label === "Others" ? "#94a3b8" : palette[index % palette.length],
       );
       return { labels, data, colors };
     };
 
-    const renderChart = (view) => {
+    const buildProvinceData = () => {
+      const counts = {};
+      (provinceCounts || []).forEach(({ province, total }) => {
+        const label = province || "Others";
+        counts[label] = (counts[label] || 0) + Number(total);
+      });
+      return formatCounts(counts, CALABARZON_PALETTE);
+    };
+
+    const buildRegionData = async () => {
+      try {
+        const { data, error } = await supabase.rpc(
+          "get_travel_authority_region_counts",
+        );
+        if (error) throw error;
+
+        const counts = {};
+        (data || []).forEach(({ region, total }) => {
+          const label = region || "Others";
+          counts[label] = Number(total);
+        });
+        return formatCounts(counts, REGION_PALETTE);
+      } catch (error) {
+        console.warn(
+          "Falling back to client-side region classification:",
+          error,
+        );
+        await loadRegionData();
+        const counts = {};
+        regionRows.forEach((ta) => {
+          const label = classifyDest(ta.destination, regionEntries);
+          counts[label] = (counts[label] || 0) + 1;
+        });
+        return formatCounts(counts, REGION_PALETTE);
+      }
+    };
+
+    const renderChart = async (view) => {
       if (title) {
         title.textContent =
           DESTINATION_TITLES[view] || DESTINATION_TITLES.region;
@@ -3893,11 +4120,10 @@ const initDestinationsChart = async () => {
         subtitle.textContent =
           DESTINATION_SUBTITLES[view] || DESTINATION_SUBTITLES.region;
       }
-      updateBadge(view);
 
-      const entries = view === "region" ? REGION_ENTRIES : CALABARZON_ENTRIES;
-      const palette = view === "region" ? REGION_PALETTE : CALABARZON_PALETTE;
-      const { labels, data, colors } = buildData(entries, palette);
+      const { labels, data, colors } =
+        view === "region" ? await buildRegionData() : buildProvinceData();
+      updateBadge();
 
       if (!labels.length) {
         canvas.parentElement.innerHTML =
@@ -3952,7 +4178,7 @@ const initDestinationsChart = async () => {
       queueInsightsLayoutSync();
     };
 
-    renderChart("calabarzon");
+    await renderChart("calabarzon");
     syncSegmentedControl(
       document.querySelector(".dest-switcher[data-segmented-control]"),
     );
@@ -3964,7 +4190,9 @@ const initDestinationsChart = async () => {
           .forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
         syncSegmentedControl(btn.closest("[data-segmented-control]"));
-        renderChart(btn.dataset.view);
+        void renderChart(btn.dataset.view).catch((error) => {
+          console.error("Destinations chart error:", error);
+        });
       });
     });
   } catch (e) {
