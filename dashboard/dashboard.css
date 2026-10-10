@@ -335,6 +335,7 @@ body.dashboard-page::before {
   color: var(--sea);
 }
 .dash-content #ta-panel .table-wrap.max-rows-10 {
+  margin-bottom: 10px;
   flex: 1;
   min-height: 0;
   max-height: none;

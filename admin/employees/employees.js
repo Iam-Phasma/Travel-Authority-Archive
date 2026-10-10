@@ -786,6 +786,45 @@ window.initEmployeeManagement = (supabase) => {
     }
   });
 
+  const addEmployeeModal = document.getElementById("add-employee-modal");
+  const openAddEmployeeBtn = document.getElementById("open-add-employee-btn");
+  const cancelAddEmployeeBtn = document.getElementById("cancel-add-employee");
+  const closeAddEmployeeModal = () => {
+    addEmployeeModal.classList.remove("show");
+    setDropdownVisible(false);
+    openAddEmployeeBtn.focus();
+  };
+
+  openAddEmployeeBtn.addEventListener("click", () => {
+    employeeStatus.textContent = "Add officials to the list.";
+    employeeStatus.classList.remove("status--error", "status--shake");
+    addEmployeeModal.classList.add("show");
+    employeeNameInput.focus();
+  });
+  cancelAddEmployeeBtn.addEventListener("click", closeAddEmployeeModal);
+  addEmployeeModal.addEventListener("click", (event) => {
+    if (event.target === addEmployeeModal) closeAddEmployeeModal();
+  });
+  addEmployeeModal.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      closeAddEmployeeModal();
+    }
+    if (event.key === "Tab") {
+      const controls = [...addEmployeeModal.querySelectorAll("input, button")]
+        .filter((control) => !control.disabled && control.getClientRects().length);
+      const first = controls[0];
+      const last = controls[controls.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  });
+
   addEmployeeBtn.addEventListener("click", async () => {
     const employeeName = employeeNameInput.value.trim();
     const employeePosition = employeePositionInput.value.trim();
@@ -886,6 +925,7 @@ window.initEmployeeManagement = (supabase) => {
       if (window.adminLoadEmployees) {
         await window.adminLoadEmployees();
       }
+      closeAddEmployeeModal();
       showToast("Official added successfully!", "success");
     } catch (error) {
       console.error("Add employee error:", error);

@@ -1,107 +1,30 @@
 <section class="panel wide-panel employees-panel hidden" id="employees-panel">
-  <div
-    class="employees-panel-head"
-    style="
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 1px;
-      margin-bottom: 14px;
-    "
-  >
-    <h2 style="font-size: 1.5rem; margin: 0; line-height: 1.2">
-      Manage Officials
-    </h2>
-    <span class="status" style="font-size: 0.8rem"
-      >Add, update, hide, or remove officials from the active directory.</span
-    >
+  <div class="employees-panel-head">
+    <div class="employees-panel-title">
+      <h2 style="font-size: 1.5rem; margin: 0; line-height: 1.2">Manage Officials</h2>
+      <span class="status" style="font-size: 0.8rem">Add, update, hide, or remove officials from the active directory.</span>
+    </div>
+    <button id="open-add-employee-btn" class="employee-add-button" type="button" aria-haspopup="dialog" aria-controls="add-employee-modal">Add Official</button>
   </div>
   <div class="employees-body">
     <div class="employees-layout">
-      <div class="employee-form-card">
-        <div class="employee-card-heading">
-          <h3>Add Official</h3>
-          <p>
-            Keep the directory current by adding each official with a consistent
-            full name and position.
-          </p>
-        </div>
-        <div class="fields employee-form-fields">
-          <div>
-            <label for="employee-name"
-              >Official Name <span class="required">*</span></label
-            >
-            <div class="autocomplete-wrapper">
-              <input
-                id="employee-name"
-                type="text"
-                placeholder="Enter First name, Initial, Surname"
-                maxlength="30"
-                pattern="[a-zA-ZÀ-ÿ\s\-'.,]+"
-                title="Only letters, spaces, hyphens, apostrophes, periods, and commas allowed"
-                required
-                autocomplete="off"
-              />
-              <div
-                id="employee-autocomplete-list"
-                class="autocomplete-dropdown hidden"
-                style="display: none"
-              ></div>
-            </div>
-          </div>
-          <div>
-            <label for="employee-position"
-              >Position <span class="required">*</span></label
-            >
-            <input
-              id="employee-position"
-              type="text"
-              placeholder="Enter position"
-              required
-              autocomplete="off"
-              list="employee-position-suggestions"
-            />
-            <datalist id="employee-position-suggestions"></datalist>
-          </div>
-          <div>
-            <label for="employee-office">Office</label>
-            <input
-              id="employee-office"
-              type="text"
-              placeholder="Enter office (optional)"
-              autocomplete="off"
-              list="employee-office-suggestions"
-            />
-            <datalist id="employee-office-suggestions"></datalist>
-          </div>
-        </div>
-        <div class="employee-form-actions">
-          <button id="add-employee-btn" type="button">Add Official</button>
-          <span class="status" id="employee-status"
-            >Add officials to the list.</span
-          >
-        </div>
-      </div>
-
       <div class="employee-list-container employee-directory-card">
         <div class="employee-list-header" style="position: relative">
           <div class="employee-card-heading employee-list-heading">
             <h3>Official Directory</h3>
-            <p>
-              Search, review, hide, update, or remove officials from the active
-              directory.
-            </p>
             <div class="employee-summary" id="employee-summary">
               Total: 0 | Active: 0 | Inactive: 0
             </div>
           </div>
           <div class="panel-head-actions">
-            <div class="employee-search-wrapper">
+            <div class="employee-search-wrapper ta-search-wrap">
+                <svg class="ta-search-icon" viewBox="0 0 24 24" role="img" aria-hidden="true" focusable="false"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
               <input
                 type="text"
                 id="employee-search"
-                class="employee-search-input"
+                class="ta-search-input"
                 placeholder="Search Officials..."
+                aria-label="Search officials"
                 autocomplete="off"
               />
             </div>

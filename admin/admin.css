@@ -414,7 +414,7 @@ body.dashboard-page::before {
   display: none;
 }
 
-/* Employees panel: fixed header, scrollable body */
+/* Officials panel: fixed header and card, scrolling inside the table only. */
 .admin-panels #employees-panel:not(.hidden) {
   flex: 1;
   min-height: 0;
@@ -427,12 +427,9 @@ body.dashboard-page::before {
   flex: 1;
   min-height: 0;
   display: flex;
-  overflow-y: auto;
-  padding-bottom: 24px;
-  scrollbar-width: none;
-}
-.admin-panels #employees-panel .employees-body::-webkit-scrollbar {
-  display: none;
+  overflow: hidden;
+  padding-bottom: 12px;
+  box-sizing: border-box;
 }
 
 /* Fill-height panels — table stretches to available space */
@@ -479,6 +476,7 @@ body.dashboard-page::before {
 .admin-panels #employees-panel {
   width: 100%;
   max-width: 100%;
+  margin-bottom: 0;
   background: transparent;
   border: none;
   box-shadow: none;
@@ -492,17 +490,21 @@ body.dashboard-page::before {
   line-height: 1.2;
 }
 
-/* Bento side-by-side layout: form on left, directory on right */
+/* Full-width official directory */
 .admin-panels #employees-panel .employees-layout {
   flex: 1;
   min-height: 0;
-  grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
   gap: 18px;
 }
 
 .admin-panels #employees-panel .employee-directory-card {
-  min-width: 0; /* prevent grid blowout */
+  min-width: 0;
+  min-height: 0;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .admin-panels #employees-panel .employee-position-filter-wrap {
@@ -557,8 +559,9 @@ body.dashboard-page::before {
 }
 
 .admin-panels #employees-panel .employee-list {
-  max-height: min(52vh, 580px);
-  max-height: min(52dvh, 580px);
+  min-height: 0;
+  max-height: none;
+  overflow: auto;
 }
 
 /* Lock the form card height and make the directory fill */
@@ -612,6 +615,7 @@ body.dashboard-page::before {
 
 /* Stretch the scrollable table inside fill-height panels */
 .admin-panels #view-panel .table-wrap.max-rows-10 {
+  margin-bottom: 10px;
   flex: 1;
   min-height: 0;
   max-height: none;
@@ -984,22 +988,9 @@ body.dashboard-page::before {
 
   /* restore scroll inside admin-content on mobile */
   #view-panel:not(.hidden),
-  #employees-panel:not(.hidden),
   #users-panel:not(.hidden),
   #draft-ta-panel:not(.hidden) {
     overflow-y: auto;
-  }
-
-  /* employees body: let the panel scroll instead of nesting two scroll areas */
-  .admin-panels #employees-panel .employees-body {
-    overflow: visible;
-    flex: unset;
-    height: auto;
-    padding-bottom: 80px;
-  }
-
-  .admin-panels #employees-panel .employee-list {
-    max-height: none;
   }
 
   .admin-panels #view-panel .table-wrap.max-rows-10 {

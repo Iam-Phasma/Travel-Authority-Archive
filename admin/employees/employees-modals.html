@@ -1,3 +1,64 @@
+<div id="add-employee-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="add-employee-title" tabindex="-1">
+  <div class="modal-content modal-form">
+    <h3 id="add-employee-title">Add Official</h3>
+    <p>Keep the directory current by adding each official with a consistent full name and position.</p>
+        <div class="fields employee-form-fields">
+          <div>
+            <label for="employee-name"
+              >Official Name <span class="required">*</span></label
+            >
+            <div class="autocomplete-wrapper">
+              <input
+                id="employee-name"
+                type="text"
+                placeholder="Enter First name, Initial, Surname"
+                maxlength="30"
+                pattern="[a-zA-ZÀ-ÿ\s\-'.,]+"
+                title="Only letters, spaces, hyphens, apostrophes, periods, and commas allowed"
+                required
+                autocomplete="off"
+              />
+              <div
+                id="employee-autocomplete-list"
+                class="autocomplete-dropdown hidden"
+                style="display: none"
+              ></div>
+            </div>
+          </div>
+          <div>
+            <label for="employee-position"
+              >Position <span class="required">*</span></label
+            >
+            <input
+              id="employee-position"
+              type="text"
+              placeholder="Enter position"
+              required
+              autocomplete="off"
+              list="employee-position-suggestions"
+            />
+            <datalist id="employee-position-suggestions"></datalist>
+          </div>
+          <div>
+            <label for="employee-office">Office</label>
+            <input
+              id="employee-office"
+              type="text"
+              placeholder="Enter office (optional)"
+              autocomplete="off"
+              list="employee-office-suggestions"
+            />
+            <datalist id="employee-office-suggestions"></datalist>
+          </div>
+        </div>
+    <span class="status" id="employee-status" aria-live="polite">Add officials to the list.</span>
+    <div class="modal-actions">
+      <button id="cancel-add-employee" class="modal-btn cancel" type="button">Cancel</button>
+      <button id="add-employee-btn" class="modal-btn confirm" type="button">Add Official</button>
+    </div>
+  </div>
+</div>
+
 <div id="delete-employee-modal" class="modal">
     <div class="modal-content">
         <h3>Confirm Official Deletion</h3>
