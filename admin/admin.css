@@ -507,45 +507,6 @@ body.dashboard-page::before {
   overflow: hidden;
 }
 
-.admin-panels #employees-panel .employee-position-filter-wrap {
-  flex: 0 1 220px;
-  min-width: 180px;
-}
-
-.admin-panels #employees-panel .employee-position-filter {
-  width: 100%;
-}
-
-.admin-panels #employees-panel .employee-list-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex: 0 1 560px;
-  min-width: 280px;
-}
-
-.admin-panels
-  #employees-panel
-  .employee-list-controls
-  .employee-position-filter-wrap {
-  flex: 0 1 220px;
-  min-width: 170px;
-}
-
-.admin-panels
-  #employees-panel
-  .employee-list-controls
-  .employee-search-wrapper {
-  flex: 1 1 320px;
-  min-width: 220px;
-}
-
-.admin-panels #employees-panel .employee-list-controls .employee-search-input {
-  padding: 10px 12px;
-  min-height: 42px;
-  line-height: 1.2;
-}
-
 .admin-panels #employees-panel .employee-list-heading .employee-summary {
   margin: 0;
   padding: 0;
@@ -564,50 +525,6 @@ body.dashboard-page::before {
   overflow: auto;
 }
 
-/* Lock the form card height and make the directory fill */
-.admin-panels #employees-panel .employee-form-card {
-  align-self: start;
-  position: sticky;
-  top: 0;
-}
-
-@media (max-width: 960px) {
-  .admin-panels #employees-panel .employees-layout {
-    grid-template-columns: minmax(0, 1fr);
-  }
-  .admin-panels #employees-panel .employee-form-card {
-    position: static;
-  }
-  .admin-panels #employees-panel .employee-position-filter-wrap {
-    flex: 0 0 auto;
-    width: 100%;
-    min-width: 0;
-  }
-}
-
-@media (max-width: 768px) {
-  .admin-panels #employees-panel .employee-list-controls {
-    flex: 0 0 auto;
-    width: 100%;
-    min-width: 0;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-
-  .admin-panels
-    #employees-panel
-    .employee-list-controls
-    .employee-position-filter-wrap,
-  .admin-panels
-    #employees-panel
-    .employee-list-controls
-    .employee-search-wrapper {
-    flex: 0 0 auto;
-    width: 100%;
-    min-width: 0;
-  }
-}
 .admin-panels #users-panel {
   width: 100%;
   max-width: 100%;

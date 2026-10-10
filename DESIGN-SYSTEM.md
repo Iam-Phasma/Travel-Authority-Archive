@@ -371,7 +371,6 @@ background: rgba(47, 111, 179, 0.08);
 ### Form Sub-Cards (inside panels)
 
 ```css
-.employee-form-card,
 .employee-directory-card {
   background: var(--surface-soft);  /* #f8fafd */
   border: 1px solid var(--line);
