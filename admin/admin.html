@@ -249,8 +249,11 @@
                     </details>
                 </div>
                 <div class="settings-section" id="settings-draft-ta-section" style="display: none;">
-                    <h3>Draft TA PDF</h3>
-                    <p>Shared signatories and ISO number for all draft TAs. Titles come from the employee list.</p>
+                    <details class="filter-columns">
+                        <summary class="filter-columns-summary">
+                            <span class="filter-columns-summary-title">Draft TA PDF</span>
+                            <span class="filter-columns-summary-desc">Set the signatories and ISO number.</span>
+                        </summary>
                     <form id="settings-draft-ta-form">
                         <div class="form-group"><label for="settings-draft-ta-recommending">Recommending Approval</label><select id="settings-draft-ta-recommending" required></select></div>
                         <div class="form-group"><label for="settings-draft-ta-funds">Funds Available</label><select id="settings-draft-ta-funds" required></select></div>
@@ -259,6 +262,7 @@
                         <button class="modal-btn confirm" id="settings-draft-ta-save" type="submit" disabled>Save Draft TA Settings</button>
                     </form>
                     <p id="settings-draft-ta-status" class="status" role="status" aria-live="polite"></p>
+                    </details>
                 </div>
                 <div class="settings-section settings-section--orphan-tools" id="settings-orphan-tools-section" style="display: none;">
                     <div class="settings-action-row">

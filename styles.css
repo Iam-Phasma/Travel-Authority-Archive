@@ -2071,12 +2071,14 @@ button:hover {
 
 #settings-draft-ta-form {
     display: grid;
-    gap: 12px;
+    gap: 8px;
+    padding-top: 6px;
+    font-size: 0.8rem;
 }
 
 #settings-draft-ta-form .form-group {
     display: grid;
-    gap: 6px;
+    gap: 4px;
     min-width: 0;
 }
 
@@ -2085,12 +2087,32 @@ button:hover {
     box-sizing: border-box;
     width: 100%;
     min-width: 0;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: 1px solid #d1d5db;
     border-radius: 8px;
     font: inherit;
     background: #fff;
     color: #081430;
+}
+
+#settings-draft-ta-form label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+#settings-draft-ta-save {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+}
+
+#settings-draft-ta-status {
+    font-size: 0.8rem;
+    margin: 8px 0 0;
+}
+
+#settings-draft-ta-status:empty {
+    display: none;
 }
 
 .settings-section--orphan-tools {

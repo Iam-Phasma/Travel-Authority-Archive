@@ -17,7 +17,7 @@ async function loadDraftSettings() {
     try {
         const [config, employees] = await Promise.all([
             draftTaClient.from('draft_ta').select('id, recommending, funds, approved, iso_no').order('id', { ascending: false }).limit(1).maybeSingle(),
-            draftTaClient.from('employee_list').select('name, position, is_active').order('name'),
+            draftTaClient.from('employee_list').select('name, position, is_active, office').order('name'),
         ]);
         if (config.error) throw config.error;
         if (employees.error) throw employees.error;
@@ -26,6 +26,7 @@ async function loadDraftSettings() {
             const select = document.getElementById(`settings-draft-ta-${key}`);
             select.replaceChildren(new Option('Select a signatory', ''));
             for (const employee of employees.data || []) {
+                if (String(employee.office || '').trim().toLowerCase() !== 'ched') continue;
                 // Preserve an existing selection even if the employee is inactive.
                 if (employee.is_active === false && employee.name !== config.data?.[key]) continue;
                 select.add(new Option(`${employee.name}${employee.position ? ` — ${employee.position}` : ''}`, employee.name));
@@ -62,7 +63,9 @@ draftForm?.addEventListener('submit', async (event) => {
         draftConfigId = data.id;
         draftStatus.textContent = 'Saved. New draft TA PDFs will use these settings.';
     } catch (error) {
-        draftStatus.textContent = `Could not save draft TA settings: ${error.message}`;
+        draftStatus.textContent = error.code === '42501'
+            ? 'Save denied by database permissions. Ask the database administrator to apply the draft TA settings migration and verify your super-user access.'
+            : `Could not save draft TA settings: ${error.message}`;
     } finally {
         draftSave.disabled = window.adminCurrentRole !== 'super';
     }
