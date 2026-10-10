@@ -1,0 +1,125 @@
+/* ========================================
+   AUTO-LOGOUT MODAL STYLES
+   ======================================== */
+
+.auto-logout-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.auto-logout-modal.active {
+  display: flex;
+}
+
+.auto-logout-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(11, 28, 59, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.auto-logout-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: 360px;
+  width: calc(100% - 32px);
+  text-align: center;
+  box-shadow: 0 10px 40px rgba(12, 21, 24, 0.2);
+  animation: auto-logout-slide-up 0.3s ease-out;
+}
+
+@keyframes auto-logout-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.auto-logout-content h3 {
+  font-size: 1.25rem;
+  color: var(--ink);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.auto-logout-content p {
+  font-size: 0.95rem;
+  color: rgba(11, 28, 59, 0.7);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.auto-logout-content p strong {
+  color: var(--sea);
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+/* Shake animation for urgency */
+.auto-logout-content.shake {
+  animation: modalShake 400ms ease-in-out;
+}
+
+@keyframes modalShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-8px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(8px);
+  }
+}
+
+/* Auto-logout button uses standard modal-btn styling */
+#auto-logout-stay-btn {
+  background: var(--ink);
+  color: white;
+}
+
+#auto-logout-stay-btn:hover {
+  background: var(--hover-ink);
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .auto-logout-content {
+    padding: 20px;
+    max-width: 320px;
+  }
+
+  .auto-logout-content h3 {
+    font-size: 1.1rem;
+  }
+
+  .auto-logout-content p {
+    font-size: 0.9rem;
+  }
+}
+
