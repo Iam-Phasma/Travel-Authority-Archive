@@ -164,7 +164,7 @@
     <!-- xlsx — kept as CDN global build (window.XLSX) -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="../pdf-generator/ta-generator.js?v=20260313-17"></script>
+    <script type="module" src="../pdf-generator/ta-generator.js?v=20261010"></script>
     <script src="destination-province.js"></script>
     <script src="employees/employees.js"></script>
     <script src="upload/upload.js"></script>
@@ -248,6 +248,18 @@
                         </div>
                     </details>
                 </div>
+                <div class="settings-section" id="settings-draft-ta-section" style="display: none;">
+                    <h3>Draft TA PDF</h3>
+                    <p>Shared signatories and ISO number for all draft TAs. Titles come from the employee list.</p>
+                    <form id="settings-draft-ta-form">
+                        <div class="form-group"><label for="settings-draft-ta-recommending">Recommending Approval</label><select id="settings-draft-ta-recommending" required></select></div>
+                        <div class="form-group"><label for="settings-draft-ta-funds">Funds Available</label><select id="settings-draft-ta-funds" required></select></div>
+                        <div class="form-group"><label for="settings-draft-ta-approved">Approved by</label><select id="settings-draft-ta-approved" required></select></div>
+                        <div class="form-group"><label for="settings-draft-ta-iso">ISO No.</label><input id="settings-draft-ta-iso" type="text" maxlength="30" required></div>
+                        <button class="modal-btn confirm" id="settings-draft-ta-save" type="submit" disabled>Save Draft TA Settings</button>
+                    </form>
+                    <p id="settings-draft-ta-status" class="status" role="status" aria-live="polite"></p>
+                </div>
                 <div class="settings-section settings-section--orphan-tools" id="settings-orphan-tools-section" style="display: none;">
                     <div class="settings-action-row">
                         <button class="modal-btn settings-btn-primary" id="settings-scan-orphans" type="button">Scan Orphan Files</button>
@@ -262,7 +274,7 @@
         </div>
     </div>
 
-    <script src="admin-settings.js?v=20260401"></script>
+    <script type="module" src="admin-settings.js?v=20261010"></script>
 
     <script>
         fetch('../footer/footer.html?v=20260321-1')

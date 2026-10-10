@@ -2069,6 +2069,30 @@ button:hover {
   padding: 14px;
 }
 
+#settings-draft-ta-form {
+    display: grid;
+    gap: 12px;
+}
+
+#settings-draft-ta-form .form-group {
+    display: grid;
+    gap: 6px;
+    min-width: 0;
+}
+
+#settings-draft-ta-form select,
+#settings-draft-ta-form input {
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 0;
+    padding: 10px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    font: inherit;
+    background: #fff;
+    color: #081430;
+}
+
 .settings-section--orphan-tools {
   background: rgba(15, 26, 31, 0.05);
   border-color: rgba(15, 26, 31, 0.15);

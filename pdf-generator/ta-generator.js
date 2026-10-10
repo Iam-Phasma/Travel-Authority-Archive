@@ -3,7 +3,18 @@
  * Generates TA forms based on user input
  */
 
-const generateTAPDF = (formData) => {
+import { loadDraftTaConfig } from './draft-ta-config.js';
+
+const generateTAPDF = async (formData) => {
+    let configuration;
+    try {
+        configuration = await loadDraftTaConfig();
+    } catch (error) {
+        const message = `Unable to generate draft TA: ${error.message || 'Could not load PDF settings.'}`;
+        if (window.showAppAlert) await window.showAppAlert('Draft TA Settings', message);
+        else alert(message);
+        return;
+    }
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
@@ -16,13 +27,13 @@ const generateTAPDF = (formData) => {
     // Column positions for section 2
     const officeCol = margin + 2;
     const nameTitleX = margin + 2;
-    const approvedByName = 'DR. FREDDIE B. BULAUAN';
+    const approvedByName = configuration.signatories.approved.name;
     
     // Master right-column divider X — all right-side vertical lines align here
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
     const approvedByNameWidth = doc.getTextWidth(approvedByName);
-    const minApprovedByColWidth = approvedByNameWidth + 4;
+    const minApprovedByColWidth = Math.min(approvedByNameWidth + 4, 74);
     const defaultRightDivX = margin + 116;
     let rightDivX = defaultRightDivX;
     const maxRightDivXForApprovedBy = pageWidth - margin - minApprovedByColWidth;
@@ -294,23 +305,30 @@ const generateTAPDF = (formData) => {
 
         yPos += approvalNameTopGap;
         doc.setFont('helvetica', 'bold');
-        doc.text('JUN A. MAGBANUA', margin + 2, yPos);
-        doc.text('DANICA A. DE SILVA', midDivX + 2, yPos);
-        doc.text(approvedByName, rightDivX + 2, yPos);
+        const drawFittedText = (text, x, y, width) => {
+            doc.setFontSize(8);
+            const measured = doc.getTextWidth(text);
+            if (measured > width) doc.setFontSize(8 * width / measured);
+            doc.text(text, x, y);
+            doc.setFontSize(8);
+        };
+        drawFittedText(configuration.signatories.recommending.name, margin + 2, yPos, leftColWidth - 4);
+        drawFittedText(configuration.signatories.funds.name, midDivX + 2, yPos, leftColWidth - 4);
+        drawFittedText(approvedByName, rightDivX + 2, yPos, pageWidth - margin - rightDivX - 4);
         
         yPos += 4;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
-        doc.text('Supervising Administrative Officer', margin + 2, yPos);
-        doc.text('Accountant III', midDivX + 2, yPos);
-        doc.text('OIC, Director IV', rightDivX + 2, yPos);
+        drawFittedText(configuration.signatories.recommending.position, margin + 2, yPos, leftColWidth - 4);
+        drawFittedText(configuration.signatories.funds.position, midDivX + 2, yPos, leftColWidth - 4);
+        drawFittedText(configuration.signatories.approved.position, rightDivX + 2, yPos, pageWidth - margin - rightDivX - 4);
 
         yPos += approvalBottomGap;
 
         // Form code — bottom-right of Approved by column
         doc.setFontSize(7);
         doc.setFont('helvetica', 'bolditalic');
-        doc.text(formData.isoControlNo || 'AD-HRS-F010-00', pageWidth - margin - 1, yPos, { align: 'right' });
+        doc.text(configuration.iso_no, pageWidth - margin - 1, yPos, { align: 'right' });
         yPos += 1.5;
 
         doc.line(midDivX, approvalTop, midDivX, yPos);

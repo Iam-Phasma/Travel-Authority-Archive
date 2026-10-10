@@ -14,6 +14,21 @@ Pages: https://iam-phasma.github.io/Travel-Authority-Archive/
 - Keep secrets and production-specific values out of source control.
 - Review the SQL and Supabase function files before making back-end changes.
 
+## Run Locally
+
+From the project folder in PowerShell:
+
+```powershell
+npm.cmd ci
+npm.cmd run dev
+```
+
+Use the local URL printed by Vite. The `.cmd` suffix avoids PowerShell's script execution restriction on `npm.ps1`.
+
+If `.env` is missing, copy `.env.example` to `.env` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`. Set `VITE_PRODUCTION_URL` to your local Vite URL when testing authentication redirects.
+
+If Vite is not recognized, the dependency installation has not completed; run `npm.cmd ci` again and resolve any installation errors first.
+
 ## Deploy To Vercel
 
 1. Import this repository in Vercel.

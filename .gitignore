@@ -29,6 +29,7 @@ lerna-debug.log*
 
 # Dependencies
 node_modules/
+.npm-cache/
 dist/
 dist-ssr/
 
