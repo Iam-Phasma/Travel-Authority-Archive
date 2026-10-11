@@ -5,6 +5,9 @@ const projectRoot = process.cwd();
 const distRoot = path.join(projectRoot, "dist");
 
 const copyTargets = [
+  // The standalone 404 page loads shared CSS directly rather than through Vite.
+  "styles.css",
+  "styles",
   "header",
   "footer",
   "pdf-generator",

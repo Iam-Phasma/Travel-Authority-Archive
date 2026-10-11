@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 – Page Not Found | CTAA</title>
-    <link rel="icon" type="image/webp" href="assets/CHED-Logo.webp">
 
     <!-- Resolve base path and inject stylesheets via script so the browser's
          preload scanner never fetches them against the wrong initial base. -->
@@ -16,10 +15,12 @@
                 base = location.href.replace(/[^/]*$/, '');
             } else if (location.host === 'iam-phasma.github.io') {
                 base = 'https://iam-phasma.github.io/Travel-Authority-Archive/';
-            } else if (location.pathname.indexOf('/Travel-Authority-Archive/') !== -1) {
+            } else if (location.pathname === '/Travel-Authority-Archive' ||
+                       location.pathname.indexOf('/Travel-Authority-Archive/') === 0) {
                 base = location.origin + '/Travel-Authority-Archive/';
             } else {
-                base = location.origin + location.pathname.replace(/[^/]*$/, '');
+                // Root deployments must not resolve assets against a missing URL.
+                base = location.origin + '/';
             }
 
             // Inject stylesheets with the correct absolute path
@@ -40,6 +41,7 @@
             document.head.insertBefore(baseTag, document.head.firstChild);
         })();
     </script>
+    <link rel="icon" type="image/webp" href="assets/CHED-Logo.webp">
 
     <style>
         body.login-page {
@@ -300,7 +302,7 @@
                     <svg viewBox="0 0 24 24" aria-hidden="true">
                         <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
                     </svg>
-                    Return
+                    Return to Home
                 </a>
             </div>
 
@@ -324,10 +326,13 @@
                 </a>
             </div>
             <div class="footer-note">
-                <p class="footer-copyright">© 2026 Commission on Higher Education.</p>
+                <p class="footer-copyright"><span id="footer-year"></span> &middot; Commission on Higher Education Regional Office IV</p>
             </div>
         </div>
     </footer>
+    <script>
+        document.getElementById('footer-year').textContent = new Date().getFullYear();
+    </script>
 
 </body>
 </html>

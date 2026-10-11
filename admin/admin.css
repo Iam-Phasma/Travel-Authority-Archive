@@ -584,7 +584,8 @@ body.dashboard-page::before {
   background: #ffffff;
 }
 
-.admin-panels #view-panel .data-table tbody tr.row-enter {
+.admin-panels #view-panel .data-table tbody tr.row-enter,
+.admin-panels #employees-panel .employee-item.row-enter {
   opacity: 0;
   transform: translateY(-6px);
   animation: adminRowEnter 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
@@ -603,7 +604,8 @@ body.dashboard-page::before {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .admin-panels #view-panel .data-table tbody tr.row-enter {
+  .admin-panels #view-panel .data-table tbody tr.row-enter,
+  .admin-panels #employees-panel .employee-item.row-enter {
     animation: none;
     opacity: 1;
     transform: none;
