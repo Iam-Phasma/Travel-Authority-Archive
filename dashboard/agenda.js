@@ -239,7 +239,7 @@ export const createAgendaTracker = ({
         agendaList.innerHTML = buildAgendaEmptyState(
           "No travel authorities scheduled for this date.",
         );
-        // clear any custom timeline height when empty
+        // Clear the custom timeline height when the list is empty.
         agendaList.style.removeProperty("--agenda-line-h");
         return;
       }
@@ -378,7 +378,7 @@ export const createAgendaTracker = ({
           calendarPanel.style.maxHeight = `${h}px`;
           agendaListPanel.style.height = `${h}px`;
           agendaListPanel.style.maxHeight = `${h}px`;
-          // update timeline pseudo-element height to match content scrollHeight
+          // Match the timeline height to the list’s scrollable content.
           try {
             const agendaTaList = document.getElementById("agenda-ta-list");
             if (agendaTaList) {
@@ -497,7 +497,7 @@ export const createAgendaTracker = ({
         }
       }
     } catch (err) {
-      // noop if ResizeObserver not supported or other failures
+      // Leave the default layout in place if size observation is unavailable.
     }
 
     // Mark today as selected on init

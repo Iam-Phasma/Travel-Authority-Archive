@@ -48,7 +48,7 @@ export const createDashboardSession = ({ supabase }) => {
           (payload) => {
             // Check if access was disabled
             if (payload.new && payload.new.access_enabled === false) {
-              // Show toast notification
+
               let toastEl = document.getElementById("toast");
               if (!toastEl) {
                 toastEl = document.createElement("div");
@@ -59,7 +59,6 @@ export const createDashboardSession = ({ supabase }) => {
               toastEl.textContent = "Access disabled: You have been logged out.";
               toastEl.classList.add("show", "toast--error");
 
-              // Immediate logout
               setTimeout(async () => {
                 try {
                   await markCurrentUserOffline();

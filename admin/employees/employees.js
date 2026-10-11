@@ -1,7 +1,7 @@
 // Official Management Module
 
 window.initEmployeeManagement = (supabase) => {
-  // Get references to required functions and variables from parent scope
+
   const showToast =
     window.adminShowToast ||
     function (msg) {
@@ -361,7 +361,6 @@ window.initEmployeeManagement = (supabase) => {
                 </div>
             `;
 
-      // Calculate employee counts
       const totalCount = allEmployeesData.length;
       const activeCount = allEmployeesData.filter(
         (emp) => emp.is_active !== false,
@@ -373,7 +372,7 @@ window.initEmployeeManagement = (supabase) => {
       ).matches;
       const employeeItems = allEmployeesData
         .map((emp, index) => {
-          // Ensure is_active is properly boolean (handle null/undefined)
+
           const isActive = emp.is_active !== false; // Default to true if null/undefined
           const inactiveClass = !isActive ? " employee-inactive" : "";
           const animationClass = shouldAnimateRows ? " row-enter" : "";
@@ -419,7 +418,6 @@ window.initEmployeeManagement = (supabase) => {
 
       employeeListContainer.innerHTML = tableHeader + employeeItems;
 
-      // Update summary container
       if (employeeSummaryContainer) {
         employeeSummaryContainer.textContent = `Total: ${totalCount} | Active: ${activeCount} | Inactive: ${inactiveCount}`;
       }
@@ -434,14 +432,12 @@ window.initEmployeeManagement = (supabase) => {
           const isActive = activeAttr === "true" || activeAttr === true;
           const newStatus = !isActive;
 
-          // Determine action and meaningful message
           const action = newStatus ? "unhide" : "hide";
           const title = newStatus ? "Unhide Official" : "Hide Official";
           const message = newStatus
             ? `Unhide "${employeeName}"?\n\nThis official will be marked as active and appear without the inactive tag.`
             : `Hide "${employeeName}"?\n\nThis official will be marked as inactive and will appear with an "(Inactive)" tag in all dropdowns and selections. Existing records remain unchanged.`;
 
-          // Show confirmation dialog
           const confirmed = await showConfirmation(title, message);
           if (!confirmed) {
             return; // User cancelled
@@ -691,7 +687,6 @@ window.initEmployeeManagement = (supabase) => {
             `;
       setDropdownVisible(true);
 
-      // Add click handler for the add button
       const addBtn = autocompleteList.querySelector(".autocomplete-add-btn");
       if (addBtn) {
         addBtn.addEventListener("click", (e) => {
@@ -703,7 +698,6 @@ window.initEmployeeManagement = (supabase) => {
       return;
     }
 
-    // Build the suggestions HTML
     autocompleteList.innerHTML = matches
       .map((emp, index) => {
         return `<div class="autocomplete-item" data-value="${escapeHtml(emp.name)}" data-index="${index}" role="option">${escapeHtml(emp.name)}</div>`;
@@ -712,7 +706,6 @@ window.initEmployeeManagement = (supabase) => {
 
     setDropdownVisible(true);
 
-    // Add click handlers to suggestions
     document.querySelectorAll(".autocomplete-item").forEach((item) => {
       item.addEventListener("click", () => {
         employeeNameInput.value = item.getAttribute("data-value");
@@ -855,7 +848,6 @@ window.initEmployeeManagement = (supabase) => {
       return;
     }
 
-    // Validate allowed characters
     const namePattern = /^[a-zA-ZÀ-ÿ\s\-'.,]+$/;
     if (!namePattern.test(employeeName)) {
       employeeStatus.textContent =
@@ -867,7 +859,6 @@ window.initEmployeeManagement = (supabase) => {
       return;
     }
 
-    // Validate length
     if (employeeName.length > 30) {
       employeeStatus.textContent = "Official name cannot exceed 30 characters.";
       employeeStatus.classList.add("status--error");
@@ -1016,7 +1007,6 @@ window.initEmployeeManagement = (supabase) => {
       return;
     }
 
-    // Validate allowed characters
     const namePattern = /^[a-zA-ZÀ-ÿ\s\-'.,]+$/;
     if (!namePattern.test(newName)) {
       editEmployeeStatus.textContent =
@@ -1032,7 +1022,6 @@ window.initEmployeeManagement = (supabase) => {
       return;
     }
 
-    // Validate length
     if (newName.length > 30) {
       editEmployeeStatus.textContent =
         "Official name cannot exceed 30 characters.";
@@ -1211,7 +1200,6 @@ window.initEmployeeManagement = (supabase) => {
       editEmployeeRecordsNote.classList.add("hidden");
   });
 
-  // Initialize - Load employees when module is initialized
   renderEmployeeList();
 
   // Expose renderEmployeeList to window for panel switching
@@ -1231,7 +1219,7 @@ window.initEmployeeManagement = (supabase) => {
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to all events
+          event: "*",
           schema: "public",
           table: "employee_list",
         },

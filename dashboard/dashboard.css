@@ -461,7 +461,7 @@ body.dashboard-page::before {
   font-size: 0.78rem;
   font-weight: 600;
 }
-/* Strip FC chrome */
+/* Hide the default FullCalendar borders. */
 #agenda-fc-calendar .fc-scrollgrid,
 #agenda-fc-calendar .fc-scrollgrid td,
 #agenda-fc-calendar .fc-scrollgrid th {
@@ -580,7 +580,7 @@ body.dashboard-page::before {
   color: #ffffff;
   font-weight: 700;
 }
-/* Today TA badge — white bg, blue text so it pops on blue cell */
+/* Today’s TA badge uses blue text on a white background for contrast. */
 #agenda-fc-calendar .fc-day-today .fc-ta-badge {
   background: rgba(255, 255, 255, 0.9);
   color: #2f6fe4;
@@ -930,7 +930,7 @@ body.dashboard-page::before {
 .agenda-date-group:last-child {
   padding-bottom: 0;
 }
-/* Rail removed from per-group — now a single line on .agenda-ta-list */
+/* Use a single timeline rail on .agenda-ta-list for all groups. */
 .agenda-date-group-header {
   position: relative;
   top: auto;

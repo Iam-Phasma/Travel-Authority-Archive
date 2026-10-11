@@ -158,7 +158,6 @@ export const createInsights = ({
       if (select.value) loadTravelFrequencyChart(select.value);
     });
   };
-  // === End Travel Frequency Chart ===
 
   // === Officials Summary List ===
   const initOfficialsSummaryChart = async () => {
@@ -236,7 +235,6 @@ export const createInsights = ({
       console.error("Officials summary error:", e);
     }
   };
-  // === End Officials Summary List ===
 
   // === Destinations Chart ===
   const initDestinationsChart = async () => {
@@ -527,7 +525,7 @@ export const createInsights = ({
     // Results are merged with fallback keywords so existing matches are never lost.
     // Responses are cached in sessionStorage (refreshed daily).
     const PSGC_BASE = "https://psgc.rootscratch.com";
-    // v3: dropped broken /province?id= city-fetch for CALABARZON drill-down
+    // Version the cache when destination classification inputs change.
     const PSGC_CACHE_KEY = "psgc_geo_v3";
     const PSGC_CACHE_DATE_KEY = "psgc_geo_date_v3";
 
@@ -596,10 +594,7 @@ export const createInsights = ({
         }
       }
 
-      // CALABARZON drill-down: the PSGC API's /municipal-city endpoint is
-      // currently non-functional (returns empty), so city/municipality-level
-      // enrichment is not possible. Use the static fallback keywords which
-      // already cover the main cities and municipalities per province.
+      // Use static city and municipality keywords for the CALABARZON drill-down.
       const calabarzonEntries = FALLBACK_CALABARZON_ENTRIES;
 
       const result = { regionEntries, calabarzonEntries };
@@ -863,7 +858,6 @@ export const createInsights = ({
       console.error("Destinations chart error:", e);
     }
   };
-  // === End Destinations Chart ===
 
   return { initTravelFrequencyYears, initOfficialsSummaryChart, initDestinationsChart };
 };

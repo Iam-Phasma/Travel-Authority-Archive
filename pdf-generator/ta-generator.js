@@ -18,17 +18,17 @@ const generateTAPDF = async (formData) => {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
 
-    // Constants
+
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
     const margin = 10;
     const contentWidth = pageWidth - (2 * margin);
-    
+
     // Column positions for section 2
     const officeCol = margin + 2;
     const nameTitleX = margin + 2;
     const approvedByName = configuration.signatories.approved.name;
-    
+
     // Master right-column divider X — all right-side vertical lines align here
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(8);
@@ -59,7 +59,7 @@ const generateTAPDF = async (formData) => {
     const month = String(taBaseDate.getMonth() + 1).padStart(2, '0');
     const taNumber = `${year}-${month}-`;
 
-    // Format date requested
+
     const dateRequested = formData.dateRequestedFormatted || taBaseDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
     const travelType = formData.travelType === 'official_time_only' ? 'official_time_only' : 'official_business';
     const fundingOption = formData.fundingOption === 'cash_advance' ? 'cash_advance' : 'reimbursement';
@@ -90,7 +90,7 @@ const generateTAPDF = async (formData) => {
         doc.setFontSize(11);
         doc.setFont('helvetica', 'bold');
         doc.text('COMMISSION ON HIGHER EDUCATION', pageWidth / 2, 20, { align: 'center' });
-        
+
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
         doc.text('Regional Office IV', pageWidth / 2, 25, { align: 'center' });
@@ -111,7 +111,7 @@ const generateTAPDF = async (formData) => {
         // Section 1: Name of Officials/Employees and Position
         doc.setLineWidth(0.3);
         doc.line(margin, yPos, pageWidth - margin, yPos);
-        
+
         const section1Top = yPos;
         yPos += 5;
         doc.setFontSize(8);
@@ -119,10 +119,10 @@ const generateTAPDF = async (formData) => {
         const positionColX = rightDivX + 2;
         doc.text('Name of Officials/Employees:', nameTitleX, yPos);
         doc.text('Position:', positionColX, yPos);
-        
+
         yPos += 5;
         doc.setFont('helvetica', 'normal');
-        
+
         // Display officials and positions for this page's chunk
         officialsChunk.forEach((official) => {
             const officialName = String(official.name || '').trim();
@@ -139,7 +139,7 @@ const generateTAPDF = async (formData) => {
         doc.line(margin, yPos, pageWidth - margin, yPos);
         const section2Top = yPos;
         yPos += 5;
-        
+
         doc.setFont('helvetica', 'bold');
         doc.text('Office/Station', officeCol, yPos);
         doc.text('Destination:', destinationCol, yPos);
@@ -212,7 +212,7 @@ const generateTAPDF = async (formData) => {
         const purposeContentHeight = Math.max(purposeTextHeight, 18);
         const purposeContentBottomY = purposeStartY + purposeContentHeight;
         yPos = purposeContentBottomY + 2;
-        
+
         // Checkboxes on the right
         const checkboxX = rightPanelAlignX;
         const checkboxGroupHeight = 12;
@@ -224,7 +224,7 @@ const generateTAPDF = async (formData) => {
 
         doc.rect(checkboxX, officialBusinessBoxY, 3, 3);
         doc.text('Official Business', checkboxX + 5, officialBusinessTextY);
-        
+
         doc.rect(checkboxX, officialTimeOnlyBoxY, 3, 3);
         doc.text('Official Time Only', checkboxX + 5, officialTimeOnlyTextY);
 
@@ -294,7 +294,7 @@ const generateTAPDF = async (formData) => {
 
         const leftColWidth = (rightDivX - margin) / 2;
         const midDivX = margin + leftColWidth;
-        
+
         doc.setFont('helvetica', 'bold');
         doc.text('Recommending Approval:', margin + 2, yPos);
         doc.text('Funds Available:', midDivX + 2, yPos);
@@ -315,7 +315,7 @@ const generateTAPDF = async (formData) => {
         drawFittedText(configuration.signatories.recommending.name, margin + 2, yPos, leftColWidth - 4);
         drawFittedText(configuration.signatories.funds.name, midDivX + 2, yPos, leftColWidth - 4);
         drawFittedText(approvedByName, rightDivX + 2, yPos, pageWidth - margin - rightDivX - 4);
-        
+
         yPos += 4;
         doc.setFont('helvetica', 'normal');
         doc.setFontSize(8);
@@ -348,7 +348,7 @@ const generateTAPDF = async (formData) => {
         yPos += 5;
         doc.setFont('helvetica', 'normal');
         doc.text(dateRequested, margin + 2, yPos);
-        
+
         doc.text('(   ) MOOE - 101', midDivX + 2, yPos);
         yPos += 4;
         doc.text('(   ) HEDF - 151', midDivX + 2, yPos);
@@ -364,10 +364,10 @@ const generateTAPDF = async (formData) => {
 
         // Draw all vertical dividers for other sections
         doc.line(rightDivX, section1Top, rightDivX, section2Top);
-        
+
         doc.line(officeDestinationDivX, section2Top, officeDestinationDivX, section3Top);
         doc.line(rightDivX, section2Top, rightDivX, section3Top);
-        
+
         for (let i = 1; i < 4; i++) {
             doc.line(margin + (leftFourColWidth * i), tableTop, margin + (leftFourColWidth * i), tableBottom);
         }
@@ -397,5 +397,4 @@ const generateTAPDF = async (formData) => {
     doc.save(fileName);
 };
 
-// Export for use in other files
 window.generateTAPDF = generateTAPDF;

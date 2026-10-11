@@ -76,7 +76,7 @@ const initOCRModal = () => {
             const w = Math.abs(cropSel.w);
             const h = Math.abs(cropSel.h);
 
-            // Dim everything
+            // Dim the image outside the selected region.
             ctx.fillStyle = 'rgba(0,0,0,0.48)';
             ctx.fillRect(0, 0, cw, ch);
 
@@ -518,11 +518,10 @@ const initOCRModal = () => {
         }
     });
 
-    // ---- AUTO-FILL (no modal) ----
+    // Automatic field extraction
     // Detect and extract a specific field's cell from the document automatically.
-    // Uses Tesseract block-level bboxes: finds the block containing the keyword,
-    // crops that region (extending to image right edge to avoid column bleed),
-    // re-OCRs the crop, strips the label line, returns clean text.
+    // Locate field labels from word bounding boxes, crop within adjacent column
+    // and row boundaries, then run OCR again and remove form labels.
     const autoFillField = async (fieldId, file) => {
         // 1. Render file to image data URL
         let imageDataUrl;

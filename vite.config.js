@@ -2,7 +2,6 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isGitHubPages = mode === 'github-pages';
   const basePath = isGitHubPages ? '/Travel-Authority-Archive/' : '/';
@@ -48,17 +47,16 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         input: {
-          // Module 1: Login page
+
           main: resolve(__dirname, 'index.html'),
-          // Module 2: Dashboard
+
           dashboard: resolve(__dirname, 'dashboard/dashboard.html'),
-          // Module 3: Admin panel
+
           admin: resolve(__dirname, 'admin/admin.html'),
         },
       },
     },
 
-    // Resolve aliases for cleaner imports
     resolve: {
       alias: {
         '@': resolve(__dirname, '.'),

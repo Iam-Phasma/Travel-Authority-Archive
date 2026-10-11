@@ -53,7 +53,6 @@ export const createAdminSession = ({ supabase, showToast, getUserRole }) => {
             if (payload.new && payload.new.access_enabled === false) {
               showToast("Access disabled: You have been logged out.", "error");
 
-              // Immediate logout
               setTimeout(async () => {
                 try {
                   await markCurrentUserOffline();

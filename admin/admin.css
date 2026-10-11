@@ -135,7 +135,7 @@ body.dashboard-page::before {
   overflow-x: hidden;
 }
 
-/* Sidebar tab buttons — override the old .switch-btn styles in this context */
+/* Sidebar tab buttons — override shared .switch-btn styles in this context */
 .admin-sidebar-nav .admin-sidebar-tab {
   display: flex;
   align-items: center;
@@ -572,7 +572,7 @@ body.dashboard-page::before {
   scrollbar-color: rgba(55, 65, 81, 0.5) transparent;
 }
 
-/* Header bg + sticky-first-col bg matching dashboard */
+/* Match the dashboard header and sticky first-column backgrounds. */
 .admin-panels #view-panel .data-table thead th {
   background: #f0f4f8;
 }
@@ -635,7 +635,7 @@ body.dashboard-page::before {
   .admin-panels #view-panel .data-table {
     table-layout: auto;
     width: 100%;
-    min-width: 900px; /* allows h-scroll on small laptops rather than squishing */
+    min-width: 900px; /* Allow horizontal scrolling when the viewport cannot fit all columns. */
   }
 
   /* Reset base styles.css nth-child rules that assume an 8-col table */
@@ -1007,7 +1007,7 @@ body.dashboard-page::before {
   color: #ffffff;
 }
 
-/* ── HIGH IMPACT STRUCTURED UPLOAD PANEL ── */
+/* Structured upload panel */
 .admin-panels #upload-panel.upload-panel-structured,
 .admin-panels #draft-ta-panel.upload-panel-structured {
   width: 100%;
@@ -1061,7 +1061,7 @@ body.dashboard-page::before {
   align-items: center;
 }
 
-/* On desktop, naturally space it beautifully */
+/* Keep the structured panel header visible while its fields scroll. */
 .panel-header-structured {
   position: sticky;
   top: 0;

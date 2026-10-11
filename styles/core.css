@@ -2488,7 +2488,7 @@ button:hover {
 }
 
 .panel-head-actions-buttons {
-  display: contents; /* acts invisible on desktop — children participate in parent flex */
+  display: contents; /* Let children participate directly in the parent flex layout. */
 }
 
 .filter-icon-btn {

@@ -56,7 +56,7 @@
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
                 document.getElementById('header-container').innerHTML = headerHTML;
                 window.headerLoaded = true;
-                
+
                 // Initialize date display in header
                 const dateElement = document.getElementById('header-date');
                 if (dateElement) {
@@ -65,7 +65,7 @@
                     const formattedDate = today.toLocaleDateString('en-US', options);
                     dateElement.textContent = `Today is ${formattedDate}`;
                 }
-                
+
                 // Call initHeaderButtons now that header is loaded
                 // Module may not have executed yet, so retry with a delay
                 if (window.initHeaderButtons) {
@@ -157,8 +157,6 @@
 
     <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-    <!-- leaflet — kept as CDN global build (window.L) for non-module scripts that need it before Vite modules load -->
-    <!-- NOTE: admin.js also exposes window.L from npm, so this is now redundant and can be removed after testing -->
     <!-- jsPDF — kept as CDN global build (window.jspdf) for ta-generator.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <!-- xlsx — kept as CDN global build (window.XLSX) -->

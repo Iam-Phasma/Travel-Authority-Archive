@@ -13,10 +13,10 @@ BEGIN
     ) THEN
         ALTER TABLE profiles 
         ADD COLUMN last_seen TIMESTAMPTZ DEFAULT NOW();
-        
+
         -- Create index for faster queries
         CREATE INDEX IF NOT EXISTS idx_profiles_last_seen ON profiles(last_seen);
-        
+
         RAISE NOTICE '✓ Added last_seen column to profiles table';
     ELSE
         RAISE NOTICE '✓ Column last_seen already exists';
@@ -33,27 +33,27 @@ DECLARE
     calling_user_id UUID;
     result JSON;
 BEGIN
-    -- Get the ID of the user making this request
+
     calling_user_id := auth.uid();
-    
+
     -- Security Check: Ensure user is authenticated
     IF calling_user_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required';
     END IF;
-    
+
     -- Update last_seen for the current user
     UPDATE profiles
     SET last_seen = NOW()
     WHERE id = calling_user_id;
-    
-    -- Return success response
+
+
     result := json_build_object(
         'success', true,
         'last_seen', NOW()
     );
-    
+
     RETURN result;
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         RAISE EXCEPTION 'Failed to update last_seen: %', SQLERRM;
@@ -86,7 +86,7 @@ BEGIN
     SELECT p.role, p.session_token INTO calling_user_role, db_session_token
     FROM profiles p
     WHERE p.id = auth.uid();
-    
+
     IF calling_user_role != 'super' THEN
         RAISE EXCEPTION 'Permission denied: Only super users can view all users';
     END IF;
@@ -97,7 +97,7 @@ BEGIN
             RAISE EXCEPTION 'Session invalid: Your session has expired or another device logged in. Please log in again.';
         END IF;
     END IF;
-    
+
     -- Return all users with their emails, roles, and online status
     -- A user is considered online if they were active in the last 5 minutes
     RETURN QUERY
@@ -111,7 +111,7 @@ BEGIN
     FROM auth.users au
     LEFT JOIN profiles p ON p.id = au.id
     ORDER BY au.email;
-    
+
 END;
 $$;
 
@@ -125,7 +125,7 @@ BEGIN
     -- Test update_last_seen
     SELECT update_last_seen() INTO test_result;
     RAISE NOTICE '✓ Test: update_last_seen works!';
-    
+
     RAISE NOTICE '';
     RAISE NOTICE '========================================';
     RAISE NOTICE 'SETUP COMPLETE!';

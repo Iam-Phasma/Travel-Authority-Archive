@@ -1,7 +1,7 @@
 import { ungzip } from "pako";
 import { safeUrl } from "./record-utils.js";
 
-// File size cache is scoped to this page, as before.
+// Keep the file-size cache scoped to this page.
 const fileSizeCache = new Map();
 
 export const fetchFileSizeBytes = async (url) => {

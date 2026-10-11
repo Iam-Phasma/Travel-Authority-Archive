@@ -125,14 +125,11 @@ export const initAdminRecords = ({
     if (el) el.addEventListener("input", () => autoResizeUpdateTextarea(el));
   });
 
-  // Upload panel TA validation will be handled in upload.js after panel loads
-
   // Real-time TA number validation for update modal
   let updateTaCheckTimer = null;
   updateTaInput.addEventListener("input", async () => {
     const taNumber = updateTaInput.value.trim();
 
-    // Clear existing timer
     if (updateTaCheckTimer) {
       clearTimeout(updateTaCheckTimer);
     }
@@ -305,7 +302,6 @@ export const initAdminRecords = ({
     );
     const adminSortToggleBtn = document.getElementById("admin-sort-toggle-btn");
 
-    // Check if filters are active (not default)
     const isFilterActive =
       adminActiveFilters.taNumber ||
       adminActiveFilters.employee ||
@@ -314,7 +310,6 @@ export const initAdminRecords = ({
       adminActiveFilters.travelDate ||
       adminActiveFilters.matchAll === false;
 
-    // Check if sort is active
     const isSortActive =
       adminActiveSort.by !== "ta" || adminActiveSort.order !== "desc";
 
@@ -338,14 +333,14 @@ export const initAdminRecords = ({
   const showToast = (message, type = "success", duration = 2600) => {
     if (!toast) return;
     toast.textContent = message;
-    // Remove any existing type classes
+
     toast.classList.remove(
       "toast--success",
       "toast--info",
       "toast--warning",
       "toast--error",
     );
-    // Add the new type class
+
     toast.classList.add(`toast--${type}`);
     toast.classList.add("show");
     if (toastTimer) {
@@ -368,7 +363,6 @@ export const initAdminRecords = ({
       confirmModalMessage.textContent = message;
       confirmModal.classList.add("show");
 
-      // Apply red styling for logout confirmation
       const isLogout = title === "Confirm Logout";
       if (isLogout) {
         confirmConfirmBtn.style.background = "#a1251b";
@@ -398,7 +392,7 @@ export const initAdminRecords = ({
         confirmConfirmBtn.removeEventListener("click", handleConfirm);
         cancelConfirmBtn.removeEventListener("click", handleCancel);
         confirmModal.removeEventListener("click", handleClickOutside);
-        // Reset button styling
+
         if (isLogout) {
           confirmConfirmBtn.style.background = "";
         }
@@ -467,7 +461,7 @@ export const initAdminRecords = ({
   });
 
   const applyAdminClientFilters = (rows) => {
-    // If no filters are active, return all rows
+
     if (
       !adminActiveFilters.taNumber &&
       !adminActiveFilters.employee &&
@@ -480,7 +474,6 @@ export const initAdminRecords = ({
     return rows.filter((row) => {
       const checks = [];
 
-      // Check TA Number filter
       if (adminActiveFilters.taNumber) {
         const matchesTa =
           row.ta_number &&
@@ -500,7 +493,6 @@ export const initAdminRecords = ({
         checks.push(matchesEmployee);
       }
 
-      // Check Year filter
       if (adminActiveFilters.year) {
         const matchesYear =
           row.travel_date &&
@@ -508,7 +500,6 @@ export const initAdminRecords = ({
         checks.push(matchesYear);
       }
 
-      // Check Travel Date filter
       if (adminActiveFilters.travelDate) {
         const matchesDate =
           row.travel_date && row.travel_date === adminActiveFilters.travelDate;
@@ -517,10 +508,10 @@ export const initAdminRecords = ({
 
       // Return based on match mode (AND or OR)
       if (adminActiveFilters.matchAll) {
-        // AND: all filters must match
+
         return checks.every((check) => check === true);
       } else {
-        // OR: at least one filter must match
+
         return checks.some((check) => check === true);
       }
     });
@@ -956,7 +947,7 @@ export const initAdminRecords = ({
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to all events
+          event: "*",
           schema: "public",
           table: "travel_authorities",
         },
@@ -1288,7 +1279,7 @@ export const initAdminRecords = ({
   // Populate year filter from available data
   const populateAdminYearFilter = async () => {
     try {
-      // Get all unique years from database
+
       const { data, error } = await supabase
         .from("travel_authorities")
         .select("travel_date");
@@ -1347,7 +1338,7 @@ export const initAdminRecords = ({
       // Auto-sync year filter when date is selected
       if (dateStr && dateStr.length >= 4) {
         const selectedYear = dateStr.substring(0, 4);
-        // Check if this year exists in the dropdown
+
         const yearOption = Array.from(adminFilterYearSelect.options).find(
           (opt) => opt.value === selectedYear,
         );
@@ -1488,7 +1479,6 @@ export const initAdminRecords = ({
 
       availableYearsForExport = Array.from(yearsSet).sort((a, b) => b - a);
 
-      // Populate checkboxes
       exportYearsList.innerHTML = availableYearsForExport
         .map(
           (year) => `
@@ -1527,7 +1517,6 @@ export const initAdminRecords = ({
       exportStatus.textContent = "Preparing export...";
       exportStatus.classList.remove("hidden", "status--error");
 
-      // Get selected years
       const selectedYears = [];
       if (exportAllYearsCheckbox.checked) {
         selectedYears.push(...availableYearsForExport);
@@ -1572,7 +1561,6 @@ export const initAdminRecords = ({
 
       exportStatus.textContent = "Generating Excel file...";
 
-      // Prepare data for export
       const exportData = filteredData.map((record) => ({
         "TA Number": record.ta_number || "",
         Purpose: record.purpose || "",
@@ -1584,7 +1572,6 @@ export const initAdminRecords = ({
         "Travel End": record.travel_until || "",
       }));
 
-      // Create workbook and worksheet
       const wb = XLSX.utils.book_new();
       const ws = XLSX.utils.json_to_sheet(exportData);
 
@@ -1607,7 +1594,6 @@ export const initAdminRecords = ({
           : selectedYears.sort().join("_");
       const filename = `Travel_Authorities_${yearRange}_${new Date().toISOString().split("T")[0]}.xlsx`;
 
-      // Download file
       XLSX.writeFile(wb, filename);
 
       exportStatus.textContent = `Successfully exported ${filteredData.length} records!`;
@@ -1641,7 +1627,7 @@ export const initAdminRecords = ({
     try {
       viewStatus.textContent = "Deleting record...";
 
-      // Mark timestamp BEFORE database operation to suppress own realtime notification
+      // Record the action timestamp before the database request to suppress duplicate realtime notifications.
       window.adminRecentDeleteTimestamp = Date.now();
 
       // Delete database record first
@@ -1679,7 +1665,6 @@ export const initAdminRecords = ({
       viewStatus.textContent = "Record deleted successfully.";
       deleteRecordData = null;
 
-      // Reload the table
       await loadTravelAuthorities(true);
     } catch (error) {
       console.error("Delete error:", error);
@@ -1816,7 +1801,7 @@ export const initAdminRecords = ({
       updateStatus.textContent = "Updating record...";
       updateStatus.classList.remove("status--error", "hidden");
 
-      // Mark timestamp BEFORE database operation to suppress own realtime notification
+      // Record the action timestamp before the database request to suppress duplicate realtime notifications.
       window.adminRecentUpdateTimestamp = Date.now();
 
       let fileUrl = updateRecordData.file_url || "";
@@ -1914,7 +1899,6 @@ export const initAdminRecords = ({
           if (pathParts.length > 1) {
             const oldFilePath = decodeURIComponent(pathParts[1]);
 
-            // Download the old file
             const { data: fileData, error: downloadError } =
               await supabase.storage.from("ta-files").download(oldFilePath);
 
@@ -1945,7 +1929,7 @@ export const initAdminRecords = ({
               if (uploadError) {
                 console.warn("Could not upload renamed file:", uploadError);
               } else {
-                // Get new public URL
+
                 const { data: publicUrlData } = supabase.storage
                   .from("ta-files")
                   .getPublicUrl(newFilePath);

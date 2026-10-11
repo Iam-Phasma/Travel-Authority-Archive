@@ -258,7 +258,7 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
         })
         .join("");
 
-      // Show only first 3, rest hidden; wire Show More button
+      // Show the first three notices and reveal the rest through Show More.
       const NOTICE_LIMIT = 3;
       const allLi = noticeListItems.querySelectorAll(".header-notice-list-item");
       allLi.forEach((li, i) => { if (i >= NOTICE_LIMIT) li.setAttribute("hidden", ""); });
@@ -381,7 +381,7 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
         return null;
       }
 
-      // persisted CHED-only toggle for header multi-select
+      // Persist the CHED-only filter for the header multiselect.
       let dashChedOnly = localStorage.getItem('draftTaHeaderChedOnly') === '1';
       const dashSettingsBtn = document.getElementById('dash-panel-draft-ta-officials-settings-btn');
       let dashSettingsPanel = null;
@@ -627,7 +627,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
       draftTaModal.classList.remove("show");
       document.body.classList.remove("header-modal-open");
 
-      // Clear all form fields
       if (draftTaPurposeInput) draftTaPurposeInput.value = "";
       if (draftTaDestinationInput) draftTaDestinationInput.value = "";
       if (draftTaTravelTypeSelect)
@@ -640,7 +639,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
         draftTaTravelEndInput.value = "";
       }
 
-      // Clear selected officials
       headerDraftSelectedEmployees.length = 0;
       headerDraftEmployeesMultiSelect?.updateDisplay();
     };
@@ -660,11 +658,9 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
         draftTaTravelEndInput.value = "";
       }
 
-      // Clear selected officials
       headerDraftSelectedEmployees.length = 0;
       headerDraftEmployeesMultiSelect?.updateDisplay();
 
-      // Focus back on purpose input
       draftTaPurposeInput?.focus();
     };
 
@@ -693,7 +689,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
               userEmailElement.textContent = session.user.email;
             }
 
-            // Fetch user's first and last name from profiles
             try {
               const { data: profile, error } = await supabase
                 .from("profiles")
@@ -910,7 +905,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
           return;
         }
 
-        // Check date validation
         const travelDate = draftTaTravelDateInput.value;
         const selectedTravelEnd = draftTaTravelEndInput?.value || "";
         const travelEnd =
@@ -933,7 +927,7 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
           }
           return;
         }
-        // Format dates
+
         const formatDate = (dateStr) => {
           if (!dateStr) return "";
           const date = new Date(dateStr + "T00:00:00");
@@ -956,7 +950,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
           };
         });
 
-        // Prepare form data
         const formData = {
           purpose: draftTaPurposeInput.value.trim(),
           destination: draftTaDestinationInput.value.trim(),
@@ -970,7 +963,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
           officials: officialsData,
         };
 
-        // Generate PDF
         if (window.generateTAPDF) {
           window.generateTAPDF(formData);
           closeDraftTaModal();
@@ -1009,7 +1001,6 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
         headerPopup.classList.remove("show");
         noticePanel?.classList.remove("show");
 
-        // Show confirmation dialog
         const confirmed = await showConfirmation(
           "Confirm Logout",
           "Are you sure you want to log out?",

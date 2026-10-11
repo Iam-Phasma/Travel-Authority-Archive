@@ -1,4 +1,4 @@
-/* Employee Management Styles */
+/* Official directory styles */
 .employees-panel {
   width: min(1080px, calc(100vw - 36px));
   min-width: 0;
@@ -318,7 +318,7 @@
   font-style: italic;
 }
 
-/* Inactive Employee Styles */
+/* Inactive official styles */
 .employee-inactive {
   opacity: 0.65;
   background: rgba(15, 26, 31, 0.02);
@@ -772,7 +772,6 @@
   width: 148px;
   text-align: center;
 }
-
 
 .text-left {
   text-align: left !important;

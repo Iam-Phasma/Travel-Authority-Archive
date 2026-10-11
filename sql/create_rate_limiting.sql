@@ -1,5 +1,5 @@
 -- ================================================
--- FIX SCRIPT: Add UNIQUE constraint and clean up duplicates
+-- Add a unique email constraint and remove duplicate login-attempt records.
 -- Run this in Supabase SQL Editor to fix the existing table
 -- ================================================
 
@@ -33,7 +33,6 @@ WHERE table_name = 'login_attempts';
 
 -- Step 4: Drop and recreate the functions to ensure they use the latest logic
 
--- Drop existing functions first
 DROP FUNCTION IF EXISTS record_failed_login(TEXT);
 DROP FUNCTION IF EXISTS check_login_lockout(TEXT);
 DROP FUNCTION IF EXISTS clear_failed_login(TEXT);
@@ -78,7 +77,7 @@ BEGIN
             locked_until = NULL,
             last_attempt_at = NOW()
         WHERE email = user_email;
-        
+
         RETURN json_build_object(
             'locked', false,
             'attempts', 0,
@@ -95,7 +94,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Recreate record_failed_login function with FIXED seconds_remaining calculation
+-- Recreate record_failed_login with the remaining lockout duration.
 CREATE OR REPLACE FUNCTION record_failed_login(user_email TEXT)
 RETURNS JSON AS $$
 DECLARE
@@ -105,7 +104,7 @@ DECLARE
     max_attempts INTEGER := 10; -- Maximum failed attempts before lockout
     lockout_minutes INTEGER := 5; -- Lockout duration in minutes
 BEGIN
-    -- Get current attempt record
+
     SELECT * INTO attempt_record
     FROM login_attempts
     WHERE email = user_email
@@ -114,15 +113,15 @@ BEGIN
     -- If no record or lockout expired, create new record
     IF attempt_record IS NULL OR 
        (attempt_record.locked_until IS NOT NULL AND attempt_record.locked_until <= NOW()) THEN
-        
-        -- Use INSERT...ON CONFLICT (now works because email is UNIQUE!)
+
+        -- The unique email constraint allows concurrent attempts to use an upsert.
         INSERT INTO login_attempts (email, attempt_count, last_attempt_at)
         VALUES (user_email, 1, NOW())
         ON CONFLICT (email) DO UPDATE
         SET attempt_count = 1,
             locked_until = NULL,
             last_attempt_at = NOW();
-        
+
         RETURN json_build_object(
             'locked', false,
             'attempts', 1,
@@ -130,19 +129,18 @@ BEGIN
         );
     END IF;
 
-    -- Increment attempt count
     new_count := attempt_record.attempt_count + 1;
 
     -- Check if we should lock the account
     IF new_count >= max_attempts THEN
         lockout_time := NOW() + (lockout_minutes || ' minutes')::INTERVAL;
-        
+
         UPDATE login_attempts
         SET attempt_count = new_count,
             locked_until = lockout_time,
             last_attempt_at = NOW()
         WHERE email = user_email;
-        
+
         RETURN json_build_object(
             'locked', true,
             'attempts', new_count,
@@ -150,12 +148,12 @@ BEGIN
             'seconds_remaining', EXTRACT(EPOCH FROM (lockout_time - NOW()))::INTEGER
         );
     ELSE
-        -- Just increment the count
+
         UPDATE login_attempts
         SET attempt_count = new_count,
             last_attempt_at = NOW()
         WHERE email = user_email;
-        
+
         RETURN json_build_object(
             'locked', false,
             'attempts', new_count,
@@ -200,5 +198,4 @@ GRANT EXECUTE ON FUNCTION clear_failed_login() TO authenticated;
 -- Step 5: Clear all existing login attempts to start fresh
 TRUNCATE TABLE login_attempts;
 
--- Done! Test message
 SELECT 'Rate limiting fix applied successfully! All login attempts cleared. Ready to test.' AS status;

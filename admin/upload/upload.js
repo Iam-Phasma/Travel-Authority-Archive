@@ -123,16 +123,16 @@ const compressImageForPdf = async (file) => {
 const recompressPDF = async (pdfFile) => {
     const TARGET_SIZE_KB = 600;
     const { PDFDocument } = window.PDFLib;
-    
+
     console.log('Starting PDF re-compression for file:', pdfFile.name || 'unnamed', `(${(pdfFile.size / 1024 / 1024).toFixed(2)}MB)`);
-    
+
     // Load PDF with pdf.js for rendering
     const pdfjsLib = window.pdfjsLib;
     if (!pdfjsLib) {
         console.warn('pdf.js not loaded, skipping PDF re-compression');
         return pdfFile;
     }
-    
+
     // Quality presets to try (from best to most compressed)
     const qualityPresets = [
         { renderScale: 3.0, maxDimension: 2800, jpegQuality: 0.90, name: 'Very High Quality' },
@@ -142,21 +142,21 @@ const recompressPDF = async (pdfFile) => {
         { renderScale: 1.4, maxDimension: 1500, jpegQuality: 0.62, name: 'Standard Quality' },
         { renderScale: 1.1, maxDimension: 1200, jpegQuality: 0.54, name: 'Compressed' },
     ];
-    
+
     try {
         const arrayBuffer = await pdfFile.arrayBuffer();
         const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
         const pdfDoc = await loadingTask.promise;
         const numPages = pdfDoc.numPages;
-        
+
         console.log(`Re-compressing PDF with ${numPages} pages...`);
-        
+
         let lastCompressedBlob = null;
-        
+
         // Try each quality preset until we get under target size
         for (const preset of qualityPresets) {
             const newPdf = await PDFDocument.create();
-            
+
             // Process each page with current preset
             for (let pageNum = 1; pageNum <= numPages; pageNum++) {
                 const page = await pdfDoc.getPage(pageNum);
@@ -172,18 +172,18 @@ const recompressPDF = async (pdfFile) => {
                 }
 
                 const scaledViewport = page.getViewport({ scale: preset.renderScale * dimensionScale });
-                
+
                 // Render to canvas
                 const canvas = document.createElement('canvas');
                 canvas.width = scaledViewport.width;
                 canvas.height = scaledViewport.height;
                 const context = canvas.getContext('2d');
-                
+
                 await page.render({
                     canvasContext: context,
                     viewport: scaledViewport
                 }).promise;
-                
+
                 // Compress canvas to JPEG
                 const compressedBlob = await new Promise((resolve, reject) => {
                     canvas.toBlob((blob) => {
@@ -191,11 +191,11 @@ const recompressPDF = async (pdfFile) => {
                         else reject(new Error('Canvas to blob failed'));
                     }, 'image/jpeg', preset.jpegQuality);
                 });
-                
+
                 // Add compressed image to new PDF
                 const imgArrayBuffer = await compressedBlob.arrayBuffer();
                 const img = await newPdf.embedJpg(imgArrayBuffer);
-                
+
                 // Create page with same dimensions as canvas
                 const newPage = newPdf.addPage([canvas.width, canvas.height]);
                 newPage.drawImage(img, {
@@ -205,20 +205,20 @@ const recompressPDF = async (pdfFile) => {
                     height: canvas.height
                 });
             }
-            
+
             // Check resulting size
             const pdfBytes = await newPdf.save();
             const compressedBlob = new Blob([pdfBytes], { type: 'application/pdf' });
             lastCompressedBlob = compressedBlob; // Save this version
-            
+
             const compressedSizeKB = compressedBlob.size / 1024;
-            
+
             const originalSizeMB = (pdfFile.size / 1024 / 1024).toFixed(2);
             const compressedSizeMB = (compressedBlob.size / 1024 / 1024).toFixed(2);
             const reduction = ((1 - compressedBlob.size / pdfFile.size) * 100).toFixed(1);
-            
+
             console.log(`Tried ${preset.name}: ${originalSizeMB}MB → ${compressedSizeMB}MB (${compressedSizeKB.toFixed(0)}KB, ${reduction}% reduction)`);
-            
+
             // If under target, use this version
             if (compressedSizeKB <= TARGET_SIZE_KB) {
                 console.log(`✓ Using ${preset.name} - under ${TARGET_SIZE_KB}KB target`);
@@ -226,14 +226,14 @@ const recompressPDF = async (pdfFile) => {
                 return compressedBlob;
             }
         }
-        
+
         // If all presets are still too large, use the most compressed one
         console.warn(`Could not achieve ${TARGET_SIZE_KB}KB target, using most compressed version`);
         if (qualityPresets.length > 0) {
             getCompressionRunState().pdfPreset = qualityPresets[qualityPresets.length - 1].name;
         }
         return lastCompressedBlob || pdfFile;
-        
+
     } catch (error) {
         console.warn('PDF re-compression failed, using original:', error);
         return pdfFile;
@@ -388,7 +388,7 @@ window.validateAndProcessFiles = async (fileInput, taNumber) => {
     };
 
     const files = Array.from(fileInput.files);
-    
+
     if (files.length === 0) {
         throw new Error('No file selected');
     }
@@ -401,7 +401,7 @@ window.validateAndProcessFiles = async (fileInput, taNumber) => {
     // Check file types
     const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
     const invalidFiles = files.filter(f => !validTypes.includes(f.type));
-    
+
     if (invalidFiles.length > 0) {
         throw new Error('Only PDF, JPEG, and PNG files are supported');
     }
@@ -760,9 +760,9 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         const confirmBtn = document.getElementById("confirm-demo-disclaimer");
         const cancelUndemoBtn = document.getElementById("cancel-undemo-disclaimer");
         const confirmUndemoBtn = document.getElementById("confirm-undemo-disclaimer");
-        
+
         let isCheckPending = false;
-        
+
         isDemoCheckbox.addEventListener("change", () => {
             if (isDemoCheckbox.checked && !isCheckPending) {
                 isCheckPending = true;
@@ -777,7 +777,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             }
             isCheckPending = false;
         });
-        
+
         // Demo checkbox handlers
         if (cancelBtn) {
             cancelBtn.addEventListener("click", () => {
@@ -787,7 +787,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
             });
         }
-        
+
         if (confirmBtn) {
             confirmBtn.addEventListener("click", () => {
                 if (disclaimerModal) {
@@ -795,7 +795,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
             });
         }
-        
+
         if (disclaimerModal) {
             disclaimerModal.addEventListener("click", (e) => {
                 if (e.target === disclaimerModal) {
@@ -804,7 +804,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
             });
         }
-        
+
         // Undemo checkbox handlers
         if (cancelUndemoBtn) {
             cancelUndemoBtn.addEventListener("click", () => {
@@ -814,7 +814,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
             });
         }
-        
+
         if (confirmUndemoBtn) {
             confirmUndemoBtn.addEventListener("click", () => {
                 if (undemoModal) {
@@ -822,7 +822,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
             });
         }
-        
+
         if (undemoModal) {
             undemoModal.addEventListener("click", (e) => {
                 if (e.target === undemoModal) {
@@ -837,12 +837,12 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     let taCheckTimer = null;
     taNumberInput.addEventListener("input", async () => {
         const taNumber = taNumberInput.value.trim();
-        
-        // Clear existing timer
+
+
         if (taCheckTimer) {
             clearTimeout(taCheckTimer);
         }
-        
+
         // Only check if TA number is valid (matches pattern)
         if (isValidTaNumber(taNumber)) {
             // Debounce the database check by 500ms
@@ -853,13 +853,13 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                         .select("ta_number")
                         .eq("ta_number", taNumber)
                         .maybeSingle();
-                    
+
                     if (error && error.code !== 'PGRST116') {
                         // PGRST116 is "no rows returned" - that's expected if TA doesn't exist
                         console.error("Error checking TA number:", error);
                         return;
                     }
-                    
+
                     if (data) {
                         // TA number already exists
                         if (window.showToast) {
@@ -1075,7 +1075,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                 }
             }
 
-            // Mark timestamp BEFORE database operation to suppress own realtime notification
+            // Record the action timestamp before the database request to suppress duplicate realtime notifications.
             window.adminRecentUploadTimestamp = Date.now();
 
             // Use minimal returning: some RLS setups allow INSERT but prevent RETURNING rows.
@@ -1176,7 +1176,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             }
 
             uploadStatus.textContent = "Upload complete.";
-            
+
             // Clear fields after successful upload
             taNumberInput.value = "";
             purposeInput.value = "";

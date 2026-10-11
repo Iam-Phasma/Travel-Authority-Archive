@@ -106,7 +106,6 @@ if (togglePasswordBtn) {
   });
 }
 
-// Show/hide new password
 document
   .getElementById("show-new-password")
   .addEventListener("change", (e) => {
@@ -228,10 +227,8 @@ const startLockoutCountdown = (seconds, mode = "account") => {
     remaining--;
   };
 
-  // Initial update
   updateCountdown();
 
-  // Update every second
   lockoutCountdownInterval = setInterval(updateCountdown, 1000);
 };
 
@@ -252,7 +249,7 @@ const getRedirectPage = async (userId) => {
 
     // Check if user has access enabled
     if (data?.access_enabled === false) {
-      // User account is disabled
+
       await supabase.auth.signOut();
       throw new Error("AUTH_FAILED_GENERIC");
     }
@@ -474,7 +471,6 @@ const handleLogin = async () => {
       throw new Error("Unable to load user session.");
     }
 
-    // Reset hCaptcha after successful login
     if (loginCaptchaWidgetId !== null) {
       hcaptcha.reset(loginCaptchaWidgetId);
       loginCaptchaToken = null;
@@ -1064,7 +1060,6 @@ sendResetBtn.addEventListener("click", async () => {
     return;
   }
 
-  // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email)) {
     resetStatus.textContent = "Please enter a valid email address.";
@@ -1194,7 +1189,6 @@ sendResetBtn.addEventListener("click", async () => {
     );
     resetStatus.classList.add("status--success");
 
-    // Reset hCaptcha
     if (resetCaptchaWidgetId !== null)
       hcaptcha.reset(resetCaptchaWidgetId);
 

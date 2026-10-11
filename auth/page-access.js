@@ -37,7 +37,7 @@ export const createAdminAccess = ({
     const user = sessionData.session.user;
     setCurrentUserId(user.id);
 
-    // CRITICAL: Verify admin/super role from database (not localStorage which can be manipulated)
+    // Verify the admin or super role in the database; localStorage is not trusted.
     const role = await getUserRole(user.id);
 
     if (role !== "admin" && role !== "super") {

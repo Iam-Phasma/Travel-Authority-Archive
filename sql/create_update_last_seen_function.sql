@@ -13,27 +13,27 @@ DECLARE
     calling_user_id UUID;
     result JSON;
 BEGIN
-    -- Get the ID of the user making this request
+
     calling_user_id := auth.uid();
-    
+
     -- Security Check: Ensure user is authenticated
     IF calling_user_id IS NULL THEN
         RAISE EXCEPTION 'Authentication required';
     END IF;
-    
+
     -- Update last_seen for the current user
     UPDATE profiles
     SET last_seen = NOW()
     WHERE id = calling_user_id;
-    
-    -- Return success response
+
+
     result := json_build_object(
         'success', true,
         'last_seen', NOW()
     );
-    
+
     RETURN result;
-    
+
 EXCEPTION
     WHEN OTHERS THEN
         RAISE EXCEPTION 'Failed to update last_seen: %', SQLERRM;

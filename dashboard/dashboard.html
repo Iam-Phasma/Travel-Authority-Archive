@@ -45,7 +45,7 @@
                 const headerHTML = data.replace(/HEADER_ASSETS_PATH/g, '../assets');
                 document.getElementById('header-container').innerHTML = headerHTML;
                 window.headerLoaded = true;
-                
+
                 // Initialize date display in header
                 const dateElement = document.getElementById('header-date');
                 if (dateElement) {
@@ -54,7 +54,7 @@
                     const formattedDate = today.toLocaleDateString('en-US', options);
                     dateElement.textContent = `Today is ${formattedDate}`;
                 }
-                
+
                 // If initHeaderButtons is already defined, call it
                 if (window.initHeaderButtons) {
                     window.initHeaderButtons();
@@ -119,7 +119,7 @@
                         <span class="btn-label">Filter</span>
                     </button>
                     </div>
-                    <!-- <span class="pill">Read only</span> -->
+
                 </div>
             </div>
             <div id="filter-panel" class="filter-panel">

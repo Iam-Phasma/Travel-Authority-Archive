@@ -20,7 +20,6 @@ import "../pwa-update.js";
 window.flatpickr = flatpickr;
 window.L = L;
 
-// Initialize Supabase
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 const { markCurrentUserOffline, clearAdminClientState, setupAccessMonitoring, setupSessionMonitoring, validateAdminSession } = createAdminSession({
   supabase, showToast: (...args) => window.adminShowToast?.(...args), getUserRole: (id) => getUserRole(id),
@@ -99,7 +98,6 @@ const employeePanelLoaded = Promise.all([
     document.getElementById("employees-modals-container").innerHTML =
       modalsHTML;
 
-    // Initialize employee management after loading
     if (window.initEmployeeManagement) {
       window.initEmployeeManagement(supabase);
     }
@@ -158,7 +156,6 @@ setupSessionMonitoring();
 // Check session validity every 30 seconds
 setInterval(validateAdminSession, 30000);
 
-// Define header button initialization function
 window.initHeaderButtons = createAdminHeader({
   supabase, markCurrentUserOffline, clearAdminClientState,
   getEmployees: () => employeesList, loadEmployees: () => loadEmployees(),
@@ -254,7 +251,6 @@ const createMultiSelect = (
                     </div>
                 `;
 
-        // Add click handler for the add button
         const addBtn = options.querySelector(".multiselect-add-btn");
         if (addBtn) {
           addBtn.addEventListener("click", async (e) => {
@@ -263,7 +259,6 @@ const createMultiSelect = (
 
             if (!nameToAdd) return;
 
-            // Validate allowed characters
             const namePattern = /^[a-zA-ZÀ-ÿ\s\-'.,]+$/;
             if (!namePattern.test(nameToAdd)) {
               alert(
@@ -272,7 +267,6 @@ const createMultiSelect = (
               return;
             }
 
-            // Validate length
             if (nameToAdd.length > 30) {
               alert("Official name cannot exceed 30 characters.");
               return;
@@ -367,7 +361,7 @@ const createMultiSelect = (
           const name = opt.getAttribute("data-name");
           if (!selectedArray.includes(name)) {
             selectedArray.push(name);
-            search.value = ""; // Clear search input after selection
+            search.value = "";
             updateDisplay();
             renderOptions();
           }
@@ -416,7 +410,7 @@ const createMultiSelect = (
       return;
     }
     if (dropdown.classList.contains("show")) {
-      search.value = ""; // Clear search input when closing dropdown
+      search.value = "";
     }
     dropdown.classList.remove("show");
   });
@@ -426,7 +420,7 @@ const createMultiSelect = (
 
 // Wait for upload panel to load before initializing multi-selects
 uploadPanelLoaded.then(async () => {
-  // Load employees first
+
   await loadEmployees();
 
   const employeesMultiSelect = createMultiSelect(
@@ -552,7 +546,7 @@ const isValidTaNumber = (value) => /^\d{4}-\d{2}-\d{4}$/.test(value);
 window.isValidTaNumber = isValidTaNumber; // Expose for upload.js
 
 const bindTaFormatter = (input) => {
-  if (!input) return; // Guard against null elements
+  if (!input) return;
   input.addEventListener("input", () => {
     input.value = formatTaNumber(input.value);
   });
@@ -827,15 +821,14 @@ viewPanelLoaded.then(() => {
 // USER MANAGEMENT (SUPER USER ONLY)
 // ============================================
 
-// Note: User panel elements are loaded asynchronously from users/users-panel.html
-// They are queried dynamically in the functions below
+// Query user-panel elements after users/users-panel.html has loaded.
 
 const { loadUsers, initControlHeaderTooltip, setupProfilesRealtimeSubscription } =
   createUserManagement({ supabase, isSuperUser });
 window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 
 // ============================================
-// END USER MANAGEMENT
+// User directory initialization
 // ============================================
 
 // Initialize and check permissions
@@ -869,10 +862,10 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
       if (error) {
         console.warn("Heartbeat error:", error.message);
       } else {
-        // Heartbeat updated
+
       }
     } catch (error) {
-      // Heartbeat update skipped
+
     }
   };
 
@@ -964,18 +957,11 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
         });
       });
 
-      // Initialize realtime subscription for profiles
-      // This will automatically update the users table when:
-      // - User status changes (online/offline)
-      // - User role changes
-      // - User access is enabled/disabled
+      // Refresh the directory when profile status, role, or access changes.
       setupProfilesRealtimeSubscription();
     });
   }
 })();
-
-// loadEmployees() is now called in uploadPanelLoaded.then() to ensure proper initialization
-// Note: loadAdminEmployeesForFilter() is called inside viewPanelLoaded.then() where it's defined
 
 // Prevent browser back/forward navigation
 // This prevents users from accidentally navigating back to login or other pages

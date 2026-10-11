@@ -1,6 +1,4 @@
-# Security: Prevent committing sensitive configuration
-# Uncomment the line below if you add real credentials to config.js
-# config.js
+# Keep credentials in ignored environment files.
 
 # Environment files
 .env

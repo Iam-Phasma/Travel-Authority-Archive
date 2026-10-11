@@ -29,7 +29,7 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
     const [localPart, domain] = email.split("@");
 
     if (localPart.length <= maxLocalLength) {
-      return email; // No truncation needed
+      return email;
     }
 
     // Truncate local part but keep domain
@@ -67,7 +67,7 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
   let editUserNameData = null;
   let userNameModalHandlersInitialized = false;
   window.currentlyEditingUserId = null; // Track which user is being edited
-  window.currentlyChangingRoleUserId = null; // Track which user's role is being changed
+  window.currentlyChangingRoleUserId = null;
 
   const closeEditUserNameModal = () => {
     const modal = document.getElementById("edit-user-name-modal");
@@ -106,7 +106,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         statusEl.textContent =
           "User is online. Name can only be edited while offline.";
 
-        // Add shake animation
         statusEl.classList.remove("status--shake");
         void statusEl.offsetWidth; // Trigger reflow to restart animation
         statusEl.classList.add("status--shake");
@@ -371,7 +370,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
           return;
         }
 
-        // Track which user's role is being changed
         window.currentlyChangingRoleUserId = userId;
 
         // Confirm role change
@@ -380,7 +378,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
           `Change user role from "${currentRole}" to "${newRole}"?`,
         );
 
-        // Clear tracking variable
         window.currentlyChangingRoleUserId = null;
 
         if (!confirmChange) {
@@ -740,12 +737,11 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         return;
       }
 
-      // Get current logged-in user ID
       const { data: sessionData } = await supabase.auth.getSession();
       const currentUserId = sessionData?.session?.user?.id;
 
       // Call server-side RPC function that validates permissions
-      // CRITICAL: This RPC function MUST verify that the calling user is 'super'
+      // The RPC must enforce the caller’s super role on the server.
       const { data, error } = await supabase.rpc("change_user_role", {
         target_user_id: userId,
         new_role: newRole,
@@ -756,14 +752,12 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         throw error;
       }
 
-      // Update success
       selectElement.setAttribute("data-current-role", newRole);
       if (usersStatus) {
         usersStatus.textContent = "Role updated successfully";
       }
       window.showToast(`Role changed to ${newRole}`, "success");
 
-      // Reload users to refresh the display
       await loadUsers();
     } catch (error) {
       console.error("Failed to change user role:", error);
@@ -771,7 +765,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       // Revert select to original role
       selectElement.value = originalRole;
 
-      // Show user-friendly error message
       let errorMessage = "Failed to change role";
 
       if (error.hint) {
@@ -812,7 +805,7 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       }
 
       // Call server-side RPC function that validates permissions
-      // CRITICAL: This RPC function MUST verify that the calling user is 'super'
+      // The RPC must enforce the caller’s super role on the server.
       const { data, error } = await supabase.rpc("toggle_user_access", {
         target_user_id: userId,
         new_access_enabled: newAccessEnabled,
@@ -823,14 +816,12 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         throw error;
       }
 
-      // Update success
       const action = newAccessEnabled ? "enabled" : "disabled";
       if (usersStatus) {
         usersStatus.textContent = "Access updated successfully";
       }
       window.showToast(`Access ${action}`, "success");
 
-      // Reload users to refresh the display
       await loadUsers();
     } catch (error) {
       console.error("Failed to toggle user access:", error);
@@ -838,7 +829,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       // Revert select to original value
       selectElement.value = originalAccess.toString();
 
-      // Show user-friendly error message
       let errorMessage = "Failed to change access";
 
       if (error.hint) {
@@ -881,12 +871,12 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       .on(
         "postgres_changes",
         {
-          event: "*", // Listen to all events
+          event: "*",
           schema: "public",
           table: "profiles",
         },
         (payload) => {
-          // PREVENTIVE MEASURE: Check if currently edited user went online
+          // Check whether the user being edited has come online.
           if (payload.eventType === "UPDATE" && payload.new && payload.old) {
             const userWentOnline =
               payload.old.is_online === false && payload.new.is_online === true;

@@ -24,7 +24,6 @@ window.Chart = Chart;
 window.flatpickr = flatpickr;
 window.L = L;
 
-// Initialize Supabase
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 const { markCurrentUserOffline, clearDashboardClientState, setupAccessMonitoring, validateSession } = createDashboardSession({
   supabase,
@@ -43,7 +42,6 @@ initAutoLogout(supabase, {
 // Initialize access monitoring
 setupAccessMonitoring();
 
-// Define header button initialization function
 // Show confirmation modal and return a Promise
 const showConfirmation = (title, message) => {
   return new Promise((resolve) => {
@@ -51,7 +49,6 @@ const showConfirmation = (title, message) => {
     confirmModalMessage.textContent = message;
     confirmModal.classList.add("show");
 
-    // Apply red styling for logout confirmation
     const isLogout = title === "Confirm Logout";
     if (isLogout) {
       confirmConfirmBtn.style.background = "#a1251b";
@@ -81,7 +78,7 @@ const showConfirmation = (title, message) => {
       confirmConfirmBtn.removeEventListener("click", handleConfirm);
       cancelConfirmBtn.removeEventListener("click", handleCancel);
       confirmModal.removeEventListener("click", handleClickOutside);
-      // Reset button styling
+
       if (isLogout) {
         confirmConfirmBtn.style.background = "";
       }
@@ -346,8 +343,8 @@ const loadSortFromStorage = () => {
 const updateButtonStates = () => {
   const filterToggleBtn = document.getElementById("filter-toggle-btn");
   const sortToggleBtn = document.getElementById("sort-toggle-btn");
-  
-  // Check if filters are active (not default)
+
+
   const isFilterActive =
     activeFilters.taNumber ||
     activeFilters.employee ||
@@ -356,7 +353,7 @@ const updateButtonStates = () => {
     activeFilters.travelDate ||
     activeFilters.matchAll === false;
 
-  // Check if sort is active
+
   const isSortActive = activeSort.by !== "ta" || activeSort.order !== "desc";
 
   if (filterToggleBtn) {
@@ -435,7 +432,7 @@ const updateViewFileSize = async (fileUrl) => {
 };
 
 const applyClientFilters = (rows) => {
-  // If no filters are active, return all rows
+
   if (
     !activeFilters.taNumber &&
     !activeFilters.employee &&
@@ -448,7 +445,6 @@ const applyClientFilters = (rows) => {
   return rows.filter((row) => {
     const checks = [];
 
-    // Check TA Number filter
     if (activeFilters.taNumber) {
       const matchesTa =
         row.ta_number &&
@@ -468,14 +464,12 @@ const applyClientFilters = (rows) => {
       checks.push(matchesEmployee);
     }
 
-    // Check Year filter
     if (activeFilters.year) {
       const matchesYear =
         row.travel_date && row.travel_date.startsWith(activeFilters.year);
       checks.push(matchesYear);
     }
 
-    // Check Travel Date filter
     if (activeFilters.travelDate) {
       const matchesDate =
         row.travel_date && row.travel_date === activeFilters.travelDate;
@@ -484,10 +478,10 @@ const applyClientFilters = (rows) => {
 
     // Return based on match mode (AND or OR)
     if (activeFilters.matchAll) {
-      // AND: all filters must match
+
       return checks.every((check) => check === true);
     } else {
-      // OR: at least one filter must match
+
       return checks.some((check) => check === true);
     }
   });
@@ -812,7 +806,7 @@ const setupDashboardEmployeeRealtimeSubscription = () => {
     .on(
       "postgres_changes",
       {
-        event: "*", // Listen to all events
+        event: "*",
         schema: "public",
         table: "employee_list",
       },
@@ -945,7 +939,7 @@ document.addEventListener("click", (e) => {
 // Populate year filter from available data
 const populateYearFilter = async () => {
   try {
-    // Get all unique years from database
+
     const { data, error } = await supabase
       .from("travel_authorities")
       .select("travel_date");
@@ -1004,7 +998,7 @@ window.flatpickr(filterTravelDateInput, {
     // Auto-sync year filter when date is selected
     if (dateStr && dateStr.length >= 4) {
       const selectedYear = dateStr.substring(0, 4);
-      // Check if this year exists in the dropdown
+
       const yearOption = Array.from(filterYearSelect.options).find(
         (opt) => opt.value === selectedYear,
       );
@@ -1155,13 +1149,13 @@ const init = async () => {
   // Update button states after loading data
   updateButtonStates();
 
-  // Initialize Travel Frequency chart
+
   void initTravelFrequencyYears();
 
-  // Initialize Officials Summary chart
+
   void initOfficialsSummaryChart();
 
-  // Initialize Destinations chart
+
   void initDestinationsChart();
 
   initInsightsLayoutSync();
@@ -1244,7 +1238,7 @@ const setupRealtimeSubscription = () => {
     .on(
       "postgres_changes",
       {
-        event: "*", // Listen to all events
+        event: "*",
         schema: "public",
         table: "travel_authorities",
       },
@@ -1265,7 +1259,7 @@ const setupRealtimeSubscription = () => {
         }
 
         // Don't show toast for demo files on dashboard (regular users)
-        // EXCEPT when a file was just updated to demo status (admin forgot to mark it initially)
+        // Notify when an existing record becomes a demo so the displayed list can be refreshed.
         if (isDemo && !changedToDemo) {
           return;
         }
