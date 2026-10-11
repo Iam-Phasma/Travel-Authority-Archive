@@ -2,8 +2,7 @@
 
 Internal web application for managing travel authority records. This repository contains the app source, supporting SQL, and deployment assets.
 
-Vercel: https://travel-authority-archive-fr1i.vercel.app/ \
-Pages: https://iam-phasma.github.io/Travel-Authority-Archive/
+Open: **[CHED IV Travel Authority Archive](https://travel-authority-archive-fr1i.vercel.app/)** 
 
 ## Project Notes
 
