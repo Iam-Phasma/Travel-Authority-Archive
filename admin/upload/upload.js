@@ -444,24 +444,9 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
     const isValidTaNumber = window.isValidTaNumber;
     const bindTaFormatter = window.bindTaFormatter;
 
-    // Initialize date pickers
-    window.flatpickr(travelDateInput, {
-        dateFormat: "Y-m-d",
-        allowInput: true,
-        disableMobile: true,
-        static: false,
-        monthSelectorType: 'static',
-        position: 'auto center'
-    });
-
-    window.flatpickr(travelUntilInput, {
-        dateFormat: "Y-m-d",
-        allowInput: true,
-        disableMobile: true,
-        static: false,
-        monthSelectorType: 'static',
-        position: 'auto center'
-    });
+    // Share the Draft TA calendar UI, including touch-device modal mode.
+    const travelDatePicker = window.createDraftTravelDatepicker(travelDateInput);
+    const travelUntilPicker = window.createDraftTravelDatepicker(travelUntilInput);
 
     // Bind TA number formatter
     bindTaFormatter(taNumberInput);
@@ -912,7 +897,7 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
 
         if (!travelUntil) {
             travelUntil = travelDate;
-            travelUntilInput.value = travelDate;
+            travelUntilPicker.selectDate(travelDate);
         }
 
         if (travelUntil) {
@@ -1143,8 +1128,8 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
                         autoResizeTextarea(destinationInput);
                         const hint1 = document.getElementById('ocr-group-hint');
                         if (hint1) hint1.textContent = 'Scan the uploaded TA to auto-fill both fields.';
-                        travelDateInput.value = "";
-                        travelUntilInput.value = "";
+                        travelDatePicker.clear();
+                        travelUntilPicker.clear();
                         clearSelectedFiles();
                         if (isDemoCheckbox) isDemoCheckbox.checked = false;
                         selectedEmployees.length = 0;
@@ -1185,8 +1170,8 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
             autoResizeTextarea(destinationInput);
             const hint2 = document.getElementById('ocr-group-hint');
             if (hint2) hint2.textContent = 'Scan the uploaded TA to auto-fill both fields.';
-            travelDateInput.value = "";
-            travelUntilInput.value = "";
+            travelDatePicker.clear();
+            travelUntilPicker.clear();
             clearSelectedFiles();
             if (isDemoCheckbox) isDemoCheckbox.checked = false;
             selectedEmployees.length = 0;
@@ -1218,8 +1203,8 @@ window.initUploadPanel = function(supabase, selectedEmployees, employeesMultiSel
         autoResizeTextarea(destinationInput);
         const hint3 = document.getElementById('ocr-group-hint');
         if (hint3) hint3.textContent = 'Scan the uploaded TA to auto-fill both fields.';
-        travelDateInput.value = "";
-        travelUntilInput.value = "";
+        travelDatePicker.clear();
+        travelUntilPicker.clear();
         clearSelectedFiles();
         if (isDemoCheckbox) isDemoCheckbox.checked = false;
         selectedEmployees.length = 0;

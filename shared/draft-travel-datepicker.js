@@ -5,7 +5,7 @@ import { getCalendarPosition } from './calendar-position.js';
 
 let activePicker;
 
-// Adapter shared by the classic Draft TA panel on admin and dashboard pages.
+// Shared calendar adapter for Draft TA and Admin Upload TA forms.
 window.createDraftTravelDatepicker = (input) => {
     if (!input || input._draftDatepicker) return input?._draftDatepicker;
 
@@ -22,7 +22,7 @@ window.createDraftTravelDatepicker = (input) => {
     calendar.classList.add('draft-travel-datepicker');
     const dialog = document.createElement('dialog');
     dialog.className = 'draft-travel-date-dialog';
-    dialog.setAttribute('aria-label', input.id.includes('travel-end') ? 'Select travel end date' : 'Select travel date');
+    dialog.setAttribute('aria-label', (input.id.includes('travel-end') || input.id === 'travel-until') ? 'Select travel end date' : 'Select travel date');
     document.body.append(dialog);
 
     const clearButton = calendar.querySelector('.mrdp-btn-clear');
