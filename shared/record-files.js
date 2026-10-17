@@ -225,3 +225,21 @@ export const createFileOpener = ({ showToast, notifyCompressed = false }) => {
   };
   return openStoredFile;
 };
+
+// Move the existing link so its download state and event handlers stay intact.
+export const setupResponsiveViewDownload = (link) => {
+  const originalParent = link.parentElement;
+  const originalNext = link.nextSibling;
+  const close = document.getElementById("close-view");
+  const phone = window.matchMedia("(max-width: 768px)");
+  const update = () => {
+    link.classList.toggle("modal-btn", phone.matches);
+    if (phone.matches) {
+      close.before(link);
+    } else {
+      originalParent.insertBefore(link, originalNext);
+    }
+  };
+  phone.addEventListener("change", update);
+  update();
+};

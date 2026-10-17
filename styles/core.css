@@ -3306,3 +3306,26 @@ button:hover {
   height: 18px;
 }
 
+
+/* Keep record view actions together on phones. */
+@media (max-width: 768px) {
+  .modal-actions.view-record-actions {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .view-record-actions .modal-btn {
+    min-width: 0;
+    width: 100%;
+    box-sizing: border-box;
+    padding-inline: 10px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: normal;
+    text-align: center;
+    white-space: nowrap;
+  }
+}

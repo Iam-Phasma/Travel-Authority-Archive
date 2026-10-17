@@ -1,6 +1,6 @@
 import { escapeHtml, safeUrl, formatFileLabel, formatTaNumber } from "../../shared/record-utils.js";
 import { renderRecordBatch, createRecordsLoader } from "../../shared/records-table.js";
-import { createFileOpener } from "../../shared/record-files.js";
+import { createFileOpener, setupResponsiveViewDownload } from "../../shared/record-files.js";
 
 // Initialize Records after its panel and modals have loaded.
 export const initAdminRecords = ({
@@ -99,6 +99,7 @@ export const initAdminRecords = ({
   const viewTravelDate = document.getElementById("view-travel-date");
   const viewTravelUntil = document.getElementById("view-travel-until");
   const viewFileLink = document.getElementById("view-file-link");
+  setupResponsiveViewDownload(viewFileLink);
   const viewFileSize = document.getElementById("view-file-size");
   const updateTaInput = document.getElementById("update-ta-number");
   const updatePurposeInput = document.getElementById("update-purpose");

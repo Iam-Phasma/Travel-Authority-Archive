@@ -12,7 +12,7 @@ import { escapeHtml, safeUrl, formatFileSize, formatFileLabel, formatTaNumber } 
 import { renderRecordBatch, createRecordsLoader } from "../shared/records-table.js";
 import { createDashboardHeader } from "../header/dashboard-header.js";
 import { createDashboardSession } from "../auth/dashboard-session.js";
-import { fetchFileSizeBytes, createFileOpener } from "../shared/record-files.js";
+import { fetchFileSizeBytes, createFileOpener, setupResponsiveViewDownload } from "../shared/record-files.js";
 import { createInsights } from "./insights.js";
 import { createAgendaTracker } from "./agenda.js";
 import { createInsightsLayout } from "./insights-layout.js";
@@ -404,6 +404,7 @@ const viewEmployees = document.getElementById("view-employees");
 const viewTravelDate = document.getElementById("view-travel-date");
 const viewTravelUntil = document.getElementById("view-travel-until");
 const viewFileLink = document.getElementById("view-file-link");
+setupResponsiveViewDownload(viewFileLink);
 const viewFileSize = document.getElementById("view-file-size");
 
 const openStoredFile = createFileOpener({ showToast });
