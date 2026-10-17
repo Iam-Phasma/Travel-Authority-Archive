@@ -1887,3 +1887,67 @@ body.dashboard-page::before {
     flex: 1;
   }
 }
+
+/* Reserve bottom navigation space once, outside each tab's scroll area. */
+@media (max-width: 768px) {
+  body.dashboard-page {
+    --phone-nav-height: calc(58px + env(safe-area-inset-bottom, 0px));
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .dashboard-page .page-content {
+    flex: none;
+    box-sizing: border-box;
+    height: calc(100dvh - 64px - var(--phone-nav-height));
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .dash-sidebar {
+    box-sizing: border-box;
+    height: var(--phone-nav-height);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .dash-content {
+    padding: 0 14px;
+    overflow: hidden;
+  }
+
+  #tab-insights.dash-tab-pane.active {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px 0 16px;
+  }
+
+  #tab-draft-ta.dash-tab-pane.active {
+    padding-bottom: 16px;
+  }
+
+  #tab-draft-ta .upload-panel-structured {
+    flex: 0 0 auto;
+  }
+
+  #tab-draft-ta .upload-actions {
+    margin-bottom: 0;
+    flex-shrink: 0;
+  }
+
+  #tab-files.dash-tab-pane.active {
+    overflow-y: auto;
+    padding-bottom: 12px;
+  }
+
+  /* Keep the table usable even with a short landscape viewport. */
+  .dash-content #ta-panel {
+    flex-shrink: 0;
+    min-height: 280px;
+  }
+
+  .dash-tab-pane.active {
+    box-sizing: border-box;
+    scroll-padding-bottom: 16px;
+  }
+}
