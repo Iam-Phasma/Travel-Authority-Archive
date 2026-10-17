@@ -1,3 +1,4 @@
+import { setupRecordToolbar } from "../../shared/record-toolbar.js";
 import { escapeHtml, safeUrl, formatFileLabel, formatTaNumber } from "../../shared/record-utils.js";
 import { renderRecordBatch, createRecordsLoader } from "../../shared/records-table.js";
 import { createFileOpener, setupResponsiveViewDownload } from "../../shared/record-files.js";
@@ -100,6 +101,7 @@ export const initAdminRecords = ({
   const viewTravelUntil = document.getElementById("view-travel-until");
   const viewFileLink = document.getElementById("view-file-link");
   setupResponsiveViewDownload(viewFileLink);
+  setupRecordToolbar(document.getElementById("view-panel"));
   const viewFileSize = document.getElementById("view-file-size");
   const updateTaInput = document.getElementById("update-ta-number");
   const updatePurposeInput = document.getElementById("update-purpose");

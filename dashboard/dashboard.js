@@ -1,3 +1,4 @@
+import { setupRecordToolbar } from "../shared/record-toolbar.js";
 // Module: Dashboard — npm-managed dependencies via Vite
 import "@lottiefiles/dotlottie-wc";
 import { createClient } from "@supabase/supabase-js";
@@ -405,6 +406,7 @@ const viewTravelDate = document.getElementById("view-travel-date");
 const viewTravelUntil = document.getElementById("view-travel-until");
 const viewFileLink = document.getElementById("view-file-link");
 setupResponsiveViewDownload(viewFileLink);
+  setupRecordToolbar(document.getElementById("ta-panel"));
 const viewFileSize = document.getElementById("view-file-size");
 
 const openStoredFile = createFileOpener({ showToast });

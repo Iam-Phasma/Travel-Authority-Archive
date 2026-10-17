@@ -3329,3 +3329,94 @@ button:hover {
     white-space: nowrap;
   }
 }
+
+.record-tools-toggle { display: none; }
+.record-tools-menu { display: contents; }
+
+@media (max-width: 768px) {
+  #ta-panel .panel-head-actions,
+  #view-panel .panel-head-actions {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    width: 100%;
+    gap: 8px;
+  }
+
+  #ta-panel .ta-search-wrap,
+  #view-panel .ta-search-wrap {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+    box-sizing: border-box;
+  }
+
+  #ta-panel .ta-search-input,
+  #view-panel .ta-search-input {
+    min-width: 0;
+    width: 100%;
+  }
+
+  #ta-panel .panel-head-actions-buttons,
+  #view-panel .panel-head-actions-buttons {
+    position: relative;
+    flex: 0 0 44px;
+    width: 44px;
+  }
+
+  #ta-panel .record-tools-toggle,
+  #view-panel .record-tools-toggle {
+    display: inline-flex;
+    width: 44px;
+    min-height: 44px;
+    padding: 10px;
+  }
+
+  .record-tools-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    z-index: 100;
+    min-width: 160px;
+    padding: 6px;
+    border: 1px solid rgba(47, 111, 228, 0.2);
+    border-radius: var(--radius-md);
+    background: white;
+    box-shadow: 0 8px 24px rgba(11, 28, 59, 0.15);
+  }
+
+  .tools-open .record-tools-menu { display: grid; gap: 4px; }
+
+  #ta-panel .record-tools-menu .filter-icon-btn,
+  #view-panel .record-tools-menu .filter-icon-btn {
+    justify-content: flex-start;
+    gap: 10px;
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .record-tools-menu .filter-icon-btn .btn-label { display: inline; }
+}
+
+/* Keep record filter/sort/export popovers inside the phone viewport. */
+@media (max-width: 768px) {
+  #ta-panel > .filter-panel,
+  #view-panel > .filter-panel {
+    box-sizing: border-box;
+    width: min(360px, calc(100vw - 24px));
+    min-width: 0;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px;
+    transform: none;
+    transition: opacity 150ms ease, visibility 150ms ease;
+  }
+
+  #ta-panel > .filter-panel .filter-field,
+  #view-panel > .filter-panel .filter-field {
+    min-width: 0;
+  }
+}
