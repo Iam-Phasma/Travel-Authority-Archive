@@ -5,13 +5,20 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>CHEDRO IV Travel Authority Archive | CTAA</title>
     <meta name="robots" content="index, follow" />
-    <meta name="description" content="Sign in to the CHEDRO IV Travel Authority Archive (CTAA), the internal travel authority records portal for Commission on Higher Education Regional Office IV personnel." />
+    <meta
+      name="description"
+      content="Sign in to the CHEDRO IV Travel Authority Archive (CTAA), the internal travel authority records portal for Commission on Higher Education Regional Office IV personnel."
+    />
     <script>
       (function () {
         var productionUrl = "%VITE_PRODUCTION_URL%".trim();
         var isGitHubPagesHost = location.hostname === "iam-phasma.github.io";
         if (!isGitHubPagesHost) return;
-        if (!productionUrl || productionUrl.indexOf("VITE_PRODUCTION_URL") !== -1) return;
+        if (
+          !productionUrl ||
+          productionUrl.indexOf("VITE_PRODUCTION_URL") !== -1
+        )
+          return;
 
         var targetBase = productionUrl.replace(/\/+$/, "");
         var repoBase = "/Travel-Authority-Archive";
@@ -20,7 +27,8 @@
           : location.pathname;
         if (!currentPath) currentPath = "/";
 
-        var targetUrl = targetBase + currentPath + location.search + location.hash;
+        var targetUrl =
+          targetBase + currentPath + location.search + location.hash;
         if (targetUrl !== location.href) {
           location.replace(targetUrl);
         }
@@ -63,9 +71,7 @@
             />
           </div>
           <p class="login-panel-subtitle">
-            The travel authority records portal for Commission on Higher
-            Education Regional Office IV personnel. Sign in with your work
-            account to access the archive.
+            A portal for CHEDRO IV travel authority records.
           </p>
         </div>
         <div class="fields">
@@ -144,7 +150,12 @@
         <div class="login-actions">
           <button id="login-btn" type="button">
             <span id="login-btn-text">Sign in</span>
-            <dotlottie-wc id="login-btn-lottie" src="assets/load.lottie" autoplay loop></dotlottie-wc>
+            <dotlottie-wc
+              id="login-btn-lottie"
+              src="assets/load.lottie"
+              autoplay
+              loop
+            ></dotlottie-wc>
           </button>
           <span class="status status--neutral hidden" id="login-status"
             >Enter your credentials.</span
