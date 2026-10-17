@@ -1,18 +1,15 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import { VitePWA } from 'vite-plugin-pwa';
-import { searchVisibility } from './scripts/search-visibility.mjs';
 
 export default defineConfig(({ mode }) => {
   const isGitHubPages = mode === 'github-pages';
   const basePath = isGitHubPages ? '/Travel-Authority-Archive/' : '/';
-  const env = loadEnv(mode, process.cwd(), 'VITE_');
 
   return {
     base: basePath,
 
     plugins: [
-      searchVisibility(process.env.VITE_PRODUCTION_URL || env.VITE_PRODUCTION_URL),
       VitePWA({
         registerType: 'prompt',
         injectRegister: false,

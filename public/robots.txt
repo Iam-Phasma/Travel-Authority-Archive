@@ -1,0 +1,12 @@
+User-agent: *
+Disallow: /
+Allow: /$
+Allow: /index.html$
+Allow: /assets/
+Allow: /styles/
+Allow: /styles.css
+Allow: /header/header.css
+Allow: /footer/footer.css
+Allow: /footer/footer.html
+
+# Internal routes remain disallowed. Assets above support rendering the login page.

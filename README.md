@@ -44,13 +44,13 @@ Notes:
 - `vercel.json` includes rewrites so `/admin` and `/dashboard` resolve to their HTML entry pages.
 - If you are using Supabase Edge Functions, include your Vercel domain in `CORS_ALLOWED_ORIGINS` for each function deployment.
 
-## Search Visibility
+## Crawler Controls
 
-- The homepage includes a descriptive title, description, and static heading and introduction that are readable without JavaScript.
-- Builds generate canonical and Open Graph metadata, WebSite structured data, `robots.txt`, and a sitemap containing only the public homepage. Set `VITE_PRODUCTION_URL` to the preferred public production URL; otherwise the Vercel URL linked above is used. Use the same value for GitHub Pages builds to consolidate duplicate homepage URLs.
-- Admin, dashboard, and error pages carry `noindex`. Crawlers can fetch those pages to read that directive; authentication continues to control access to records.
-- Deploy the build to make these changes public. Check the deployed homepage source, `/robots.txt`, and `/sitemap.xml`. Preview deployments should have hosting-level indexing protection.
-- Discovery does not require webmaster tools. A link from the organization's existing website or an approved public profile can help people and crawlers find the portal. Indexing and ranking remain search-engine decisions.
+- The public login page at / and /index.html permits indexing and includes a descriptive title and search description.
+- public/robots.txt allows the login page and assets required for rendering it, while disallowing internal routes. No sitemap is generated.
+- Admin, dashboard, and error pages retain noindex, nofollow metadata. Vercel sends matching headers for internal routes and shared HTML fragments, without applying noindex to the homepage.
+- Deploy to activate these controls, then verify /robots.txt, homepage source, and response headers.
+- Robots directives are voluntary, not access controls. Disallowed URLs may still appear as URL-only results because crawlers cannot read their noindex directives. Authentication and backend permissions must protect internal records.
 
 ## Repository Layout
 
