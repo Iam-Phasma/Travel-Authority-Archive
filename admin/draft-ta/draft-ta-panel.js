@@ -297,13 +297,70 @@ window.initDraftTaPanel = (supabase) => {
         const settingsBtn = document.getElementById('panel-draft-ta-officials-settings-btn');
         let settingsPanel = null;
 
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'draft-official-actions';
+        const actionMenu = document.createElement('div');
+        actionMenu.className = 'draft-official-actions-menu';
+        actionMenu.id = 'panel-draft-ta-officials-actions-menu';
+        const actionToggle = document.createElement('button');
+        actionToggle.type = 'button';
+        actionToggle.className = 'draft-official-actions-toggle filter-icon-btn';
+        actionToggle.setAttribute('aria-label', 'Officials actions');
+        actionToggle.setAttribute('aria-expanded', 'false');
+        actionToggle.setAttribute('aria-controls', actionMenu.id);
+        actionToggle.innerHTML = '<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.583 8.445h.01M10.86 19.71l-6.573-6.63a.993.993 0 0 1 0-1.4l7.329-7.394A.98.98 0 0 1 12.31 4l5.734.007A1.968 1.968 0 0 1 20 5.983v5.5a.992.992 0 0 1-.316.727l-7.44 7.5a.974.974 0 0 1-1.384.001Z"/></svg>';
+        const filterIcon = '<svg class="w-6 h-6 text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" viewBox="0 0 24 24"><path stroke="currentColor" stroke-linecap="round" stroke-width="2" d="M18.796 4H5.204a1 1 0 0 0-.753 1.659l5.302 6.058a1 1 0 0 1 .247.659v4.874a.5.5 0 0 0 .2.4l3 2.25a.5.5 0 0 0 .8-.4v-7.124a1 1 0 0 1 .247-.659l5.302-6.059c.566-.646.106-1.658-.753-1.658Z"/></svg>';
+        const settingsIcon = settingsBtn?.innerHTML || '';
+        settingsBtn?.setAttribute('aria-label', 'Filter officials');
+        settingsBtn?.setAttribute('title', 'Filter officials');
+        const phoneIcons = window.matchMedia('(max-width: 768px)');
+        const updateActionIcons = () => {
+            actionToggle.innerHTML = settingsIcon;
+            if (settingsBtn) settingsBtn.innerHTML = phoneIcons.matches ? filterIcon : settingsIcon;
+        };
+        phoneIcons.addEventListener('change', updateActionIcons);
+        updateActionIcons();
+        const closeActionMenu = () => {
+            actionGroup.classList.remove('open');
+            actionToggle.setAttribute('aria-expanded', 'false');
+        };
+        for (const [button, label] of [[settingsBtn, 'Filter'], [officialsSelectAll, 'Add all listed'], [officialsClearAll, 'Clear selected']]) {
+            if (!button) continue;
+            button.dataset.actionLabel = label;
+            actionMenu.appendChild(button);
+            button.addEventListener('click', closeActionMenu);
+        }
+        actionGroup.append(actionToggle, actionMenu);
+        officialsSearch.parentElement.appendChild(actionGroup);
+        actionToggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const open = actionGroup.classList.toggle('open');
+            actionToggle.setAttribute('aria-expanded', String(open));
+        });
+        actionGroup.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                event.stopPropagation();
+                closeActionMenu();
+                actionToggle.focus();
+            }
+        });
+        document.addEventListener('click', (event) => {
+            if (!actionGroup.contains(event.target)) closeActionMenu();
+            if (settingsPanel && !settingsPanel.contains(event.target) && !settingsBtn?.contains(event.target)) {
+                settingsPanel.classList.remove('open');
+            }
+        }, true);
+        window.matchMedia('(max-width: 768px)').addEventListener('change', closeActionMenu);
+
         const closeDropdown = () => {
+            closeActionMenu();
             officialsSearch.value = '';
             officialsDropdown.classList.remove('show');
             if (settingsPanel) settingsPanel.classList.remove('open');
         };
 
         const updateDisplay = () => {
+            if (officialsClearAll) officialsClearAll.disabled = selectedEmployees.length === 0;
             if (selectedEmployees.length === 0) {
                 officialsDisplay.innerHTML = '<span class="multiselect-placeholder">Select officials...</span>';
                 if (officialsCountIndicator) officialsCountIndicator.innerHTML = '<em>0 selected</em>';
