@@ -1560,6 +1560,10 @@ body.dashboard-page::before {
     justify-content: flex-start;
   }
 
+  .agenda-calendar-panel {
+    display: none;
+  }
+
   .agenda-calendar-panel,
   .agenda-list-panel {
     padding: 14px;
