@@ -244,19 +244,38 @@ if (settingsHideMatchAllFilter) {
 
 applyDashboardMatchAllFilterVisibility(getDashboardHideMatchAllFilter());
 
+// Employee, TA number, and travel date filters stay in memory only.
 const saveFiltersToStorage = () => {
-  localStorage.setItem("dashboardFilters", JSON.stringify(activeFilters));
+  try {
+    localStorage.removeItem("dashboardFilters");
+    localStorage.setItem("dashboardFilterPreferences", JSON.stringify({
+      year: /^\d{4}$/.test(activeFilters.year)
+        ? activeFilters.year
+        : "",
+      matchAll: activeFilters.matchAll === true,
+    }));
+  } catch (e) {
+    console.error("Failed to save dashboard filter preferences:", e);
+  }
 };
 
 const loadFiltersFromStorage = () => {
-  const saved = localStorage.getItem("dashboardFilters");
-  if (saved) {
-    try {
+  try {
+    // Remove legacy filters without restoring personal information.
+    localStorage.removeItem("dashboardFilters");
+    const saved = localStorage.getItem("dashboardFilterPreferences");
+    if (saved) {
       const parsed = JSON.parse(saved);
-      activeFilters = { ...activeFilters, ...parsed };
-    } catch (e) {
-      console.error("Failed to parse saved filters:", e);
+      if (typeof parsed?.year === "string" &&
+          (parsed.year === "" || /^\d{4}$/.test(parsed.year))) {
+        activeFilters.year = parsed.year;
+      }
+      if (typeof parsed?.matchAll === "boolean") {
+        activeFilters.matchAll = parsed.matchAll;
+      }
     }
+  } catch (e) {
+    console.error("Failed to load dashboard filter preferences:", e);
   }
 };
 
