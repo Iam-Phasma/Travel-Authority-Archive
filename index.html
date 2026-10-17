@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CTAA</title>
+    <title>CHEDRO IV Travel Authority Archive | CTAA</title>
+    <meta name="description" content="Access the CHEDRO IV Travel Authority Archive (CTAA), the travel authority records portal for Commission on Higher Education Regional Office IV personnel." />
     <script>
       (function () {
         var productionUrl = "%VITE_PRODUCTION_URL%".trim();
@@ -35,7 +36,16 @@
   </head>
   <body class="login-page">
     <main class="shell">
-      <div id="header-container"></div>
+      <div id="header-container">
+        <header class="login-hero-header">
+          <div class="login-header-bar">
+            <p class="login-header-kicker">CHEDRO IV</p>
+          </div>
+          <div class="login-header-copy">
+            <h1>Travel Authority Archive</h1>
+          </div>
+        </header>
+      </div>
 
       <section class="panel" id="login-panel">
         <div class="login-panel-intro">
@@ -52,7 +62,9 @@
             />
           </div>
           <p class="login-panel-subtitle">
-            Use your work account credentials to continue.
+            The travel authority records portal for Commission on Higher
+            Education Regional Office IV personnel. Sign in with your work
+            account to access the archive.
           </p>
         </div>
         <div class="fields">
@@ -266,15 +278,6 @@
         </div>
       </div>
     </main>
-
-    <script>
-      fetch("header/login-header.html?v=20260321-2")
-        .then((response) => response.text())
-        .then((data) => {
-          document.getElementById("header-container").innerHTML = data;
-        })
-        .catch((error) => console.error("Error loading header:", error));
-    </script>
 
     <div id="footer-container"></div>
     <script>
