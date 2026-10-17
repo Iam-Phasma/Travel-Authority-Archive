@@ -1,4 +1,8 @@
 /* Scope the calendar controls so app-wide button styles cannot distort them. */
+.travel-datepicker-input[readonly] {
+    cursor: pointer;
+}
+
 .mrdp-container.draft-travel-datepicker {
     --mrdp-primary-color: var(--sea);
     --mrdp-primary-light: var(--hover-sea-subtle);

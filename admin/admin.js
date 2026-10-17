@@ -2,8 +2,6 @@
 import "@lottiefiles/dotlottie-wc";
 import { setupRecordToolbar } from "../shared/record-toolbar.js";
 import { createClient } from "@supabase/supabase-js";
-import flatpickr from "flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
 import "../shared/draft-travel-datepicker.js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -19,7 +17,6 @@ import { createAdminAccess } from "../auth/page-access.js";
 import "../pwa-update.js";
 
 // Expose globals for non-module scripts (upload.js, draft-ta-panel.js, draft-location-picker.js)
-window.flatpickr = flatpickr;
 window.L = L;
 
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);

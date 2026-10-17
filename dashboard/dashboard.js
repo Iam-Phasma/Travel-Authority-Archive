@@ -3,8 +3,6 @@ import { setupRecordToolbar } from "../shared/record-toolbar.js";
 import "@lottiefiles/dotlottie-wc";
 import { createClient } from "@supabase/supabase-js";
 import Chart from "chart.js/auto";
-import flatpickr from "flatpickr";
-import "flatpickr/dist/flatpickr.min.css";
 import "../shared/draft-travel-datepicker.js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -23,7 +21,6 @@ import "../pwa-update.js";
 
 // Expose globals for non-module scripts (draft-ta-panel.js, draft-location-picker.js, ta-generator.js)
 window.Chart = Chart;
-window.flatpickr = flatpickr;
 window.L = L;
 
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
@@ -991,30 +988,16 @@ filterTaNumberInput.addEventListener("input", () => {
   updateButtonStates();
 });
 
-// Initialize flatpickr for date filter
-window.flatpickr(filterTravelDateInput, {
-  dateFormat: "Y-m-d",
-  allowInput: true,
-  disableMobile: true,
-  static: false,
-  monthSelectorType: "static",
-  position: "auto center",
-  onChange: function (selectedDates, dateStr) {
-    // Auto-sync year filter when date is selected
-    if (dateStr && dateStr.length >= 4) {
-      const selectedYear = dateStr.substring(0, 4);
-
-      const yearOption = Array.from(filterYearSelect.options).find(
-        (opt) => opt.value === selectedYear,
-      );
-      if (yearOption) {
-        filterYearSelect.value = selectedYear;
-      } else {
-        // Year not available in records, set to "No selection"
-        filterYearSelect.value = "";
-      }
-    }
-  },
+const filterDatePicker = window.createDraftTravelDatepicker(filterTravelDateInput);
+filterTravelDateInput.addEventListener('change', () => {
+  const dateStr = filterTravelDateInput.value;
+  if (dateStr) {
+    const selectedYear = dateStr.substring(0, 4);
+    const yearOption = Array.from(filterYearSelect.options).find(
+      (option) => option.value === selectedYear,
+    );
+    filterYearSelect.value = yearOption ? selectedYear : '';
+  }
 });
 
 filterToggleBtn.addEventListener("click", () => {
@@ -1046,7 +1029,7 @@ clearFilterBtn.addEventListener("click", () => {
   filterEmployeeInput.value = "";
   setFilterEmpDropdownVisible(false);
   filterYearSelect.value = "";
-  filterTravelDateInput.value = "";
+  filterDatePicker.clear();
   filterMatchAllCheckbox.checked = true;
   saveFiltersToStorage();
   updateButtonStates();
@@ -1139,7 +1122,7 @@ const init = async () => {
     filterEmployeeInput.value = activeFilters.employee || "";
   if (filterYearSelect) filterYearSelect.value = activeFilters.year || "";
   if (filterTravelDateInput)
-    filterTravelDateInput.value = activeFilters.travelDate || "";
+    filterDatePicker.selectDate(activeFilters.travelDate || "", { silent: true });
   if (filterMatchAllCheckbox)
     filterMatchAllCheckbox.checked =
       activeFilters.matchAll !== undefined ? activeFilters.matchAll : true;

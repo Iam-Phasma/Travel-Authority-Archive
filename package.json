@@ -13,7 +13,6 @@
     "@lottiefiles/dotlottie-wc": "^0.9.14",
     "@supabase/supabase-js": "^2.50.0",
     "chart.js": "^4.4.2",
-    "flatpickr": "^4.6.13",
     "flexidatepicker": "^1.1.5",
     "leaflet": "^1.9.4",
     "pako": "^3.0.2",

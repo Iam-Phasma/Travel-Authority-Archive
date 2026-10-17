@@ -9,6 +9,9 @@ let activePicker;
 window.createDraftTravelDatepicker = (input) => {
     if (!input || input._draftDatepicker) return input?._draftDatepicker;
 
+    input.readOnly = true;
+    input.classList.add('travel-datepicker-input');
+
     const picker = new FlexiDatepicker(`#${CSS.escape(input.id)}`, {
         mode: 'single',
         locale: 'en-US',
@@ -22,7 +25,9 @@ window.createDraftTravelDatepicker = (input) => {
     calendar.classList.add('draft-travel-datepicker');
     const dialog = document.createElement('dialog');
     dialog.className = 'draft-travel-date-dialog';
-    dialog.setAttribute('aria-label', (input.id.includes('travel-end') || input.id === 'travel-until') ? 'Select travel end date' : 'Select travel date');
+    dialog.setAttribute('aria-label', input.id.includes('date-request')
+        ? 'Select date requested'
+        : (input.id.includes('travel-end') || input.id.endsWith('travel-until')) ? 'Select travel end date' : 'Select travel date');
     document.body.append(dialog);
 
     const clearButton = calendar.querySelector('.mrdp-btn-clear');

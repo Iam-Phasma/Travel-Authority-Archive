@@ -464,23 +464,8 @@ export const initAdminRecords = ({
   window.adminShowAlert = showAlertModal;
   window.showAppAlert = showAlertModal;
 
-  window.flatpickr(updateTravelDateInput, {
-    dateFormat: "Y-m-d",
-    allowInput: true,
-    disableMobile: true,
-    static: false,
-    monthSelectorType: "static",
-    position: "auto center",
-  });
-
-  window.flatpickr(updateTravelUntilInput, {
-    dateFormat: "Y-m-d",
-    allowInput: true,
-    disableMobile: true,
-    static: false,
-    monthSelectorType: "static",
-    position: "auto center",
-  });
+  const updateTravelDatePicker = window.createDraftTravelDatepicker(updateTravelDateInput);
+  const updateTravelUntilPicker = window.createDraftTravelDatepicker(updateTravelUntilInput);
 
   const applyAdminClientFilters = (rows) => {
 
@@ -682,8 +667,8 @@ export const initAdminRecords = ({
           updateDestinationInput.value = record.destination || "";
           autoResizeUpdateTextarea(updatePurposeInput);
           autoResizeUpdateTextarea(updateDestinationInput);
-          updateTravelDateInput.value = record.travel_date || "";
-          updateTravelUntilInput.value = record.travel_until || "";
+          updateTravelDatePicker.selectDate(record.travel_date || "", { silent: true });
+          updateTravelUntilPicker.selectDate(record.travel_until || "", { silent: true });
           updateScanFileInput.value = "";
           if (updateIsDemoCheckbox)
             updateIsDemoCheckbox.checked = record.is_demo || false;
@@ -825,8 +810,8 @@ export const initAdminRecords = ({
     updateDestinationInput.value = record.destination || "";
     autoResizeUpdateTextarea(updatePurposeInput);
     autoResizeUpdateTextarea(updateDestinationInput);
-    updateTravelDateInput.value = record.travel_date || "";
-    updateTravelUntilInput.value = record.travel_until || "";
+    updateTravelDatePicker.selectDate(record.travel_date || "", { silent: true });
+    updateTravelUntilPicker.selectDate(record.travel_until || "", { silent: true });
     updateScanFileInput.value = "";
     if (updateIsDemoCheckbox)
       updateIsDemoCheckbox.checked = record.is_demo || false;
@@ -1330,30 +1315,16 @@ export const initAdminRecords = ({
     updateAdminButtonStates();
   });
 
-  // Initialize flatpickr for admin date filter
-  window.flatpickr(adminFilterTravelDateInput, {
-    dateFormat: "Y-m-d",
-    allowInput: true,
-    disableMobile: true,
-    static: false,
-    monthSelectorType: "static",
-    position: "auto center",
-    onChange: function (selectedDates, dateStr) {
-      // Auto-sync year filter when date is selected
-      if (dateStr && dateStr.length >= 4) {
-        const selectedYear = dateStr.substring(0, 4);
-
-        const yearOption = Array.from(adminFilterYearSelect.options).find(
-          (opt) => opt.value === selectedYear,
-        );
-        if (yearOption) {
-          adminFilterYearSelect.value = selectedYear;
-        } else {
-          // Year not available in records, set to "No selection"
-          adminFilterYearSelect.value = "";
-        }
-      }
-    },
+  const adminFilterDatePicker = window.createDraftTravelDatepicker(adminFilterTravelDateInput);
+  adminFilterTravelDateInput.addEventListener('change', () => {
+    const dateStr = adminFilterTravelDateInput.value;
+    if (dateStr) {
+      const selectedYear = dateStr.substring(0, 4);
+      const yearOption = Array.from(adminFilterYearSelect.options).find(
+        (option) => option.value === selectedYear,
+      );
+      adminFilterYearSelect.value = yearOption ? selectedYear : '';
+    }
   });
 
   adminFilterToggleBtn.addEventListener("click", () => {
@@ -1386,7 +1357,7 @@ export const initAdminRecords = ({
     adminFilterEmployeeInput.value = "";
     setAdminFilterEmpDropdownVisible(false);
     adminFilterYearSelect.value = "";
-    adminFilterTravelDateInput.value = "";
+    adminFilterDatePicker.clear();
     adminFilterMatchAllCheckbox.checked = true;
     saveAdminFiltersToStorage();
     updateAdminButtonStates();
@@ -1749,7 +1720,7 @@ export const initAdminRecords = ({
 
     if (!travelUntil) {
       travelUntil = travelDate;
-      updateTravelUntilInput.value = travelDate;
+      updateTravelUntilPicker.selectDate(travelDate);
     }
 
     const start = new Date(`${travelDate}T00:00:00`);
@@ -2074,7 +2045,7 @@ export const initAdminRecords = ({
     if (adminFilterYearSelect)
       adminFilterYearSelect.value = adminActiveFilters.year || "";
     if (adminFilterTravelDateInput)
-      adminFilterTravelDateInput.value = adminActiveFilters.travelDate || "";
+      adminFilterDatePicker.selectDate(adminActiveFilters.travelDate || "", { silent: true });
     if (adminFilterMatchAllCheckbox)
       adminFilterMatchAllCheckbox.checked =
         adminActiveFilters.matchAll !== undefined

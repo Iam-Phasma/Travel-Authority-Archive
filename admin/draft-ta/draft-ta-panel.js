@@ -205,8 +205,8 @@ window.initDraftTaPanel = (supabase) => {
                 selectedEmployees = parsed.officials.slice();
             }
 
-            if (dateRequestInput?._flatpickr && typeof parsed.dateRequested === 'string' && parsed.dateRequested) {
-                dateRequestInput._flatpickr.setDate(parsed.dateRequested, true);
+            if (dateRequestInput?._draftDatepicker && dateRequestInput.value) {
+                dateRequestInput._draftDatepicker.selectDate(dateRequestInput.value, { silent: true });
             }
             if (travelDateInput?._draftDatepicker && travelDateInput.value) {
                 travelDateInput._draftDatepicker.selectDate(travelDateInput.value, { silent: true });
@@ -596,18 +596,9 @@ window.initDraftTaPanel = (supabase) => {
     };
 
     // ── Date helpers ───────────────────────────────────────────────────────
-    const flatpickrOpts = {
-        dateFormat: 'Y-m-d',
-        allowInput: false,
-        disableMobile: true,
-        static: false,
-        monthSelectorType: 'static',
-        position: 'auto center'
-    };
-
     const setDateDefault = () => {
-        if (dateRequestInput?._flatpickr && !dateRequestInput.value) {
-            dateRequestInput._flatpickr.setDate(new Date(), true);
+        if (dateRequestInput?._draftDatepicker && !dateRequestInput.value) {
+            dateRequestInput._draftDatepicker.selectDate(getTodayLocalISO());
         }
     };
 
@@ -627,7 +618,7 @@ window.initDraftTaPanel = (supabase) => {
         if (travelTypeSelect)   travelTypeSelect.value = 'official_business';
         if (fundingOptionSelect) fundingOptionSelect.value = 'reimbursement';
         if (isoControlInput)    isoControlInput.value = 'AD-HRS-F010-01';
-        if (dateRequestInput?._flatpickr) dateRequestInput._flatpickr.setDate(new Date(), true);
+        if (dateRequestInput?._draftDatepicker) dateRequestInput._draftDatepicker.selectDate(getTodayLocalISO());
         else if (dateRequestInput) dateRequestInput.value = getTodayLocalISO();
         if (travelDateInput?._draftDatepicker) travelDateInput._draftDatepicker.clear();
         if (travelEndInput?._draftDatepicker) travelEndInput._draftDatepicker.clear();
@@ -957,10 +948,7 @@ window.initDraftTaPanel = (supabase) => {
         bindTextareaAutoResize(destinationInput);
         window.createDraftTravelDatepicker(travelDateInput);
         window.createDraftTravelDatepicker(travelEndInput);
-        // Date Requested keeps its existing picker.
-        if (window.flatpickr) {
-            if (dateRequestInput) window.flatpickr(dateRequestInput, flatpickrOpts);
-        }
+        window.createDraftTravelDatepicker(dateRequestInput);
         multiSelect = createMultiSelect();
         multiSelect?.updateDisplay();
         multiSelect?.renderOptions();
