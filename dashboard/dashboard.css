@@ -1951,3 +1951,20 @@ body.dashboard-page::before {
     scroll-padding-bottom: 16px;
   }
 }
+
+/* Keep Draft TA actions side by side on phones. */
+@media (max-width: 768px) {
+  #tab-draft-ta .upload-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  #tab-draft-ta .upload-actions .modal-btn {
+    min-width: 0;
+    width: 100%;
+    padding-inline: 8px;
+    white-space: nowrap;
+    box-sizing: border-box;
+  }
+}
