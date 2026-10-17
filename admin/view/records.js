@@ -202,19 +202,38 @@ export const initAdminRecords = ({
   window.adminEmployeesListForFilter = adminEmployeesListForFilter;
 
   // Helper functions for localStorage persistence
+  // Employee, TA number, and travel date filters stay in memory only.
   const saveAdminFiltersToStorage = () => {
-    localStorage.setItem("adminFilters", JSON.stringify(adminActiveFilters));
+    try {
+      localStorage.removeItem("adminFilters");
+      localStorage.setItem("adminFilterPreferences", JSON.stringify({
+        year: /^\d{4}$/.test(adminActiveFilters.year)
+          ? adminActiveFilters.year
+          : "",
+        matchAll: adminActiveFilters.matchAll === true,
+      }));
+    } catch (e) {
+      console.error("Failed to save admin filter preferences:", e);
+    }
   };
 
   const loadAdminFiltersFromStorage = () => {
-    const saved = localStorage.getItem("adminFilters");
-    if (saved) {
-      try {
+    try {
+      // Remove legacy filters without restoring personal information.
+      localStorage.removeItem("adminFilters");
+      const saved = localStorage.getItem("adminFilterPreferences");
+      if (saved) {
         const parsed = JSON.parse(saved);
-        adminActiveFilters = { ...adminActiveFilters, ...parsed };
-      } catch (e) {
-        console.error("Failed to parse saved admin filters:", e);
+        if (typeof parsed?.year === "string" &&
+            (parsed.year === "" || /^\d{4}$/.test(parsed.year))) {
+          adminActiveFilters.year = parsed.year;
+        }
+        if (typeof parsed?.matchAll === "boolean") {
+          adminActiveFilters.matchAll = parsed.matchAll;
+        }
       }
+    } catch (e) {
+      console.error("Failed to load admin filter preferences:", e);
     }
   };
 
