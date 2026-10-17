@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import Chart from "chart.js/auto";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
+import "../shared/draft-travel-datepicker.js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabaseConfig } from "../config.js";

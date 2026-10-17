@@ -208,11 +208,11 @@ window.initDraftTaPanel = (supabase) => {
             if (dateRequestInput?._flatpickr && typeof parsed.dateRequested === 'string' && parsed.dateRequested) {
                 dateRequestInput._flatpickr.setDate(parsed.dateRequested, true);
             }
-            if (travelDateInput?._flatpickr && typeof parsed.travelDate === 'string' && parsed.travelDate) {
-                travelDateInput._flatpickr.setDate(parsed.travelDate, true);
+            if (travelDateInput?._draftDatepicker && travelDateInput.value) {
+                travelDateInput._draftDatepicker.selectDate(travelDateInput.value, { silent: true });
             }
-            if (travelEndInput?._flatpickr && typeof parsed.travelEnd === 'string' && parsed.travelEnd) {
-                travelEndInput._flatpickr.setDate(parsed.travelEnd, true);
+            if (travelEndInput?._draftDatepicker && travelEndInput.value) {
+                travelEndInput._draftDatepicker.selectDate(travelEndInput.value, { silent: true });
             }
 
             autoResizeTextarea(purposeInput);
@@ -629,8 +629,8 @@ window.initDraftTaPanel = (supabase) => {
         if (isoControlInput)    isoControlInput.value = 'AD-HRS-F010-01';
         if (dateRequestInput?._flatpickr) dateRequestInput._flatpickr.setDate(new Date(), true);
         else if (dateRequestInput) dateRequestInput.value = getTodayLocalISO();
-        if (travelDateInput?._flatpickr)  travelDateInput._flatpickr.clear();
-        if (travelEndInput?._flatpickr)   { travelEndInput._flatpickr.clear(); }
+        if (travelDateInput?._draftDatepicker) travelDateInput._draftDatepicker.clear();
+        if (travelEndInput?._draftDatepicker) travelEndInput._draftDatepicker.clear();
         [purposeInput, destinationInput].forEach((textarea) => {
             if (!textarea) return;
             delete textarea.dataset.manualResize;
@@ -955,10 +955,10 @@ window.initDraftTaPanel = (supabase) => {
         bindDraftTaAutosave();
         bindTextareaAutoResize(purposeInput);
         bindTextareaAutoResize(destinationInput);
-        // Init Flatpickr date pickers (matching Upload panel options)
+        window.createDraftTravelDatepicker(travelDateInput);
+        window.createDraftTravelDatepicker(travelEndInput);
+        // Date Requested keeps its existing picker.
         if (window.flatpickr) {
-            if (travelDateInput)  window.flatpickr(travelDateInput, { ...flatpickrOpts, onChange: validateDates });
-            if (travelEndInput)   window.flatpickr(travelEndInput,  { ...flatpickrOpts, onChange: validateDates });
             if (dateRequestInput) window.flatpickr(dateRequestInput, flatpickrOpts);
         }
         multiSelect = createMultiSelect();

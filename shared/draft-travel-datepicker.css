@@ -1,0 +1,249 @@
+/* Scope the calendar controls so app-wide button styles cannot distort them. */
+.mrdp-container.draft-travel-datepicker {
+    --mrdp-primary-color: var(--sea);
+    --mrdp-primary-light: var(--hover-sea-subtle);
+    z-index: 1500;
+    width: 344px;
+    max-width: calc(100vw - 24px);
+    padding: 12px;
+    box-sizing: border-box;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 12px 36px rgb(16 42 56 / 16%);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 14px;
+}
+
+.draft-travel-datepicker *,
+.draft-travel-datepicker *::before,
+.draft-travel-datepicker *::after {
+    box-sizing: border-box;
+}
+
+.mrdp-container.draft-travel-datepicker.draft-date-popover {
+    position: fixed;
+    overflow-y: auto;
+}
+
+.draft-travel-datepicker button {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    font: inherit;
+    line-height: 1;
+    color: var(--sea);
+    background: transparent;
+    border: 0;
+    border-radius: 8px;
+    box-shadow: none;
+    transform: none;
+}
+
+.draft-travel-datepicker button:hover {
+    background: var(--hover-sea-subtle);
+    color: var(--sea);
+    box-shadow: none;
+    transform: none;
+}
+
+.draft-travel-datepicker .mrdp-header {
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 0 12px;
+    border-bottom: 1px solid var(--line);
+}
+
+.draft-travel-datepicker .mrdp-month-year-display {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    min-width: 0;
+}
+
+.draft-travel-datepicker .mrdp-month-year-btn {
+    min-width: 0;
+    height: 40px;
+    padding: 0 8px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.draft-travel-datepicker #mrdp-month-btn,
+.draft-travel-datepicker #mrdp-year-btn {
+    min-width: 0;
+}
+
+.draft-travel-datepicker .mrdp-nav-btn {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    font-size: 22px;
+}
+
+.draft-travel-datepicker .mrdp-grid {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px 0;
+    padding: 8px 0;
+}
+
+.draft-travel-datepicker .mrdp-day-header {
+    display: grid;
+    place-items: center;
+    height: 32px;
+    padding: 0;
+    font-size: 12px;
+    font-weight: 500;
+    color: #71818a;
+}
+
+.draft-travel-datepicker .mrdp-day-cell {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 42px;
+    min-height: 0;
+    padding: 0;
+    line-height: 1;
+    font-size: 14px;
+    border-radius: 10px;
+}
+
+.draft-travel-datepicker .mrdp-day-cell.selected-start.selected-end {
+    border-radius: 10px;
+}
+
+/* Keep selection legible when the library applies its generic day hover. */
+.draft-travel-datepicker .mrdp-day-cell:not(.empty):not(.disabled):hover {
+    background: var(--hover-sea-subtle);
+    color: var(--ink);
+}
+
+.draft-travel-datepicker .mrdp-day-cell.today {
+    border-color: var(--sea);
+    color: var(--sea);
+}
+
+.draft-travel-datepicker .mrdp-day-cell.selected-start.selected-end {
+    background: var(--sea);
+    color: #fff;
+}
+
+.draft-travel-datepicker .mrdp-day-cell.selected-start.selected-end:not(.disabled):hover {
+    background: var(--hover-sea);
+    color: #fff;
+}
+
+.draft-travel-datepicker .mrdp-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 8px 0 0;
+    border-top: 1px solid var(--line);
+}
+
+.draft-travel-datepicker .mrdp-controls .draft-date-today,
+.draft-travel-datepicker .mrdp-controls .mrdp-btn-clear {
+    height: 36px;
+    padding: 0 12px;
+    border: 0;
+    background: rgba(161, 37, 27, 0.15);
+    color: var(--red);
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.draft-travel-datepicker .mrdp-controls .draft-date-today {
+    background: var(--hover-sea-subtle);
+    color: var(--sea);
+}
+
+.draft-travel-datepicker .mrdp-controls .draft-date-today:hover {
+    background: var(--hover-sea-soft);
+    color: var(--sea);
+}
+
+.draft-travel-datepicker .mrdp-controls .mrdp-btn-clear:hover {
+    background: var(--hover-danger-soft);
+    color: var(--red);
+}
+
+.draft-travel-datepicker .mrdp-picker-overlay {
+    top: 0;
+    padding: 12px;
+    overflow: auto;
+}
+
+.draft-travel-datepicker .mrdp-picker-item,
+.draft-travel-datepicker .mrdp-year-nav {
+    min-height: 44px;
+    padding: 8px;
+}
+
+.draft-travel-datepicker .mrdp-picker-item:hover {
+    background: var(--hover-sea-subtle);
+    border-color: var(--sea);
+    color: var(--ink);
+}
+
+.draft-travel-datepicker .mrdp-picker-item.current-year {
+    border-color: var(--sea);
+    color: var(--sea);
+}
+
+.draft-travel-datepicker .mrdp-picker-item.active,
+.draft-travel-datepicker .mrdp-picker-item.current-year.active {
+    background: var(--sea);
+    border-color: var(--sea);
+    color: #fff;
+}
+
+.draft-travel-datepicker .mrdp-picker-item.active:hover {
+    background: var(--hover-sea);
+    color: #fff;
+}
+
+.draft-travel-datepicker button:focus-visible,
+.draft-travel-datepicker [role='button']:focus-visible {
+    outline: 2px solid var(--sea);
+    outline-offset: -2px;
+}
+
+.draft-travel-date-dialog {
+    width: fit-content;
+    border: 0;
+    padding: 0;
+    margin: auto;
+    border-radius: 16px;
+    background: #fff;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    overflow: auto;
+}
+
+.draft-travel-date-dialog::backdrop {
+    background: rgb(16 35 46 / 45%);
+}
+
+.draft-travel-date-dialog .draft-travel-datepicker {
+    position: relative;
+    width: min(360px, calc(100vw - 24px));
+    margin: 0;
+    border: 0;
+    box-shadow: none;
+}
+
+.draft-travel-date-dialog .mrdp-day-cell,
+.draft-travel-date-dialog .mrdp-nav-btn,
+.draft-travel-date-dialog .mrdp-month-year-btn,
+.draft-travel-date-dialog .mrdp-controls .draft-date-today,
+.draft-travel-date-dialog .mrdp-controls .mrdp-btn-clear {
+    height: 44px;
+}
+
+
+body:has(.draft-travel-date-dialog[open]) {
+    overflow: hidden;
+}
