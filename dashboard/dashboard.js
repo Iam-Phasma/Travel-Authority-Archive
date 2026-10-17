@@ -672,25 +672,7 @@ const loadMoreDashRows = () => {
 
 const updateTaFooter = () => {
   const totalFiltered = currentDisplayRows.length;
-  const hasActiveFilters =
-    activeFilters.taNumber ||
-    activeFilters.employee ||
-    activeFilters.year ||
-    activeFilters.travelDate;
-
-  if (!taRows.length) {
-    taStatus.textContent = "No records yet.";
-  } else if (!totalFiltered) {
-    taStatus.textContent = "No records match the current filters.";
-  } else if (renderedCount < totalFiltered) {
-    taStatus.textContent = hasActiveFilters
-      ? `Showing ${renderedCount} of ${totalFiltered} filtered record${totalFiltered === 1 ? "" : "s"} (${taRows.length} total). Scroll for more.`
-      : `Showing ${renderedCount} of ${totalFiltered} record${totalFiltered === 1 ? "" : "s"}. Scroll for more.`;
-  } else if (hasActiveFilters) {
-    taStatus.textContent = `Showing ${totalFiltered} of ${taRows.length} record${taRows.length === 1 ? "" : "s"} (filtered).`;
-  } else {
-    taStatus.textContent = `Loaded ${taRows.length} record${taRows.length === 1 ? "" : "s"}.`;
-  }
+  taStatus.textContent = `Showing ${renderedCount} of ${totalFiltered}`;
 };
 
 const recordsLoader = createRecordsLoader({

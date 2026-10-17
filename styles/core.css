@@ -3333,9 +3333,10 @@ button:hover {
 .record-tools-toggle { display: none; }
 .record-tools-menu { display: contents; }
 
-@media (max-width: 768px) {
+@media (max-width: 1200px) {
   #ta-panel .panel-head-actions,
-  #view-panel .panel-head-actions {
+  #view-panel .panel-head-actions,
+  #employees-panel .panel-head-actions {
     display: flex;
     flex-direction: row;
     align-items: stretch;
@@ -3344,7 +3345,8 @@ button:hover {
   }
 
   #ta-panel .ta-search-wrap,
-  #view-panel .ta-search-wrap {
+  #view-panel .ta-search-wrap,
+  #employees-panel .ta-search-wrap {
     flex: 1 1 0;
     min-width: 0;
     width: auto;
@@ -3352,20 +3354,24 @@ button:hover {
   }
 
   #ta-panel .ta-search-input,
-  #view-panel .ta-search-input {
+  #view-panel .ta-search-input,
+  #employees-panel .ta-search-input {
     min-width: 0;
     width: 100%;
   }
 
   #ta-panel .panel-head-actions-buttons,
-  #view-panel .panel-head-actions-buttons {
+  #view-panel .panel-head-actions-buttons,
+  #employees-panel .panel-head-actions-buttons {
+    display: flex;
     position: relative;
     flex: 0 0 44px;
     width: 44px;
   }
 
   #ta-panel .record-tools-toggle,
-  #view-panel .record-tools-toggle {
+  #view-panel .record-tools-toggle,
+  #employees-panel .record-tools-toggle {
     display: inline-flex;
     width: 44px;
     min-height: 44px;
@@ -3389,7 +3395,8 @@ button:hover {
   .tools-open .record-tools-menu { display: grid; gap: 4px; }
 
   #ta-panel .record-tools-menu .filter-icon-btn,
-  #view-panel .record-tools-menu .filter-icon-btn {
+  #view-panel .record-tools-menu .filter-icon-btn,
+  #employees-panel .record-tools-menu .filter-icon-btn {
     justify-content: flex-start;
     gap: 10px;
     width: 100%;

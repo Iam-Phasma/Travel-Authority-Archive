@@ -479,6 +479,7 @@ body.dashboard-page::before {
   margin-bottom: 0;
   background: transparent;
   border: none;
+  border-radius: 0;
   box-shadow: none;
   padding: 0;
 }
@@ -625,8 +626,48 @@ body.dashboard-page::before {
 .admin-panels #view-panel .panel-head {
   max-height: none;
   align-items: center;
+  flex-wrap: wrap;
   flex-shrink: 0;
   padding-top: 0;
+}
+
+.admin-panels #view-panel .panel-head > div:first-child {
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.admin-panels #view-panel .panel-head-actions {
+  flex: 1 1 480px;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.admin-panels #view-panel .ta-search-wrap {
+  flex: 1 1 180px;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-panels #view-panel .ta-search-input {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 768px) {
+  .admin-panels #view-panel .panel-head > div:first-child,
+  .admin-panels #view-panel .panel-head-actions {
+    flex-basis: auto;
+    width: 100%;
+  }
+
+  .admin-panels #view-panel .panel-head-actions {
+    flex-wrap: nowrap;
+  }
+
+  .admin-panels #view-panel .ta-search-wrap {
+    flex: 1 1 0;
+  }
 }
 
 /* ── Admin view-panel table: balanced columns, no overflow ── */

@@ -5,11 +5,15 @@ export const setupRecordToolbar = (panel) => {
   const menu = document.createElement("div");
   menu.className = "record-tools-menu";
   menu.id = `${panel.id}-tools-menu`;
+  // Keep reload available beside search; group export, sort, and filter.
+  const refresh = controls.querySelector('[id="admin-refresh-btn"], [id="refresh-table-btn"]');
+  if (refresh) controls.before(refresh);
   menu.append(...controls.children);
   const toggle = document.createElement("button");
   toggle.type = "button";
   toggle.className = "filter-icon-btn record-tools-toggle";
-  toggle.setAttribute("aria-label", "Record actions");
+  toggle.setAttribute("aria-label", "Tools");
+  toggle.title = "Tools";
   toggle.setAttribute("aria-expanded", "false");
   toggle.setAttribute("aria-controls", menu.id);
   toggle.innerHTML = '<svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="white"/><circle cx="15" cy="17" r="3" fill="white"/></svg>';
@@ -34,7 +38,7 @@ export const setupRecordToolbar = (panel) => {
       toggle.focus();
     }
   });
-  window.matchMedia("(max-width: 768px)").addEventListener("change", close);
+  window.matchMedia("(max-width: 1200px)").addEventListener("change", close);
 };
 
 // Position within the visible viewport, including when the phone keyboard opens.

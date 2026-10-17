@@ -848,25 +848,7 @@ export const initAdminRecords = ({
 
   const updateViewFooter = () => {
     const totalFiltered = adminCurrentDisplayRows.length;
-    const hasActiveFilters =
-      adminActiveFilters.taNumber ||
-      adminActiveFilters.employee ||
-      adminActiveFilters.year ||
-      adminActiveFilters.travelDate;
-
-    if (!viewRows.length) {
-      viewStatus.textContent = "No records yet.";
-    } else if (!totalFiltered) {
-      viewStatus.textContent = "No records match the current filters.";
-    } else if (adminRenderedCount < totalFiltered) {
-      viewStatus.textContent = hasActiveFilters
-        ? `Showing ${adminRenderedCount} of ${totalFiltered} filtered record${totalFiltered === 1 ? "" : "s"} (${viewRows.length} total). Scroll for more.`
-        : `Showing ${adminRenderedCount} of ${totalFiltered} record${totalFiltered === 1 ? "" : "s"}. Scroll for more.`;
-    } else if (hasActiveFilters) {
-      viewStatus.textContent = `Showing ${totalFiltered} of ${viewRows.length} record${viewRows.length === 1 ? "" : "s"} (filtered).`;
-    } else {
-      viewStatus.textContent = `Loaded ${viewRows.length} record${viewRows.length === 1 ? "" : "s"}.`;
-    }
+    viewStatus.textContent = `Showing ${adminRenderedCount} of ${totalFiltered}`;
   };
 
   const recordsLoader = createRecordsLoader({

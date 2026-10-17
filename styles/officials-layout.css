@@ -1,7 +1,7 @@
 /* Official directory action and add dialog use the shared panel design. */
 .employee-directory-card .employee-list-header {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
   gap: 8px 16px;
 }
@@ -16,6 +16,20 @@
 
 .employee-directory-card .employee-summary {
   grid-column: 1;
+}
+
+.employee-directory-card .employee-list-header > .panel-head-actions {
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+
+.employee-directory-card .employee-search-wrapper {
+  flex: 1 1 240px;
+  width: auto;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 @media (max-width: 720px) {

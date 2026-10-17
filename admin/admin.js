@@ -1,5 +1,6 @@
 // Module: Admin — npm-managed dependencies via Vite
 import "@lottiefiles/dotlottie-wc";
+import { setupRecordToolbar } from "../shared/record-toolbar.js";
 import { createClient } from "@supabase/supabase-js";
 import flatpickr from "flatpickr";
 import "flatpickr/dist/flatpickr.min.css";
@@ -96,6 +97,7 @@ const employeePanelLoaded = Promise.all([
 ])
   .then(([panelHTML, modalsHTML]) => {
     document.getElementById("employees-panel-container").innerHTML = panelHTML;
+    setupRecordToolbar(document.getElementById("employees-panel"));
     document.getElementById("employees-modals-container").innerHTML =
       modalsHTML;
 
