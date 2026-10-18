@@ -578,6 +578,131 @@
   text-align: center;
 }
 
+.users-table th:nth-child(7),
+.users-table td:nth-child(7) {
+  min-width: 148px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.control-select {
+  min-width: 110px;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid rgba(15, 26, 31, 0.15);
+  border-radius: 8px;
+  background: white;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%230b1c3b' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  color: var(--ink);
+  font-size: 0.9rem;
+  cursor: pointer;
+  appearance: none;
+}
+
+.control-select:focus {
+  outline: none;
+  border-color: var(--sea);
+  box-shadow: 0 0 0 3px rgba(47, 111, 179, 0.15);
+}
+
+.control-select:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+.users-table .role-select:disabled,
+.users-table .access-select:disabled,
+.users-table .control-select:disabled {
+  border-color: rgba(71, 85, 105, 0.22);
+  background-color: #f1f3f5;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23667085' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+  color: #667085;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.th-control-wrap,
+.ctrl-tooltip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ctrl-tooltip {
+  position: relative;
+}
+
+.ctrl-tooltip-icon {
+  width: 15px;
+  height: 15px;
+  fill: currentColor;
+  opacity: 0.45;
+  cursor: help;
+}
+
+.ctrl-tooltip-box {
+  position: fixed;
+  top: var(--ctrl-tip-top, 0px);
+  left: var(--ctrl-tip-left, 0px);
+  z-index: 9999;
+  display: flex;
+  min-width: 152px;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 11px;
+  border: 1px solid rgba(15, 26, 31, 0.12);
+  border-radius: 8px;
+  background: white;
+  box-shadow: 0 4px 18px rgba(11, 28, 59, 0.12);
+  color: var(--ink);
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 140ms ease, visibility 140ms ease;
+}
+
+.ctrl-tooltip-box.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+.ctrl-tip-scope {
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(15, 26, 31, 0.08);
+  color: rgba(15, 26, 31, 0.5);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ctrl-tip-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.ctrl-tip-badge {
+  flex-shrink: 0;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.ctrl-tip-badge.lvl1 {
+  background: rgba(47, 111, 179, 0.12);
+  color: rgba(47, 111, 179, 0.9);
+}
+
+.ctrl-tip-badge.lvl2 {
+  background: rgba(210, 130, 30, 0.12);
+  color: rgba(180, 100, 10, 0.9);
+}
+
 .text-left {
   text-align: left !important;
 }

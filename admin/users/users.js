@@ -284,7 +284,8 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
             : role === "admin"
               ? "admins"
               : "users";
-        tbody.innerHTML = `<tr><td colspan="6">No ${label} found.</td></tr>`;
+        const columnCount = role === "admin" ? 7 : 6;
+        tbody.innerHTML = `<tr><td colspan="${columnCount}">No ${label} found.</td></tr>`;
         continue;
       }
 
@@ -316,6 +317,8 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
               ? "Can't change role: access is disabled."
               : "";
           const roleTooltip = roleDisabledReason || "Change user role";
+          const controlLevel = user.control ?? 1;
+          const isAdmin = user.role === "admin";
           return `
           <tr class="${!accessEnabled ? "user-disabled" : ""}">
               <td class="text-left">
@@ -354,6 +357,17 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
                       </select>
                   </span>
               </td>
+              ${role === "admin" ? `
+              <td>
+                  ${
+                    isAdmin
+                      ? `<select class="control-select" data-user-id="${escapeHtml(user.id)}" data-current-control="${controlLevel}" ${isOnline ? "disabled" : ""}>
+                          <option value="1" ${controlLevel === 1 ? "selected" : ""}>Level 1</option>
+                          <option value="2" ${controlLevel === 2 ? "selected" : ""}>Level 2</option>
+                      </select>`
+                      : '<span aria-hidden="true" style="font-size:0.75rem;opacity:0.35;">—</span>'
+                  }
+              </td>` : ""}
               <td>${escapeHtml(formatLastOnlineDate(user.last_seen))}</td>
           </tr>
       `;
@@ -419,6 +433,31 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       });
     });
 
+    document.querySelectorAll(".control-select").forEach((select) => {
+      select.addEventListener("change", async (e) => {
+        const userId = e.target.getAttribute("data-user-id");
+        const currentControl = Number(e.target.getAttribute("data-current-control"));
+        const newControl = Number(e.target.value);
+
+        if (newControl === currentControl) return;
+
+        const levelLabels = {
+          1: "Level 1 — edit only",
+          2: "Level 2 — edit + delete",
+        };
+        const confirmChange = await window.adminShowConfirmation(
+          "Confirm Control Change",
+          `Set admin control to ${levelLabels[newControl] || `Level ${newControl}`}?`,
+        );
+        if (!confirmChange) {
+          e.target.value = currentControl.toString();
+          return;
+        }
+
+        await changeUserControl(userId, newControl, e.target);
+      });
+    });
+
     document.querySelectorAll(".user-edit-btn").forEach((button) => {
       button.addEventListener("click", () => {
         const userId = button.getAttribute("data-user-id");
@@ -437,7 +476,8 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       console.warn("Blocked non-super user from loading users panel data.");
       ["super", "admin", "user"].forEach((r) => {
         const tb = document.getElementById(`users-body-${r}`);
-        if (tb) tb.innerHTML = '<tr><td colspan="6">Permission denied.</td></tr>';
+        const columnCount = r === "admin" ? 7 : 6;
+        if (tb) tb.innerHTML = `<tr><td colspan="${columnCount}">Permission denied.</td></tr>`;
       });
       if (usersStatus) {
         usersStatus.textContent = "Only super users can view this panel.";
@@ -546,6 +586,7 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         ...user,
         FName: namesById[user.id]?.FName || "",
         LName: namesById[user.id]?.LName || "",
+        control: user.control ?? 1,
       }));
 
       // Sort by role priority: super > admin > user
@@ -595,13 +636,71 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       console.error("Failed to load users:", error);
       ["super", "admin", "user"].forEach((r) => {
         const tb = document.getElementById(`users-body-${r}`);
-        if (tb)
-          tb.innerHTML = '<tr><td colspan="6">Error loading users.</td></tr>';
+        const columnCount = r === "admin" ? 7 : 6;
+        if (tb) tb.innerHTML = `<tr><td colspan="${columnCount}">Error loading users.</td></tr>`;
       });
       if (usersStatus) {
         usersStatus.textContent = error?.message || "Failed to load users.";
         usersStatus.classList.add("status--error");
       }
+    }
+  };
+
+  const initControlHeaderTooltip = () => {
+    document.querySelectorAll("#users-panel .ctrl-tooltip").forEach((trigger) => {
+      const icon = trigger.querySelector(".ctrl-tooltip-icon");
+      const box = trigger.querySelector(".ctrl-tooltip-box");
+      if (!icon || !box || box.dataset.initialized === "true") return;
+
+      document.body.appendChild(box);
+      box.dataset.initialized = "true";
+
+      const show = () => {
+        const rect = icon.getBoundingClientRect();
+        box.style.top = "-9999px";
+        box.style.left = "-9999px";
+        box.style.visibility = "hidden";
+        box.classList.add("active");
+        const width = box.offsetWidth || 160;
+        const left = Math.max(8, Math.min(rect.left + rect.width / 2 - width / 2, window.innerWidth - width - 8));
+        box.style.top = `${rect.bottom + 10}px`;
+        box.style.left = `${left}px`;
+        box.style.visibility = "";
+      };
+      const hide = () => box.classList.remove("active");
+
+      trigger.addEventListener("mouseenter", show);
+      trigger.addEventListener("mouseleave", hide);
+      trigger.addEventListener("focusin", show);
+      trigger.addEventListener("focusout", hide);
+    });
+  };
+
+  const changeUserControl = async (userId, newControl, selectElement) => {
+    const originalControl = Number(selectElement.getAttribute("data-current-control"));
+    const usersStatus = document.getElementById("users-status");
+
+    try {
+      if (usersStatus) {
+        usersStatus.textContent = "Updating control level...";
+        usersStatus.classList.remove("status--error");
+      }
+      const { error } = await supabase.from("profiles").update({ control: newControl }).eq("id", userId);
+      if (error) throw error;
+
+      selectElement.setAttribute("data-current-control", String(newControl));
+      if (usersStatus) usersStatus.textContent = "Control level updated successfully.";
+      window.showToast(`Control set to Level ${newControl}`, "success");
+      await loadUsers();
+    } catch (error) {
+      console.error("Failed to update control level:", error);
+      selectElement.value = String(originalControl);
+      const errorMessage = error.message || "Failed to update control level.";
+      if (usersStatus) {
+        usersStatus.textContent = errorMessage;
+        usersStatus.classList.add("status--error");
+      }
+      window.showToast(errorMessage, "error");
     }
   };
 
@@ -836,5 +935,5 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       .subscribe((status) => {});
   };
 
-  return { loadUsers, setupProfilesRealtimeSubscription };
+  return { loadUsers, initControlHeaderTooltip, setupProfilesRealtimeSubscription };
 };
