@@ -275,9 +275,9 @@ window.initDraftTaPanel = (supabase) => {
     };
 
     const showRequiredFieldsWarning = (missingConfigs) => {
-        const message = `Please complete the following required fields:\n\n${missingConfigs.map((config) => `- ${config.label}`).join('\n')}`;
+        const message = `Complete these before creating your draft:\n\n${missingConfigs.map((config) => `- ${config.label}`).join('\n')}`;
         if (window.showAppAlert) {
-            void window.showAppAlert('Complete Required Fields', message);
+            void window.showAppAlert('Missing Required Fields', message);
             return;
         }
         alert(message);

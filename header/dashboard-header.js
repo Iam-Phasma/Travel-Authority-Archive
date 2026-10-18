@@ -894,12 +894,12 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
         if (missingConfigs.length > 0) {
           if (window.showAppAlert) {
             void window.showAppAlert(
-              "Complete Required Fields",
-              `Please complete the following required fields:\n\n${missingConfigs.map((config) => `- ${config.label}`).join("\n")}`,
+              "Missing Required Fields",
+              `Complete these before creating your draft:\n\n${missingConfigs.map((config) => `- ${config.label}`).join("\n")}`,
             );
           } else {
             alert(
-              `Please complete the following required fields:\n\n${missingConfigs.map((config) => `- ${config.label}`).join("\n")}`,
+              `Complete these before creating your draft:\n\n${missingConfigs.map((config) => `- ${config.label}`).join("\n")}`,
             );
           }
           return;
