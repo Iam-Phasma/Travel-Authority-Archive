@@ -822,6 +822,20 @@ body.dashboard-page::before {
   flex-shrink: 0;
 }
 @media (max-width: 768px) {
+  body.dashboard-page {
+    --phone-nav-height: calc(58px + env(safe-area-inset-bottom, 0px));
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .dashboard-page .page-content {
+    flex: none;
+    box-sizing: border-box;
+    height: calc(100dvh - 64px - var(--phone-nav-height));
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
   /* Hide footer — bottom tab bar handles nav */
   .dashboard-page #footer-container-inner {
     display: none;
@@ -842,7 +856,7 @@ body.dashboard-page::before {
     bottom: 0;
     top: auto !important;
     width: 100% !important;
-    height: 58px;
+    height: var(--phone-nav-height);
     flex-direction: row;
     border-right: none;
     border-top: 1px solid rgba(11, 28, 59, 0.1);
@@ -851,7 +865,8 @@ body.dashboard-page::before {
     z-index: 300;
     overflow: visible;
     box-shadow: 0 -2px 12px rgba(11, 28, 59, 0.08);
-    padding: 0;
+    padding: 0 0 env(safe-area-inset-bottom, 0px);
+    box-sizing: border-box;
     transition: none;
   }
 
@@ -924,7 +939,7 @@ body.dashboard-page::before {
   /* Content fills above the tab bar */
   .admin-content {
     margin-left: 0 !important;
-    padding: 16px 14px 58px;
+    padding: 16px 14px 0;
     overflow-y: auto;
     overflow-x: hidden;
     flex: 1;
