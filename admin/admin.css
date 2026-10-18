@@ -427,6 +427,8 @@ body.dashboard-page::before {
   flex: 1;
   min-height: 0;
   display: flex;
+  flex-direction: column;
+  gap: 20px;
   overflow: hidden;
   padding-bottom: 12px;
   box-sizing: border-box;
@@ -491,24 +493,7 @@ body.dashboard-page::before {
   line-height: 1.2;
 }
 
-/* Full-width official directory */
-.admin-panels #employees-panel .employees-layout {
-  flex: 1;
-  min-height: 0;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr);
-  align-items: stretch;
-  gap: 18px;
-}
-
-.admin-panels #employees-panel .employee-directory-card {
-  min-width: 0;
-  min-height: 0;
-  grid-template-rows: auto minmax(0, 1fr);
-  overflow: hidden;
-}
-
-.admin-panels #employees-panel .employee-list-heading .employee-summary {
+.admin-panels #employees-panel .employee-summary {
   margin: 0;
   padding: 0;
   background: transparent;
@@ -521,6 +506,7 @@ body.dashboard-page::before {
 }
 
 .admin-panels #employees-panel .employee-list {
+  flex: 1;
   min-height: 0;
   max-height: none;
   overflow: auto;

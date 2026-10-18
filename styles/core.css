@@ -2345,17 +2345,6 @@ button:hover {
     padding: 24px 18px 0;
   }
 
-  .employee-list-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .employee-list-container h3 {
-    margin-bottom: 0;
-    margin-right: 0;
-  }
-
   .employee-search-wrapper {
     max-width: 100%;
     flex: 1;
