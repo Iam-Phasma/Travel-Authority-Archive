@@ -783,7 +783,6 @@ const activateAdminPanel = (targetPanel) => {
     } else {
       loadUsersPanel().then((loaded) => {
         if (loaded) {
-          initControlHeaderTooltip();
           showUsersPanel();
         }
       });
@@ -823,7 +822,7 @@ viewPanelLoaded.then(() => {
 
 // Query user-panel elements after users/users-panel.html has loaded.
 
-const { loadUsers, initControlHeaderTooltip, setupProfilesRealtimeSubscription } =
+const { loadUsers, setupProfilesRealtimeSubscription } =
   createUserManagement({ supabase, isSuperUser });
 window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 
@@ -908,7 +907,6 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
       if (!loaded) {
         return;
       }
-      initControlHeaderTooltip();
       enforceUsersPanelAccess();
       const usersPanelBtn = document.getElementById("users-panel-btn");
       if (

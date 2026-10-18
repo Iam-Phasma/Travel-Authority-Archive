@@ -64,6 +64,21 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
     return `${initials} ${normalizedLast}`.trim() || fullName;
   };
 
+  const formatLastOnlineDate = (lastSeen) => {
+    if (!lastSeen) return "—";
+    const date = new Date(lastSeen);
+    if (Number.isNaN(date.getTime())) return "—";
+    const parts = new Intl.DateTimeFormat("en-US", {
+      month: "short",
+      day: "2-digit",
+      year: "numeric",
+    }).formatToParts(date);
+    const month = parts.find((part) => part.type === "month")?.value;
+    const day = parts.find((part) => part.type === "day")?.value;
+    const year = parts.find((part) => part.type === "year")?.value;
+    return `${month}-${day}-${year}`;
+  };
+
   let editUserNameData = null;
   let userNameModalHandlersInitialized = false;
   window.currentlyEditingUserId = null; // Track which user is being edited
@@ -301,8 +316,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
               ? "Can't change role: access is disabled."
               : "";
           const roleTooltip = roleDisabledReason || "Change user role";
-          const isAdmin = user.role === "admin";
-          const controlLevel = user.control ?? 1;
           return `
           <tr class="${!accessEnabled ? "user-disabled" : ""}">
               <td class="text-left">
@@ -341,17 +354,7 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
                       </select>
                   </span>
               </td>
-              <td>
-                  ${
-                    isAdmin
-                      ? `
-                  <select class="control-select" data-user-id="${escapeHtml(user.id)}" data-current-control="${controlLevel}" ${isOnline ? "disabled" : ""}>
-                          <option value="1" ${controlLevel === 1 ? "selected" : ""}>Level 1</option>
-                          <option value="2" ${controlLevel === 2 ? "selected" : ""}>Level 2</option>
-                      </select>`
-                      : '<span aria-hidden="true" style="font-size:0.75rem;opacity:0.35;">—</span>'
-                  }
-              </td>
+              <td>${escapeHtml(formatLastOnlineDate(user.last_seen))}</td>
           </tr>
       `;
         })
@@ -413,35 +416,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         }
 
         await toggleUserAccess(userId, newAccess, e.target);
-      });
-    });
-
-    // Add change event listeners to control selects
-    document.querySelectorAll(".control-select").forEach((select) => {
-      select.addEventListener("change", async (e) => {
-        const userId = e.target.getAttribute("data-user-id");
-        const currentControl = parseInt(
-          e.target.getAttribute("data-current-control"),
-          10,
-        );
-        const newControl = parseInt(e.target.value, 10);
-
-        if (newControl === currentControl) return;
-
-        const levelLabels = {
-          1: "Level 1 — edit only",
-          2: "Level 2 — edit + delete",
-        };
-        const confirmChange = await window.adminShowConfirmation(
-          "Confirm Control Change",
-          `Set admin control to ${levelLabels[newControl] || `Level ${newControl}`}?`,
-        );
-        if (!confirmChange) {
-          e.target.value = currentControl.toString();
-          return;
-        }
-
-        await changeUserControl(userId, newControl, e.target);
       });
     });
 
@@ -572,7 +546,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         ...user,
         FName: namesById[user.id]?.FName || "",
         LName: namesById[user.id]?.LName || "",
-        control: user.control ?? 1,
       }));
 
       // Sort by role priority: super > admin > user
@@ -629,87 +602,6 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
         usersStatus.textContent = error?.message || "Failed to load users.";
         usersStatus.classList.add("status--error");
       }
-    }
-  };
-
-  const initControlHeaderTooltip = () => {
-    document.querySelectorAll("#users-panel .ctrl-tooltip").forEach((trigger) => {
-      const icon = trigger.querySelector(".ctrl-tooltip-icon");
-      const box = trigger.querySelector(".ctrl-tooltip-box");
-      if (!icon || !box) return;
-
-      document.body.appendChild(box);
-
-      const show = () => {
-        const r = icon.getBoundingClientRect();
-        box.style.top = "-9999px";
-        box.style.left = "-9999px";
-        box.style.visibility = "hidden";
-        box.classList.add("active");
-        const boxW = box.offsetWidth || 160;
-        let left = r.left + r.width / 2 - boxW / 2;
-        left = Math.max(8, Math.min(left, window.innerWidth - boxW - 8));
-        box.style.top = r.bottom + 10 + "px";
-        box.style.left = left + "px";
-        box.style.visibility = "";
-        icon.style.opacity = "0.7";
-      };
-
-      const hide = () => {
-        box.classList.remove("active");
-        icon.style.opacity = "";
-      };
-
-      trigger.addEventListener("mouseenter", show);
-      trigger.addEventListener("mouseleave", hide);
-      trigger.addEventListener("focusin", show);
-      trigger.addEventListener("focusout", hide);
-    });
-  };
-
-  const changeUserControl = async (userId, newControl, selectElement) => {
-    const originalControl = parseInt(
-      selectElement.getAttribute("data-current-control"),
-      10,
-    );
-    const usersStatus = document.getElementById("users-status");
-
-    try {
-      if (usersStatus) {
-        usersStatus.textContent = "Updating control level...";
-        usersStatus.classList.remove("status--error");
-      }
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ control: newControl })
-        .eq("id", userId);
-
-      if (error) throw error;
-
-      selectElement.setAttribute("data-current-control", newControl.toString());
-      if (usersStatus)
-        usersStatus.textContent = "Control level updated successfully.";
-      window.showToast(`Control set to Level ${newControl}`, "success");
-
-      await loadUsers();
-    } catch (error) {
-      console.error("Failed to update control level:", error);
-      selectElement.value = originalControl.toString();
-
-      let errorMessage = "Failed to update control level.";
-      if (error.message?.includes("Permission denied")) {
-        errorMessage =
-          "Permission denied. Only super users can change control levels.";
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      if (usersStatus) {
-        usersStatus.textContent = errorMessage;
-        usersStatus.classList.add("status--error");
-      }
-      window.showToast(errorMessage, "error");
     }
   };
 
@@ -944,5 +836,5 @@ export const createUserManagement = ({ supabase, isSuperUser }) => {
       .subscribe((status) => {});
   };
 
-  return { loadUsers, initControlHeaderTooltip, setupProfilesRealtimeSubscription };
+  return { loadUsers, setupProfilesRealtimeSubscription };
 };
