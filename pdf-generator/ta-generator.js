@@ -4,6 +4,7 @@
  */
 
 import { loadDraftTaConfig } from './draft-ta-config.js';
+import { chunkOfficialsByLines } from './official-layout.js';
 
 const generateTAPDF = async (formData) => {
     let configuration;
@@ -72,13 +73,25 @@ const generateTAPDF = async (formData) => {
         doc.setLineWidth(prevWidth);
     };
 
-    // Split officials into chunks of 20 per page
-    const MAX_PER_PAGE = 20;
-    const officialChunks = [];
-    const allOfficials = formData.officials && formData.officials.length ? formData.officials : [{ name: '', position: '' }];
-    for (let i = 0; i < allOfficials.length; i += MAX_PER_PAGE) {
-        officialChunks.push(allOfficials.slice(i, i + MAX_PER_PAGE));
-    }
+    const allOfficials = (formData.officials && formData.officials.length
+        ? formData.officials
+        : [{ name: '', position: '' }]
+    ).map((official) => {
+        const position = String(official.position || '').slice(0, 50);
+        doc.setFontSize(8);
+        const positionWidth = pageWidth - margin - (rightDivX + 2) - 2;
+        const positionLines = position
+            ? doc.splitTextToSize(position, positionWidth)
+            : [''];
+        return {
+            ...official,
+            position,
+            positionLines,
+            lineCount: Math.max(1, positionLines.length),
+        };
+    });
+    const OFFICIAL_LINES_PER_PAGE = 20;
+    const officialChunks = chunkOfficialsByLines(allOfficials, OFFICIAL_LINES_PER_PAGE);
 
     // Draw one full TA page per chunk
     officialChunks.forEach((officialsChunk, pageIndex) => {
@@ -128,9 +141,9 @@ const generateTAPDF = async (formData) => {
             const officialName = String(official.name || '').trim();
             doc.text(officialName, nameTitleX, yPos);
             if (official.position) {
-                doc.text(official.position, positionColX, yPos);
+                doc.text(official.positionLines, positionColX, yPos);
             }
-            yPos += 4;
+            yPos += Math.max(1, official.lineCount) * 4;
         });
 
         yPos = Math.max(yPos, 85); // Ensure minimum height

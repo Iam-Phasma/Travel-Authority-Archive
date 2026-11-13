@@ -1827,6 +1827,20 @@ body.dashboard-page::before {
 }
 
 /* Match admin: consistent field and officials heights */
+.multiselect-tag-unlisted {
+  background: #34c759;
+}
+
+.draft-official-position-modal .modal-content > p {
+  margin-bottom: 16px;
+}
+.draft-official-position-modal .modal-content > input {
+  width: 100%;
+  min-height: 46px;
+  box-sizing: border-box;
+  margin: 8px 0 20px;
+}
+
 #tab-draft-ta .structured-fields .input-wrap input[type="text"],
 #tab-draft-ta .structured-fields .input-wrap select,
 #tab-draft-ta .structured-fields .multiselect-display {

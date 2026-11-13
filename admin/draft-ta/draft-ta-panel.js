@@ -31,6 +31,7 @@ window.initDraftTaPanel = (supabase) => {
 
     let employeesList = [];
     let selectedEmployees = [];
+    let customEmployeePositions = {};
     let multiSelect = null;
 
     const getTodayLocalISO = () => {
@@ -167,6 +168,7 @@ window.initDraftTaPanel = (supabase) => {
             travelEnd: travelEndInput?.value || '',
             isoControlNo: isoControlInput?.value || '',
             officials: selectedEmployees.slice(),
+            customEmployeePositions: { ...customEmployeePositions },
         };
 
         try {
@@ -203,6 +205,13 @@ window.initDraftTaPanel = (supabase) => {
 
             if (Array.isArray(parsed.officials)) {
                 selectedEmployees = parsed.officials.slice();
+            }
+            if (parsed.customEmployeePositions && typeof parsed.customEmployeePositions === 'object' && !Array.isArray(parsed.customEmployeePositions)) {
+                customEmployeePositions = Object.fromEntries(
+                    Object.entries(parsed.customEmployeePositions).filter(([name, position]) =>
+                        selectedEmployees.includes(name) && typeof position === 'string'
+                    )
+                );
             }
 
             if (dateRequestInput?._draftDatepicker && dateRequestInput.value) {
@@ -282,6 +291,42 @@ window.initDraftTaPanel = (supabase) => {
         }
         alert(message);
     };
+
+    const promptForOfficialPosition = (name, initialPosition = '') => new Promise((resolve) => {
+        const modal = document.createElement('div');
+        modal.className = 'modal show draft-official-position-modal';
+        modal.setAttribute('role', 'presentation');
+        modal.innerHTML = `
+            <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="draft-official-position-title">
+                <h3 id="draft-official-position-title">${initialPosition ? 'Edit Official Position' : 'Add Official'}</h3>
+                <p>${initialPosition ? 'Update' : 'Add'} the position, designation, or office for <strong>${escapeHtml(name)}</strong>.</p>
+                <label for="draft-official-position-input">Position / designation / office</label>
+                <input id="draft-official-position-input" type="text" maxlength="50" autocomplete="off" placeholder="Leave blank if unknown" value="${escapeHtml(initialPosition)}">
+                <div class="modal-actions">
+                    <button type="button" class="modal-btn cancel" data-action="cancel">Cancel</button>
+                    <button type="button" class="modal-btn confirm" data-action="add">Continue</button>
+                </div>
+            </div>`;
+        document.body.appendChild(modal);
+        const input = modal.querySelector('#draft-official-position-input');
+        const finish = (value) => {
+            modal.remove();
+            resolve(value);
+        };
+        modal.querySelector('[data-action="cancel"]').addEventListener('click', () => finish(null));
+        modal.querySelector('[data-action="add"]').addEventListener('click', () => finish(input.value));
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) finish(null);
+        });
+        modal.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') finish(null);
+            if (event.key === 'Enter' && event.target === input) {
+                event.preventDefault();
+                finish(input.value);
+            }
+        });
+        input.focus();
+    });
 
     // ── Officials multiselect ──────────────────────────────────────────────
     const createMultiSelect = () => {
@@ -370,14 +415,33 @@ window.initDraftTaPanel = (supabase) => {
                 const count = selectedEmployees.length;
                 officialsCountIndicator.innerHTML = `<em>${count} selected</em>`;
             }
-            officialsDisplay.innerHTML = selectedEmployees.map(name =>
-                `<span class="multiselect-tag">${escapeHtml(name)}<button type="button" class="multiselect-remove" data-name="${escapeHtml(name)}">&times;</button></span>`
-            ).join('');
+            officialsDisplay.innerHTML = selectedEmployees.map(name => {
+                const isUnlisted = !employeesList.some((employee) => employee.name === name);
+                const editButton = isUnlisted
+                    ? `<button type="button" class="multiselect-edit-position" data-name="${escapeHtml(name)}" aria-label="Edit position for ${escapeHtml(name)}" title="Edit position"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" aria-hidden="true"><path fill="currentColor" d="M416.9 85.2L372 130.1L509.9 268L554.8 223.1C568.4 209.6 576 191.2 576 172C576 152.8 568.4 134.4 554.8 120.9L519.1 85.2C505.6 71.6 487.2 64 468 64C448.8 64 430.4 71.6 416.9 85.2zM338.1 164L122.9 379.1C112.2 389.8 104.4 403.2 100.3 417.8L64.9 545.6C62.6 553.9 64.9 562.9 71.1 569C77.3 575.1 86.2 577.5 94.5 575.2L222.3 539.7C236.9 535.6 250.2 527.9 261 517.1L476 301.9L338.1 164z"/></svg></button>`
+                    : '';
+                return `<span class="multiselect-tag${isUnlisted ? ' multiselect-tag-unlisted' : ''}">${editButton}${escapeHtml(name)}<button type="button" class="multiselect-remove" data-name="${escapeHtml(name)}">&times;</button></span>`;
+            }).join('');
+            officialsDisplay.querySelectorAll('.multiselect-edit-position').forEach((btn) => {
+                btn.addEventListener('click', async (event) => {
+                    event.stopPropagation();
+                    const name = btn.getAttribute('data-name');
+                    const position = await promptForOfficialPosition(name, customEmployeePositions[name] || '');
+                    if (position === null) return;
+                    if (position.trim()) customEmployeePositions[name] = position.trim();
+                    else delete customEmployeePositions[name];
+                    persistDraftTaState();
+                });
+            });
             officialsDisplay.querySelectorAll('.multiselect-remove').forEach(btn => {
                 btn.addEventListener('click', e => {
                     e.stopPropagation();
                     const idx = selectedEmployees.indexOf(btn.getAttribute('data-name'));
-                    if (idx > -1) { selectedEmployees.splice(idx, 1); updateDisplay(); renderOptions(); persistDraftTaState(); }
+                    if (idx > -1) {
+                        const [removedName] = selectedEmployees.splice(idx, 1);
+                        delete customEmployeePositions[removedName];
+                        updateDisplay(); renderOptions(); persistDraftTaState();
+                    }
                 });
             });
         };
@@ -427,9 +491,25 @@ window.initDraftTaPanel = (supabase) => {
                             if (nameToAdd.length > 30) { alert('Official name cannot exceed 30 characters.'); return; }
                             const existing = employeesList.find(emp => emp.name.toLowerCase() === nameToAdd.toLowerCase());
                             const resolvedName = existing ? existing.name : nameToAdd;
-                            if (!selectedEmployees.includes(resolvedName)) selectedEmployees.push(resolvedName);
-                            officialsSearch.value = '';
-                            updateDisplay(); renderOptions(); persistDraftTaState();
+                            const addOfficial = (position = '') => {
+                                if (!selectedEmployees.includes(resolvedName)) selectedEmployees.push(resolvedName);
+                                if (!existing) {
+                                    delete customEmployeePositions[resolvedName];
+                                }
+                                if (!existing && position.trim()) {
+                                    customEmployeePositions[resolvedName] = position.trim();
+                                }
+                                officialsSearch.value = '';
+                                updateDisplay(); renderOptions(); persistDraftTaState();
+                            };
+                            if (existing) {
+                                addOfficial();
+                                return;
+                            }
+                            promptForOfficialPosition(resolvedName).then((position) => {
+                                if (position === null) return;
+                                addOfficial(position);
+                            });
                         });
                     }
                 } else {
@@ -628,6 +708,7 @@ window.initDraftTaPanel = (supabase) => {
             autoResizeTextarea(textarea);
         });
         selectedEmployees.length = 0;
+        customEmployeePositions = {};
         multiSelect?.updateDisplay();
         clearStoredDraftTaState();
         updateDestinationQuality();
@@ -896,7 +977,11 @@ window.initDraftTaPanel = (supabase) => {
         const officialsData = selectedEmployees.map(name => {
             const cleanName = String(name || '').trim();
             const emp = employeesList.find(e => String(e.name || '').trim() === cleanName);
-            return { name: cleanName, position: emp ? emp.position : '' };
+            return {
+                name: cleanName,
+                position: emp ? emp.position : (customEmployeePositions[cleanName] || ''),
+                office: emp ? (emp.office || '') : '',
+            };
         });
 
         const formData = {
