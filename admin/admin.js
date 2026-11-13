@@ -1,7 +1,7 @@
 // Module: Admin — npm-managed dependencies via Vite
 import "@lottiefiles/dotlottie-wc";
 import Chart from "chart.js/auto";
-import "../shared/record-toolbar.js";
+import { setupRecordToolbar } from "../shared/record-toolbar.js";
 import { createClient } from "@supabase/supabase-js";
 import "../shared/draft-travel-datepicker.js";
 import L from "leaflet";
