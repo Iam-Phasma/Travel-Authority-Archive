@@ -950,7 +950,6 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
   window.adminCurrentRole = userRole;
   window.adminCurrentControl = userControl;
   enforceUsersPanelAccess();
-  await restoreAdminActivePanel();
   window.dispatchEvent(
     new CustomEvent("admin-role-ready", { detail: { role: userRole } }),
   );
@@ -1012,6 +1011,8 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
   // Initial heartbeat on page load
   updateHeartbeat(true);
 
+  await restoreAdminActivePanel();
+
   // Initialize insights only for regular Admin users, not Super users.
   if (userRole === "admin") {
     const {
@@ -1067,6 +1068,11 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
       initAdminAgendaTracker();
       initAdminInsightsLayoutSync();
     };
+
+    if (!adminInsightsPanel.classList.contains("hidden")) {
+      initAdminInsights();
+      scheduleAdminInsightsLayoutSync();
+    }
   }
 
   // Show User Management panel only for super users
