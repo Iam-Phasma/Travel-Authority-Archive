@@ -462,24 +462,24 @@ body.dashboard-page::before {
   font-weight: 600;
 }
 /* Hide the default FullCalendar borders. */
-#agenda-fc-calendar .fc-scrollgrid,
-#agenda-fc-calendar .fc-scrollgrid td,
-#agenda-fc-calendar .fc-scrollgrid th {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-scrollgrid,
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-scrollgrid td,
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-scrollgrid th {
   border: none !important;
 }
 /* Toolbar */
-#agenda-fc-calendar .fc-toolbar {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-toolbar {
   margin-bottom: 10px;
   align-items: center;
 }
-#agenda-fc-calendar .fc-toolbar-title {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-toolbar-title {
   font-size: 1.45rem;
   font-weight: 700;
   color: #0b1c3b;
   font-family: inherit;
 }
-#agenda-fc-calendar .fc-button,
-#agenda-fc-calendar .fc-button-primary {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-button,
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-button-primary {
   background: transparent !important;
   border: none !important;
   color: rgba(11, 28, 59, 0.5) !important;
@@ -495,34 +495,34 @@ body.dashboard-page::before {
   font-size: 1.1rem !important;
   font-weight: 700 !important;
 }
-#agenda-fc-calendar .fc-button:hover,
-#agenda-fc-calendar .fc-button-primary:hover {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-button:hover,
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-button-primary:hover {
   background: transparent !important;
   border-color: transparent !important;
   color: var(--sea) !important;
 }
 /* Gap between prev and next */
-#agenda-fc-calendar .fc-toolbar-chunk:last-child {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-toolbar-chunk:last-child {
   display: flex;
   gap: 12px;
 }
 /* Thicker arrow icons */
-#agenda-fc-calendar .fc-icon {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-icon {
   font-size: 1.3rem !important;
   font-weight: 900 !important;
   -webkit-font-smoothing: antialiased;
 }
-#agenda-fc-calendar .fc-button:focus {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-button:focus {
   box-shadow: none !important;
   outline: none;
 }
 /* Column headers */
-#agenda-fc-calendar .fc-col-header-cell {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-col-header-cell {
   background: transparent;
   border: none !important;
   padding-bottom: 6px;
 }
-#agenda-fc-calendar .fc-col-header-cell-cushion {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-col-header-cell-cushion {
   color: rgba(11, 28, 59, 0.55);
   font-size: 0.82rem;
   font-weight: 600;
@@ -530,13 +530,13 @@ body.dashboard-page::before {
   font-family: inherit;
 }
 /* Day cells — use padding on td to simulate gap */
-#agenda-fc-calendar .fc-daygrid-day {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day {
   padding: 3px !important;
   border: none !important;
   background: transparent !important;
   cursor: pointer;
 }
-#agenda-fc-calendar .fc-daygrid-day-frame {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day-frame {
   background: #f2f4f8;
   border-radius: 10px;
   border: 1px solid rgba(11, 28, 59, 0.05);
@@ -551,15 +551,15 @@ body.dashboard-page::before {
     border-color 0.14s;
   overflow: visible;
 }
-#agenda-fc-calendar .fc-daygrid-day:hover .fc-daygrid-day-frame {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day:hover .fc-daygrid-day-frame {
   background: #e9edf7;
 }
 /* Day number — centered */
-#agenda-fc-calendar .fc-daygrid-day-top {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day-top {
   justify-content: center;
   padding-top: 0;
 }
-#agenda-fc-calendar .fc-daygrid-day-number {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day-number {
   color: rgba(11, 28, 59, 0.56);
   font-size: 0.96rem;
   font-weight: 600;
@@ -572,55 +572,55 @@ body.dashboard-page::before {
   text-align: center;
 }
 /* Today */
-#agenda-fc-calendar .fc-day-today .fc-daygrid-day-frame {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-today .fc-daygrid-day-frame {
   background: #2f6fe4 !important;
   border-color: #2f6fe4 !important;
 }
-#agenda-fc-calendar .fc-day-today .fc-daygrid-day-number {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-today .fc-daygrid-day-number {
   color: #ffffff;
   font-weight: 700;
 }
 /* Today’s TA badge uses blue text on a white background for contrast. */
-#agenda-fc-calendar .fc-day-today .fc-ta-badge {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-today .fc-ta-badge {
   background: rgba(255, 255, 255, 0.9);
   color: #2f6fe4;
 }
 /* Selected — thicker border only, no fill or text change */
-#agenda-fc-calendar .fc-day-selected .fc-daygrid-day-frame {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-selected .fc-daygrid-day-frame {
   background: #f2f4f8 !important;
   border-color: #2f6fe4 !important;
   border-width: 2px !important;
   box-shadow: none;
 }
-#agenda-fc-calendar .fc-day-selected .fc-daygrid-day-number {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-selected .fc-daygrid-day-number {
   color: rgba(11, 28, 59, 0.56);
 }
 /* When today is also selected, keep blue fill */
-#agenda-fc-calendar
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar)
   .fc-day-today.fc-day-selected
   .fc-daygrid-day-frame {
   background: #2f6fe4 !important;
   border-color: #2f6fe4 !important;
   border-width: 2px !important;
 }
-#agenda-fc-calendar
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar)
   .fc-day-today.fc-day-selected
   .fc-daygrid-day-number {
   color: #ffffff;
 }
-#agenda-fc-calendar
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar)
   .fc-day-today.fc-day-selected
   .fc-ta-badge {
   background: rgba(255, 255, 255, 0.9);
   color: #2f6fe4;
 }
 /* Hide FC event bars — we use custom badges */
-#agenda-fc-calendar .fc-daygrid-day-events,
-#agenda-fc-calendar .fc-daygrid-more-link {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day-events,
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-more-link {
   display: none !important;
 }
 /* TA count badge */
-#agenda-fc-calendar .fc-ta-badge {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-ta-badge {
   position: absolute;
   top: 5px;
   right: 5px;
@@ -639,18 +639,18 @@ body.dashboard-page::before {
   pointer-events: none;
   z-index: 2;
 }
-#agenda-fc-calendar .fc-day-selected .fc-ta-badge {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-selected .fc-ta-badge {
   background: #3b82f6;
   color: #ffffff;
 }
-#agenda-fc-calendar .fc-day-other .fc-daygrid-day-frame {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-other .fc-daygrid-day-frame {
   background: rgba(242, 244, 248, 0.55);
   border-color: rgba(11, 28, 59, 0.05);
 }
-#agenda-fc-calendar .fc-day-other .fc-daygrid-day-number {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-other .fc-daygrid-day-number {
   color: rgba(11, 28, 59, 0.3);
 }
-#agenda-fc-calendar .fc-day-other .fc-ta-badge {
+:is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-day-other .fc-ta-badge {
   background: rgba(59, 130, 246, 0.45);
   color: rgba(255, 255, 255, 0.85);
 }
@@ -1570,15 +1570,15 @@ body.dashboard-page::before {
   }
 
   /* Calendar cells on phones: keep number and badge in separate vertical zones */
-  #agenda-fc-calendar .fc-daygrid-day-frame {
+  :is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day-frame {
     min-height: 62px !important;
   }
 
-  #agenda-fc-calendar .fc-daygrid-day-number {
+  :is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-daygrid-day-number {
     padding-top: 22px;
   }
 
-  #agenda-fc-calendar .fc-ta-badge {
+  :is(#agenda-fc-calendar, #admin-agenda-fc-calendar) .fc-ta-badge {
     top: 6px;
     right: 6px;
   }

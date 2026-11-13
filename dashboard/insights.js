@@ -3,7 +3,15 @@ import { escapeHtml } from "../shared/record-utils.js";
 // Insights charts keep their own chart state and data queries.
 export const createInsights = ({
   supabase, Chart, currentYear, queueInsightsLayoutSync, syncSegmentedControl,
+  root = globalThis.document, idPrefix = "",
 }) => {
+  const getElementById = (id) => root.querySelector(`#${idPrefix}${id}`);
+  const querySelector = (selector) => root.querySelector(selector);
+  const querySelectorAll = (selector) => {
+    const nodes = root.querySelectorAll(selector);
+    if (!idPrefix || selector !== ".dest-switch-btn") return nodes;
+    return Array.from(nodes).filter((button) => button.closest("#admin-dest-switcher"));
+  };
   // === Travel Frequency Chart ===
   let travelFrequencyChart = null;
 
@@ -44,7 +52,7 @@ export const createInsights = ({
       console.error("Travel frequency chart error:", e);
     }
 
-    const canvas = document.getElementById("tf-chart");
+    const canvas = getElementById("tf-chart");
     if (!canvas) return;
     const displayCounts = counts.map((count) => (count === 0 ? null : count));
     const maxCount = Math.max(...counts, 0);
@@ -120,7 +128,7 @@ export const createInsights = ({
   };
 
   const initTravelFrequencyYears = async () => {
-    const select = document.getElementById("tf-year-select");
+    const select = getElementById("tf-year-select");
     if (!select) return;
 
     try {
@@ -161,7 +169,7 @@ export const createInsights = ({
 
   // === Officials Summary List ===
   const initOfficialsSummaryChart = async () => {
-    const list = document.getElementById("os-list");
+    const list = getElementById("os-list");
     if (!list) return;
 
     try {
@@ -238,9 +246,9 @@ export const createInsights = ({
 
   // === Destinations Chart ===
   const initDestinationsChart = async () => {
-    const canvas = document.getElementById("dest-chart");
-    const title = document.getElementById("dest-card-title");
-    const subtitle = document.getElementById("dest-card-subtitle");
+    const canvas = getElementById("dest-chart");
+    const title = getElementById("dest-card-title");
+    const subtitle = getElementById("dest-card-subtitle");
     if (!canvas) return;
 
     const DESTINATION_TITLES = {
@@ -670,7 +678,7 @@ export const createInsights = ({
         regionEntries = FALLBACK_REGION_ENTRIES;
       };
 
-      const dataBadge = document.getElementById("dest-data-badge");
+      const dataBadge = getElementById("dest-data-badge");
       const updateBadge = () => {
         if (!dataBadge) return;
         dataBadge.hidden = true;
@@ -702,7 +710,7 @@ export const createInsights = ({
       };
 
       const renderLegend = (labels, data, colors) => {
-        const legend = document.getElementById("dest-legend");
+        const legend = getElementById("dest-legend");
         if (!legend) return;
         const total = data.reduce((a, b) => a + b, 0);
         legend.innerHTML = labels
@@ -839,13 +847,12 @@ export const createInsights = ({
 
       await renderChart("calabarzon");
       syncSegmentedControl(
-        document.querySelector(".dest-switcher[data-segmented-control]"),
+        querySelector(idPrefix ? "#admin-dest-switcher" : ".dest-switcher[data-segmented-control]"),
       );
 
-      document.querySelectorAll(".dest-switch-btn").forEach((btn) => {
+      querySelectorAll(".dest-switch-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
-          document
-            .querySelectorAll(".dest-switch-btn")
+          querySelectorAll(".dest-switch-btn")
             .forEach((b) => b.classList.remove("active"));
           btn.classList.add("active");
           syncSegmentedControl(btn.closest("[data-segmented-control]"));

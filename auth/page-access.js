@@ -64,7 +64,10 @@ export const createAdminAccess = ({
       if (previousLoginMarker !== loginMarker) {
         localStorage.removeItem("adminFilters");
         localStorage.removeItem("adminSort");
-        localStorage.setItem("adminActivePanel", "upload-panel");
+        localStorage.setItem(
+          "adminActivePanel",
+          role === "admin" ? "admin-insights-panel" : "upload-panel",
+        );
         sessionStorage.setItem("adminLoginMarker", loginMarker);
       }
     } catch (storageError) {

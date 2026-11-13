@@ -1,23 +1,28 @@
 // Module: Admin — npm-managed dependencies via Vite
 import "@lottiefiles/dotlottie-wc";
-import { setupRecordToolbar } from "../shared/record-toolbar.js";
+import Chart from "chart.js/auto";
+import "../shared/record-toolbar.js";
 import { createClient } from "@supabase/supabase-js";
 import "../shared/draft-travel-datepicker.js";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { supabaseConfig } from "../config.js";
 import { initAutoLogout } from "../auto-logout.js";
-import { escapeHtml, formatFileSize, formatTaNumber } from "../shared/record-utils.js";
+import { escapeHtml, safeUrl, formatFileSize, formatTaNumber } from "../shared/record-utils.js";
 import { createAdminHeader } from "../header/admin-header.js";
 import { createAdminSession } from "../auth/admin-session.js";
 import { fetchFileSizeBytes } from "../shared/record-files.js";
 import { createUserManagement } from "./users/users.js";
 import { initAdminRecords } from "./view/records.js";
+import { createInsights } from "../dashboard/insights.js";
+import { createAgendaTracker } from "../dashboard/agenda.js";
+import { createInsightsLayout } from "../dashboard/insights-layout.js";
 import { createAdminAccess } from "../auth/page-access.js";
 import "../pwa-update.js";
 
 // Expose globals for non-module scripts (upload.js, draft-ta-panel.js, draft-location-picker.js)
 window.L = L;
+window.Chart = Chart;
 
 const supabase = createClient(supabaseConfig.url, supabaseConfig.anonKey);
 const { markCurrentUserOffline, clearAdminClientState, setupAccessMonitoring, setupSessionMonitoring, validateAdminSession } = createAdminSession({
@@ -160,6 +165,8 @@ window.initHeaderButtons = createAdminHeader({
   supabase, markCurrentUserOffline, clearAdminClientState,
   getEmployees: () => employeesList, loadEmployees: () => loadEmployees(),
 });
+
+let openAdminInsightRecord = () => {};
 // Multi-select employees functionality
 let employeesList = [];
 window.adminEmployeesList = employeesList;
@@ -556,6 +563,60 @@ window.bindTaFormatter = bindTaFormatter; // Expose for upload.js
 // Panel switching logic
 const adminPanelSwitcher = document.querySelector(".admin-panel-switcher");
 const switchButtons = document.querySelectorAll(".switch-btn");
+const adminInsightsPanel = document.getElementById("admin-insights-panel");
+const adminInsightsRoot = {
+  querySelector(selector) {
+    if (selector === "#admin-insights-panel") return adminInsightsPanel;
+    return adminInsightsPanel?.querySelector(selector) || null;
+  },
+  querySelectorAll(selector) {
+    return adminInsightsPanel?.querySelectorAll(selector) || [];
+  },
+};
+const adminYear = new Date().getFullYear().toString();
+const adminRecordModal = document.getElementById("view-modal");
+const adminRecordModalElements = {
+  taNumber: document.getElementById("view-ta-number"),
+  purpose: document.getElementById("view-purpose"),
+  destination: document.getElementById("view-destination"),
+  employees: document.getElementById("view-employees"),
+  travelDate: document.getElementById("view-travel-date"),
+  travelUntil: document.getElementById("view-travel-until"),
+  fileLink: document.getElementById("view-file-link"),
+  fileSize: document.getElementById("view-file-size"),
+};
+openAdminInsightRecord = async (record) => {
+  if (!record || !adminRecordModal) return;
+  adminRecordModalElements.taNumber.textContent = record.ta_number || "-";
+  adminRecordModalElements.purpose.textContent = record.purpose || "-";
+  adminRecordModalElements.destination.textContent = record.destination || "-";
+  adminRecordModalElements.employees.textContent = record.employees || "-";
+  adminRecordModalElements.travelDate.textContent = record.travel_date || "-";
+  adminRecordModalElements.travelUntil.textContent = record.travel_until || "-";
+  if (record.file_url) {
+    const fileUrl = safeUrl(record.file_url);
+    adminRecordModalElements.fileLink.href = fileUrl;
+    adminRecordModalElements.fileLink.dataset.fileUrl = fileUrl;
+    adminRecordModalElements.fileLink.dataset.fileName = record.file_name || "Download";
+    adminRecordModalElements.fileLink.textContent = "Download";
+    await updateViewFileSize(fileUrl);
+  } else {
+    adminRecordModalElements.fileLink.href = "#";
+    adminRecordModalElements.fileLink.dataset.fileUrl = "";
+    adminRecordModalElements.fileLink.dataset.fileName = "";
+    adminRecordModalElements.fileLink.textContent = "No file";
+    adminRecordModalElements.fileSize.textContent = "File size: -";
+  }
+  adminRecordModal.classList.add("show");
+  document.body.style.overflow = "hidden";
+};
+let adminViewRows = [];
+let adminAgendaInitialized = false;
+let initAdminAgendaTracker = () => {};
+let renderAdminAgendaTracker = () => {};
+let adminInsightsInitialized = false;
+let queueAdminInsightsLayoutSync = () => {};
+let initAdminInsightsLayoutSync = () => {};
 
 // Sidebar collapse toggle
 const adminSidebar = document.getElementById("admin-sidebar");
@@ -616,8 +677,29 @@ updateAdminSwitcherLayout();
 updateAdminSwitcherStickyState();
 
 const isSuperUser = () => window.adminCurrentRole === "super";
+const isAdminUser = () => window.adminCurrentRole === "admin";
+let scheduleAdminInsightsLayoutSync = () => {};
+let initAdminInsights = () => {};
 
 const enforceUsersPanelAccess = () => {
+  const insightsButton = document.getElementById("admin-insights-panel-btn");
+  const insightsPanel = document.getElementById("admin-insights-panel");
+  const shouldHideInsightsAccess = !isAdminUser();
+
+  if (insightsButton) {
+    insightsButton.classList.toggle("hidden", shouldHideInsightsAccess);
+    insightsButton.toggleAttribute("hidden", shouldHideInsightsAccess);
+  }
+  if (insightsPanel && shouldHideInsightsAccess) {
+    insightsPanel.classList.add("hidden");
+  }
+  if (
+    shouldHideInsightsAccess &&
+    localStorage.getItem("adminActivePanel") === "admin-insights-panel"
+  ) {
+    localStorage.setItem("adminActivePanel", "upload-panel");
+  }
+
   const usersPanelBtn = document.getElementById("users-panel-btn");
   const usersPanel = document.getElementById("users-panel");
   const shouldHideUsersAccess = !isSuperUser();
@@ -651,7 +733,10 @@ const restoreAdminActivePanel = () =>
     const savedPanel = localStorage.getItem("adminActivePanel");
     let targetPanel = savedPanel || "upload-panel";
 
-    if (targetPanel === "users-panel" && !isSuperUser()) {
+    if (
+      (targetPanel === "users-panel" && !isSuperUser()) ||
+      (targetPanel === "admin-insights-panel" && !isAdminUser())
+    ) {
       targetPanel = "upload-panel";
       localStorage.setItem("adminActivePanel", targetPanel);
     }
@@ -692,7 +777,11 @@ const revealAdminPanel = (panelEl) => {
 const activateAdminPanel = (targetPanel) => {
   if (!targetPanel) return;
 
-  // Super-only panel hard gate.
+  // Insights are admin-only; User Management remains super-only.
+  if (targetPanel === "admin-insights-panel" && !isAdminUser()) {
+    activateAdminPanel("upload-panel");
+    return;
+  }
   if (targetPanel === "users-panel" && !isSuperUser()) {
     console.warn("Users panel is restricted to super users.");
     activateAdminPanel("upload-panel");
@@ -714,6 +803,7 @@ const activateAdminPanel = (targetPanel) => {
   const viewPanel = document.getElementById("view-panel");
   const employeesPanel = document.getElementById("employees-panel");
   const draftTaPanel = document.getElementById("draft-ta-panel");
+  const insightsPanel = document.getElementById("admin-insights-panel");
   const usersPanel = document.getElementById("users-panel");
 
   const allPanels = [
@@ -721,6 +811,7 @@ const activateAdminPanel = (targetPanel) => {
     viewPanel,
     employeesPanel,
     draftTaPanel,
+    insightsPanel,
     usersPanel,
   ];
 
@@ -734,6 +825,17 @@ const activateAdminPanel = (targetPanel) => {
   if (targetPanel === "upload-panel") {
     if (uploadPanel) {
       revealAdminPanel(uploadPanel);
+    }
+  } else if (targetPanel === "admin-insights-panel") {
+    if (insightsPanel) {
+      revealAdminPanel(insightsPanel);
+      if (window.loadTravelAuthoritiesIfNeeded && isAdminUser()) {
+        window.loadTravelAuthoritiesIfNeeded();
+      }
+      if (!adminInsightsInitialized && isAdminUser()) {
+        initAdminInsights();
+      }
+      scheduleAdminInsightsLayoutSync();
     }
   } else if (targetPanel === "view-panel") {
     if (viewPanel) {
@@ -809,6 +911,15 @@ viewPanelLoaded.then(() => {
     getUpdateEmployeesMultiSelect: () => updateEmployeesMultiSelect,
     updateSelectedEmployees, updateViewFileSize, parseEmployeeNames,
     bindTaFormatter, isValidTaNumber,
+    onRowsLoaded: (rows) => {
+      adminViewRows = rows;
+      if (adminInsightsInitialized && !adminAgendaInitialized) {
+        initAdminAgendaTracker();
+      } else if (adminAgendaInitialized) {
+        renderAdminAgendaTracker();
+      }
+    },
+    onOpenViewRecord: openAdminInsightRecord,
   });
 });
 
@@ -900,6 +1011,63 @@ window.setupProfilesRealtimeSubscription = setupProfilesRealtimeSubscription;
 
   // Initial heartbeat on page load
   updateHeartbeat(true);
+
+  // Initialize insights only for regular Admin users, not Super users.
+  if (userRole === "admin") {
+    const {
+      queueAgendaCalendarLayoutSync: queueAdminAgendaCalendarLayoutSync,
+      scheduleAgendaCalendarLayoutSync: scheduleAdminAgendaCalendarLayoutSync,
+      syncSegmentedControl: syncAdminSegmentedControl,
+      syncAllSegmentedControls: syncAllAdminSegmentedControls,
+      initAgendaTracker: createAdminAgendaTracker,
+      renderAgendaTracker: renderAdminAgenda,
+    } = createAgendaTracker({
+      getRecords: () => adminViewRows.filter((row) => !row.is_demo),
+      openViewModalForRecord: openAdminInsightRecord,
+      queueInsightsLayoutSync: () => queueAdminInsightsLayoutSync(),
+      root: adminInsightsRoot,
+      idPrefix: "admin-",
+      paneId: "#admin-insights-panel",
+    });
+    initAdminAgendaTracker = () => {
+      if (adminAgendaInitialized) return;
+      adminAgendaInitialized = true;
+      createAdminAgendaTracker();
+    };
+    renderAdminAgendaTracker = renderAdminAgenda;
+    const adminInsightsLayout = createInsightsLayout({
+      queueAgendaCalendarLayoutSync: queueAdminAgendaCalendarLayoutSync,
+      syncAllSegmentedControls: syncAllAdminSegmentedControls,
+      root: adminInsightsRoot,
+      paneSelector: "#admin-insights-panel",
+      isPaneActive: (pane) => !pane.classList.contains("hidden"),
+    });
+    queueAdminInsightsLayoutSync = adminInsightsLayout.queueInsightsLayoutSync;
+    scheduleAdminInsightsLayoutSync = () => {
+      adminInsightsLayout.scheduleInsightsLayoutSync();
+      scheduleAdminAgendaCalendarLayoutSync();
+    };
+    initAdminInsightsLayoutSync = adminInsightsLayout.initInsightsLayoutSync;
+
+    const adminInsights = createInsights({
+      supabase,
+      Chart,
+      currentYear: adminYear,
+      queueInsightsLayoutSync: queueAdminInsightsLayoutSync,
+      syncSegmentedControl: syncAdminSegmentedControl,
+      root: adminInsightsRoot,
+      idPrefix: "admin-",
+    });
+    initAdminInsights = () => {
+      if (adminInsightsInitialized) return;
+      adminInsightsInitialized = true;
+      void adminInsights.initTravelFrequencyYears();
+      void adminInsights.initOfficialsSummaryChart();
+      void adminInsights.initDestinationsChart();
+      initAdminAgendaTracker();
+      initAdminInsightsLayoutSync();
+    };
+  }
 
   // Show User Management panel only for super users
   if (userRole === "super") {

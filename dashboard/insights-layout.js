@@ -1,7 +1,11 @@
 // Coordinate Insights card heights with Agenda and segmented controls.
 export const createInsightsLayout = ({
   queueAgendaCalendarLayoutSync, syncAllSegmentedControls,
+  root = globalThis.document, paneSelector = "#tab-insights",
+  isPaneActive = (pane) => pane.classList.contains("active"),
 }) => {
+  const querySelector = (selector) => root.querySelector(selector);
+  const getInsightsPane = () => root.querySelector(paneSelector);
   let insightsHeightObserver = null;
   let insightsHeightFrame = null;
   let insightsResizeTimeout = null;
@@ -9,13 +13,13 @@ export const createInsightsLayout = ({
   let insightsBreakpointQuery = null;
 
   const syncInsightsLayout = () => {
-    const leftColumn = document.querySelector(".insights-left-col");
-    const officialsCard = document.querySelector(".insight-card-os");
+    const leftColumn = querySelector(".insights-left-col");
+    const officialsCard = querySelector(".insight-card-os");
     const officialsListWrap = officialsCard?.querySelector(".os-list-wrap");
     const officialsHeading = officialsCard?.querySelector(
       ".insight-card-heading",
     );
-    const insightsPane = document.getElementById("tab-insights");
+    const insightsPane = getInsightsPane();
     if (!leftColumn || !officialsCard) return;
 
     if (window.matchMedia("(max-width: 950px)").matches) {
@@ -27,7 +31,7 @@ export const createInsightsLayout = ({
       return;
     }
 
-    if (!insightsPane || !insightsPane.classList.contains("active")) {
+    if (!insightsPane || !isPaneActive(insightsPane)) {
       return;
     }
 
@@ -99,7 +103,7 @@ export const createInsightsLayout = ({
   };
 
   const initInsightsLayoutSync = () => {
-    const leftColumn = document.querySelector(".insights-left-col");
+    const leftColumn = querySelector(".insights-left-col");
     if (!leftColumn) return;
 
     if (insightsHeightObserver) {

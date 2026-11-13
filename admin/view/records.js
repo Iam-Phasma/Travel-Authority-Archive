@@ -7,7 +7,7 @@ import { createFileOpener, setupResponsiveViewDownload } from "../../shared/reco
 export const initAdminRecords = ({
   supabase, getCurrentUserId, getUpdateEmployeesMultiSelect,
   updateSelectedEmployees, updateViewFileSize, parseEmployeeNames,
-  bindTaFormatter, isValidTaNumber,
+  bindTaFormatter, isValidTaNumber, onRowsLoaded = () => {}, onOpenViewRecord = () => {},
 }) => {
   let latestKnownTimestamp = null;
   // Table view functionality
@@ -741,6 +741,7 @@ export const initAdminRecords = ({
           viewModal.classList.add("show");
           document.body.style.overflow = "hidden";
           document.getElementById("view-edit-btn")._currentRecordId = recordId;
+          onOpenViewRecord(record);
         });
       }
     });
@@ -856,6 +857,7 @@ export const initAdminRecords = ({
         .order("created_at", { ascending: false }),
     onLoaded: async (rows) => {
       viewRows = rows;
+      onRowsLoaded(viewRows);
       latestKnownTimestamp = viewRows[0]?.created_at || latestKnownTimestamp;
       const adminLastUpdated = document.getElementById("admin-last-updated");
       if (adminLastUpdated && latestKnownTimestamp) {

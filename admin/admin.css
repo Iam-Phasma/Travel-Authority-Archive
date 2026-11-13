@@ -396,6 +396,23 @@ body.dashboard-page::before {
 }
 
 /* Scrollable panels — natural scroll within their own container */
+.admin-panels #admin-insights-panel.hidden {
+  display: none !important;
+}
+.admin-panels #admin-insights-panel:not(.hidden) {
+  width: 100%;
+  box-sizing: border-box;
+  display: block;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 20px 0 24px;
+  scrollbar-width: none;
+  animation: fadeUp 280ms ease-out both;
+}
+.admin-panels #admin-insights-panel:not(.hidden)::-webkit-scrollbar {
+  display: none;
+}
 .admin-panels #upload-panel:not(.hidden),
 .admin-panels #draft-ta-panel:not(.hidden) {
   flex: 1;

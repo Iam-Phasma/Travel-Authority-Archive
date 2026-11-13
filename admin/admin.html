@@ -29,10 +29,13 @@
     <!-- FlexiDatepicker and leaflet CSS injected by Vite bundle -->
     <link rel="stylesheet" href="../styles.css?v=20260321-11">
     <link rel="stylesheet" href="../header/header.css?v=20260509-4">
+    <link rel="stylesheet" href="../dashboard/dashboard.css?v=20260401">
     <link rel="stylesheet" href="../footer/footer.css?v=20260321-3">
     <!-- dotlottie-wc, supabase, FlexiDatepicker, leaflet bundled via Vite -->
     <!-- pdf-lib — kept as CDN global build (window.PDFLib) -->
     <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" integrity="sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" crossorigin="anonymous"></script>
+    <!-- FullCalendar — kept as CDN global build (window.FullCalendar) -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
     <!-- pdfjs-dist — kept as CDN global build (window.pdfjsLib) -->
     <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
     <script>
@@ -96,6 +99,10 @@
                     </button>
                 </div>
                 <nav class="admin-sidebar-nav" aria-label="Admin sections">
+                    <button class="switch-btn admin-sidebar-tab hidden" hidden id="admin-insights-panel-btn" data-panel="admin-insights-panel" aria-selected="false">
+                        <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 6.025A7.5 7.5 0 1 0 17.975 14H10V6.025Z"/><path d="M13.5 3c-.169 0-.334.014-.5.025V11h7.975c.011-.166.025-.331.025-.5A7.5 7.5 0 0 0 13.5 3Z"/></svg>
+                        <span class="admin-sidebar-label">Insights</span>
+                    </button>
                     <button class="switch-btn admin-sidebar-tab active" data-panel="upload-panel" aria-selected="true">
                         <svg class="icon-line" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 15v2a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-2M12 4v12m0-12 4 4m-4-4L8 8"/></svg>
                         <span class="admin-sidebar-label">Upload</span>
@@ -121,7 +128,84 @@
             <div class="admin-content" id="admin-content">
                 <div class="admin-main">
                     <div class="admin-panels">
-                        <div id="upload-panel-container"></div>
+                        <div id="admin-insights-panel" class="admin-insights-panel hidden">
+                    <div class="insights-grid">
+                        <div class="insights-left-col">
+                            <div class="insight-card">
+                                <div class="insight-card-header">
+                                    <div class="insight-card-heading">
+                                        <h3 class="insight-card-title">Travel Authorities Filed</h3>
+                                        <p class="insight-card-subtitle">Counts how many travel authority records were filed each month for the selected year.</p>
+                                    </div>
+                                    <select class="insight-year-select" id="admin-tf-year-select" aria-label="Select year"><option value="">Loading...</option></select>
+                                </div>
+                                <div class="insight-graph-scroll">
+                                    <div class="tf-chart-wrap">
+                                        <canvas id="admin-tf-chart"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="insight-card">
+                                <div class="insight-card-header">
+                                    <div class="insight-card-heading">
+                                        <h3 class="insight-card-title" id="admin-dest-card-title">Travel Destinations</h3>
+                                        <p class="insight-card-subtitle" id="admin-dest-card-subtitle">Groups destination records by Philippine region.</p>
+                                    </div>
+                                    <div class="dest-switcher insight-segmented-switcher" id="admin-dest-switcher" data-segmented-control>
+                                        <span class="segmented-switcher-pill" aria-hidden="true"></span>
+                                        <button class="dest-switch-btn" data-view="region">Region</button>
+                                        <button class="dest-switch-btn active" data-view="calabarzon">Province</button>
+                                    </div>
+                                </div>
+                                <div class="insight-graph-scroll dest-chart-source">
+                                    <div class="dest-chart-wrap">
+                                        <div class="dest-chart-canvas-wrap">
+                                            <canvas id="admin-dest-chart"></canvas>
+                                        </div>
+                                        <div id="admin-dest-legend" class="dest-legend"></div>
+                                    </div>
+                                    <a id="admin-dest-data-badge" class="dest-data-badge" target="_blank" rel="noopener noreferrer" hidden></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="insight-card insight-card-os">
+                            <div class="insight-card-heading">
+                                <h3 class="insight-card-title">Official's Travel Count</h3>
+                                <p class="insight-card-subtitle">Ranks active officials by how many travel authority records include their names.</p>
+                            </div>
+                            <div class="os-list-wrap">
+                                <div id="admin-os-list" class="os-officials-list"></div>
+                                <div class="os-list-fade"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="insight-card insight-agenda-card" id="admin-insight-agenda-card">
+                        <div class="insight-card-header">
+                            <div class="insight-card-heading">
+                                <h3 class="insight-card-title">Travel Agenda</h3>
+                                <p class="insight-card-subtitle">View today's and upcoming travel authorities.</p>
+                            </div>
+                        </div>
+                        <div class="agenda-tracker-grid">
+                            <section class="agenda-calendar-panel" aria-label="Travel calendar">
+                                <div id="admin-agenda-fc-calendar"></div>
+                            </section>
+
+                            <section class="agenda-list-panel" aria-label="Travel agenda list">
+                                <div class="agenda-tabs insight-segmented-switcher" data-segmented-control role="tablist" aria-label="Agenda tabs">
+                                    <span class="segmented-switcher-pill" aria-hidden="true"></span>
+                                    <button class="agenda-tab-btn active" id="admin-agenda-tab-today" data-agenda-tab="today" role="tab" aria-selected="true" type="button">Today</button>
+                                    <button class="agenda-tab-btn" id="admin-agenda-tab-upcoming" data-agenda-tab="upcoming" role="tab" aria-selected="false" type="button">Upcoming</button>
+                                </div>
+                                <div class="agenda-list-meta">
+                                    <span class="agenda-target-date" id="admin-agenda-target-date">-</span>
+                                </div>
+                                <div class="agenda-ta-list" id="admin-agenda-ta-list"></div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+                <div id="upload-panel-container"></div>
 
                         <div id="view-panel-container"></div>
 

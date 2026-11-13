@@ -3,7 +3,11 @@ import { escapeHtml } from "../shared/record-utils.js";
 // Agenda calendar and lists read the latest Records data through a getter.
 export const createAgendaTracker = ({
   getRecords, openViewModalForRecord, queueInsightsLayoutSync,
+  root = globalThis.document, idPrefix = "", paneId = "#tab-insights",
 }) => {
+  const getElementById = (id) => root.querySelector(`#${idPrefix}${id}`);
+  const querySelector = (selector) => root.querySelector(selector);
+  const querySelectorAll = (selector) => root.querySelectorAll(selector);
   let agendaCalendarHeightObserver = null;
   let agendaBreakpointQuery = null;
   let agendaTrackerInitialized = false;
@@ -140,7 +144,7 @@ export const createAgendaTracker = ({
 
   const scrollToUpcomingDateGroup = (isoDate) => {
     if (!isoDate) return;
-    const target = document.querySelector(
+    const target = querySelector(
       `[data-upcoming-date-group="${isoDate}"]`,
     );
     if (!target) return;
@@ -168,25 +172,23 @@ export const createAgendaTracker = ({
   };
 
   const syncAllSegmentedControls = () => {
-    document
-      .querySelectorAll("[data-segmented-control]")
-      .forEach((container) => syncSegmentedControl(container));
+    const segmentedControls = querySelectorAll("[data-segmented-control]");
+    segmentedControls.forEach((container) => syncSegmentedControl(container));
   };
 
   const renderAgendaTabs = () => {
-    document.querySelectorAll(".agenda-tab-btn").forEach((btn) => {
+    querySelectorAll(idPrefix ? '[id^="admin-agenda-tab-"]' : ".agenda-tab-btn").forEach((btn) => {
       const isActive =
         btn.getAttribute("data-agenda-tab") === agendaState.activeTab;
       btn.classList.toggle("active", isActive);
       btn.setAttribute("aria-selected", isActive ? "true" : "false");
     });
-    syncSegmentedControl(
-      document.querySelector(".agenda-tabs[data-segmented-control]"),
-    );
+    const agendaTab = querySelector(idPrefix ? "#admin-agenda-tab-today" : ".agenda-tab-btn");
+    syncSegmentedControl(agendaTab?.closest("[data-segmented-control]"));
   };
 
   const updateFcBadgesAndSummary = () => {
-    const calEl = document.getElementById("agenda-fc-calendar");
+    const calEl = getElementById("agenda-fc-calendar");
     if (!calEl) return;
 
     calEl.querySelectorAll(".fc-daygrid-day").forEach((dayEl) => {
@@ -222,8 +224,8 @@ export const createAgendaTracker = ({
   `;
 
   const renderAgendaList = () => {
-    const agendaList = document.getElementById("agenda-ta-list");
-    const agendaTargetDate = document.getElementById("agenda-target-date");
+    const agendaList = getElementById("agenda-ta-list");
+    const agendaTargetDate = getElementById("agenda-target-date");
     if (!agendaList || !agendaTargetDate) return;
 
     if (agendaState.activeTab === "today") {
@@ -339,10 +341,10 @@ export const createAgendaTracker = ({
   const syncAgendaCalendarLayout = () => {
     if (!fcCalendar) return;
 
-    const insightsPane = document.getElementById("tab-insights");
-    const fcContainer = document.getElementById("agenda-fc-calendar");
-    const calendarPanel = document.querySelector(".agenda-calendar-panel");
-    const agendaListPanel = document.querySelector(".agenda-list-panel");
+    const fcContainer = getElementById("agenda-fc-calendar");
+    const insightsPane = root.querySelector(paneId);
+    const calendarPanel = fcContainer?.closest(".agenda-calendar-panel");
+    const agendaListPanel = fcContainer?.closest(".agenda-tracker-grid")?.querySelector(".agenda-list-panel");
     if (
       !insightsPane ||
       !insightsPane.classList.contains("active") ||
@@ -380,7 +382,7 @@ export const createAgendaTracker = ({
           agendaListPanel.style.maxHeight = `${h}px`;
           // Match the timeline height to the list’s scrollable content.
           try {
-            const agendaTaList = document.getElementById("agenda-ta-list");
+            const agendaTaList = getElementById("agenda-ta-list");
             if (agendaTaList) {
               const cs = window.getComputedStyle(agendaTaList);
               const padTop = parseFloat(cs.paddingTop) || 0;
@@ -395,7 +397,7 @@ export const createAgendaTracker = ({
           agendaListPanel.style.maxHeight = "";
           calendarPanel.style.height = "";
           calendarPanel.style.maxHeight = "";
-          const agendaTaList = document.getElementById("agenda-ta-list");
+          const agendaTaList = getElementById("agenda-ta-list");
           if (agendaTaList) agendaTaList.style.removeProperty("--agenda-line-h");
         }
       });
@@ -438,7 +440,7 @@ export const createAgendaTracker = ({
       return;
     }
 
-    const fcContainer = document.getElementById("agenda-fc-calendar");
+    const fcContainer = getElementById("agenda-fc-calendar");
     if (!fcContainer) return;
 
     agendaTrackerInitialized = true;
@@ -458,8 +460,8 @@ export const createAgendaTracker = ({
         updateFcBadgesAndSummary();
       },
       dateClick: (info) => {
-        document
-          .querySelectorAll("#agenda-fc-calendar .fc-day-selected")
+        fcContainer
+          .querySelectorAll(".fc-day-selected")
           .forEach((el) => el.classList.remove("fc-day-selected"));
         info.dayEl.classList.add("fc-day-selected");
         agendaState.selectedDateIso = info.dateStr;
@@ -475,7 +477,7 @@ export const createAgendaTracker = ({
 
     // Observe calendar panel size changes to keep the agenda list height in sync
     try {
-      const calendarPanel = document.querySelector(".agenda-calendar-panel");
+      const calendarPanel = fcContainer.closest(".agenda-calendar-panel");
       if (calendarPanel && typeof ResizeObserver !== "undefined") {
         if (agendaCalendarHeightObserver) agendaCalendarHeightObserver.disconnect();
         agendaCalendarHeightObserver = new ResizeObserver(() => {
@@ -504,7 +506,7 @@ export const createAgendaTracker = ({
     const todayEl = fcContainer.querySelector(".fc-day-today");
     if (todayEl) todayEl.classList.add("fc-day-selected");
 
-    document.querySelectorAll(".agenda-tab-btn").forEach((btn) => {
+    querySelectorAll(idPrefix ? '[id^="admin-agenda-tab-"]' : ".agenda-tab-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
         const tabName = btn.getAttribute("data-agenda-tab");
         if (!tabName) return;
@@ -513,8 +515,8 @@ export const createAgendaTracker = ({
           agendaState.selectedDateIso = toIsoDateLocal(new Date());
           fcCalendar.today();
           // Highlight today
-          document
-            .querySelectorAll("#agenda-fc-calendar .fc-day-selected")
+          fcContainer
+            .querySelectorAll(".fc-day-selected")
             .forEach((el) => el.classList.remove("fc-day-selected"));
           const todayDayEl = fcContainer.querySelector(".fc-day-today");
           if (todayDayEl) todayDayEl.classList.add("fc-day-selected");
@@ -529,6 +531,7 @@ export const createAgendaTracker = ({
 
   return {
     initAgendaTracker, renderAgendaTracker, queueAgendaCalendarLayoutSync,
+    scheduleAgendaCalendarLayoutSync,
     scheduleAgendaCalendarLayoutSync,
     syncSegmentedControl, syncAllSegmentedControls,
   };
