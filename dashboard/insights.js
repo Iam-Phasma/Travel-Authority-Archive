@@ -1,5 +1,16 @@
 import { escapeHtml } from "../shared/record-utils.js";
 
+export const filterRecordsByYear = (query, year) =>
+  query.gte("travel_date", `${year}-01-01`).lte("travel_date", `${year}-12-31`);
+
+export const getInsightYears = (records, currentYear) =>
+  [...new Set([
+    currentYear,
+    ...records
+      .filter((record) => record.travel_date)
+      .map((record) => record.travel_date.substring(0, 4)),
+  ])].sort((a, b) => b - a);
+
 // Insights charts keep their own chart state and data queries.
 export const createInsights = ({
   supabase, Chart, currentYear, queueInsightsLayoutSync, syncSegmentedControl,
@@ -12,6 +23,10 @@ export const createInsights = ({
     if (!idPrefix || selector !== ".dest-switch-btn") return nodes;
     return Array.from(nodes).filter((button) => button.closest("#admin-dest-switcher"));
   };
+  const getSelectedYear = () =>
+    getElementById("tf-year-select")?.value || currentYear;
+  let refreshDestinationsForYear = null;
+
   // === Travel Frequency Chart ===
   let travelFrequencyChart = null;
 
@@ -138,13 +153,7 @@ export const createInsights = ({
         .eq("is_demo", false);
 
       if (!error && data) {
-        const years = [
-          ...new Set(
-            data
-              .filter((r) => r.travel_date)
-              .map((r) => r.travel_date.substring(0, 4)),
-          ),
-        ].sort((a, b) => b - a);
+        const years = getInsightYears(data, currentYear);
 
         select.innerHTML = years.length
           ? years
@@ -155,22 +164,34 @@ export const createInsights = ({
               .join("")
           : '<option value="">No data</option>';
 
-        const selectedYear = select.value || years[0];
-        if (selectedYear) await loadTravelFrequencyChart(selectedYear);
+        const selectedYear = years.includes(currentYear) ? currentYear : years[0];
+        if (selectedYear) {
+          select.value = selectedYear;
+          await loadTravelFrequencyChart(selectedYear);
+        }
       }
     } catch (e) {
       console.error("Failed to init travel frequency years:", e);
     }
 
     select.addEventListener("change", () => {
-      if (select.value) loadTravelFrequencyChart(select.value);
+      if (!select.value) return;
+      void loadTravelFrequencyChart(select.value);
+      void initOfficialsSummaryChart();
+      if (refreshDestinationsForYear) {
+        void refreshDestinationsForYear().catch((error) => {
+          console.error("Destinations chart error:", error);
+        });
+      }
     });
   };
 
   // === Officials Summary List ===
+  let officialsRenderId = 0;
   const initOfficialsSummaryChart = async () => {
     const list = getElementById("os-list");
     if (!list) return;
+    const renderId = ++officialsRenderId;
 
     try {
       const { data: employees, error: empError } = await supabase
@@ -188,18 +209,24 @@ export const createInsights = ({
       );
 
       if (!validEmployees.length) {
+        if (renderId !== officialsRenderId) return;
         list.innerHTML =
           '<div class="insight-chart-placeholder" style="height:120px"><span>No officials found</span></div>';
         queueInsightsLayoutSync();
         return;
       }
 
-      const { data: tas, error: taError } = await supabase
-        .from("travel_authorities")
-        .select("employees")
-        .eq("is_demo", false);
+      const year = getSelectedYear();
+      const { data: tas, error: taError } = await filterRecordsByYear(
+        supabase
+          .from("travel_authorities")
+          .select("employees")
+          .eq("is_demo", false),
+        year,
+      );
 
       if (taError) throw taError;
+      if (renderId !== officialsRenderId) return;
 
       const counts = {};
       validEmployees.forEach((e) => {
@@ -222,12 +249,14 @@ export const createInsights = ({
         .sort((a, b) => counts[b.name] - counts[a.name]);
 
       if (!ranked.length) {
+        if (renderId !== officialsRenderId) return;
         list.innerHTML =
           '<div class="insight-chart-placeholder" style="height:120px"><span>No travel records yet</span></div>';
         queueInsightsLayoutSync();
         return;
       }
 
+      if (renderId !== officialsRenderId) return;
       list.innerHTML = ranked
         .map(
           (e) => `
@@ -656,26 +685,32 @@ export const createInsights = ({
     ];
 
     try {
-      const { data: provinceCounts, error: provinceCountsError } =
-        await supabase.rpc("get_travel_authority_province_counts");
-      if (provinceCountsError) throw provinceCountsError;
+      let destinationRows = null;
+      let destinationRowsYear = null;
+      let regionEntries = FALLBACK_REGION_ENTRIES;
+      let calabarzonEntries = FALLBACK_CALABARZON_ENTRIES;
 
-      let regionRows = null;
-      let regionEntries = null;
-
-      const loadRegionData = async () => {
-        if (regionRows && regionEntries) {
-          return;
-        }
-
-        const { data, error } = await supabase
-          .from("travel_authorities")
-          .select("destination")
-          .eq("is_demo", false);
+      const loadDestinationData = async (year) => {
+        if (destinationRows && destinationRowsYear === year) return;
+        const { data, error } = await filterRecordsByYear(
+          supabase
+            .from("travel_authorities")
+            .select("destination, travel_date")
+            .eq("is_demo", false),
+          year,
+        );
 
         if (error) throw error;
-        regionRows = data || [];
-        regionEntries = FALLBACK_REGION_ENTRIES;
+        destinationRows = data || [];
+        destinationRowsYear = year;
+        try {
+          const psgcEntries = await loadPsgcEntries();
+          regionEntries = psgcEntries.regionEntries;
+          calabarzonEntries = psgcEntries.calabarzonEntries;
+        } catch (_) {
+          regionEntries = FALLBACK_REGION_ENTRIES;
+          calabarzonEntries = FALLBACK_CALABARZON_ENTRIES;
+        }
       };
 
       const dataBadge = getElementById("dest-data-badge");
@@ -743,42 +778,31 @@ export const createInsights = ({
 
       const buildProvinceData = () => {
         const counts = {};
-        (provinceCounts || []).forEach(({ province, total }) => {
-          const label = province || "Others";
-          counts[label] = (counts[label] || 0) + Number(total);
+        destinationRows.forEach((ta) => {
+          const label = classifyDest(ta.destination, calabarzonEntries);
+          counts[label] = (counts[label] || 0) + 1;
         });
         return formatCounts(counts, CALABARZON_PALETTE);
       };
 
-      const buildRegionData = async () => {
-        try {
-          const { data, error } = await supabase.rpc(
-            "get_travel_authority_region_counts",
-          );
-          if (error) throw error;
-
-          const counts = {};
-          (data || []).forEach(({ region, total }) => {
-            const label = region || "Others";
-            counts[label] = Number(total);
-          });
-          return formatCounts(counts, REGION_PALETTE);
-        } catch (error) {
-          console.warn(
-            "Falling back to client-side region classification:",
-            error,
-          );
-          await loadRegionData();
-          const counts = {};
-          regionRows.forEach((ta) => {
-            const label = classifyDest(ta.destination, regionEntries);
-            counts[label] = (counts[label] || 0) + 1;
-          });
-          return formatCounts(counts, REGION_PALETTE);
-        }
+      const buildRegionData = () => {
+        const counts = {};
+        destinationRows.forEach((ta) => {
+          const label = classifyDest(ta.destination, regionEntries);
+          counts[label] = (counts[label] || 0) + 1;
+        });
+        return formatCounts(counts, REGION_PALETTE);
       };
 
-      const renderChart = async (view) => {
+      let activeDestinationView = "calabarzon";
+      let destinationRenderId = 0;
+      const renderChart = async (view = activeDestinationView) => {
+        activeDestinationView = view;
+        const renderId = ++destinationRenderId;
+        const year = getSelectedYear();
+        await loadDestinationData(year);
+        if (renderId !== destinationRenderId) return;
+
         if (title) {
           title.textContent =
             DESTINATION_TITLES[view] || DESTINATION_TITLES.region;
@@ -789,16 +813,30 @@ export const createInsights = ({
         }
 
         const { labels, data, colors } =
-          view === "region" ? await buildRegionData() : buildProvinceData();
+          view === "region" ? buildRegionData() : buildProvinceData();
+        if (renderId !== destinationRenderId) return;
         updateBadge();
 
+        const chartWrap = canvas.closest(".dest-chart-wrap");
+        let emptyState = chartWrap?.querySelector(".insight-chart-placeholder");
         if (!labels.length) {
-          canvas.parentElement.innerHTML =
-            '<div class="insight-chart-placeholder" style="height:220px"><span>No destination data yet</span></div>';
+          destChart?.destroy();
+          destChart = null;
+          canvas.hidden = true;
+          getElementById("dest-legend")?.replaceChildren();
+          if (chartWrap && !emptyState) {
+            emptyState = document.createElement("div");
+            emptyState.className = "insight-chart-placeholder";
+            emptyState.style.height = "220px";
+            emptyState.innerHTML = "<span>No destination data yet</span>";
+            chartWrap.insertBefore(emptyState, getElementById("dest-legend"));
+          }
           queueInsightsLayoutSync();
           return;
         }
 
+        if (emptyState) emptyState.remove();
+        canvas.hidden = false;
         renderLegend(labels, data, colors);
 
         if (destChart) {
@@ -845,6 +883,7 @@ export const createInsights = ({
         queueInsightsLayoutSync();
       };
 
+      refreshDestinationsForYear = () => renderChart();
       await renderChart("calabarzon");
       syncSegmentedControl(
         querySelector(idPrefix ? "#admin-dest-switcher" : ".dest-switcher[data-segmented-control]"),
