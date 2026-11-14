@@ -574,38 +574,39 @@ const adminInsightsRoot = {
   },
 };
 const adminYear = new Date().getFullYear().toString();
-const adminRecordModal = document.getElementById("view-modal");
-const adminRecordModalElements = {
-  taNumber: document.getElementById("view-ta-number"),
-  purpose: document.getElementById("view-purpose"),
-  destination: document.getElementById("view-destination"),
-  employees: document.getElementById("view-employees"),
-  travelDate: document.getElementById("view-travel-date"),
-  travelUntil: document.getElementById("view-travel-until"),
-  fileLink: document.getElementById("view-file-link"),
-  fileSize: document.getElementById("view-file-size"),
-};
 openAdminInsightRecord = async (record) => {
+  const adminRecordModal = document.getElementById("view-modal");
   if (!record || !adminRecordModal) return;
-  adminRecordModalElements.taNumber.textContent = record.ta_number || "-";
-  adminRecordModalElements.purpose.textContent = record.purpose || "-";
-  adminRecordModalElements.destination.textContent = record.destination || "-";
-  adminRecordModalElements.employees.textContent = record.employees || "-";
-  adminRecordModalElements.travelDate.textContent = record.travel_date || "-";
-  adminRecordModalElements.travelUntil.textContent = record.travel_until || "-";
+
+  const modalElements = {
+    taNumber: document.getElementById("view-ta-number"),
+    purpose: document.getElementById("view-purpose"),
+    destination: document.getElementById("view-destination"),
+    employees: document.getElementById("view-employees"),
+    travelDate: document.getElementById("view-travel-date"),
+    travelUntil: document.getElementById("view-travel-until"),
+    fileLink: document.getElementById("view-file-link"),
+    fileSize: document.getElementById("view-file-size"),
+  };
+  modalElements.taNumber.textContent = record.ta_number || "-";
+  modalElements.purpose.textContent = record.purpose || "-";
+  modalElements.destination.textContent = record.destination || "-";
+  modalElements.employees.textContent = record.employees || "-";
+  modalElements.travelDate.textContent = record.travel_date || "-";
+  modalElements.travelUntil.textContent = record.travel_until || "-";
   if (record.file_url) {
     const fileUrl = safeUrl(record.file_url);
-    adminRecordModalElements.fileLink.href = fileUrl;
-    adminRecordModalElements.fileLink.dataset.fileUrl = fileUrl;
-    adminRecordModalElements.fileLink.dataset.fileName = record.file_name || "Download";
-    adminRecordModalElements.fileLink.textContent = "Download";
+    modalElements.fileLink.href = fileUrl;
+    modalElements.fileLink.dataset.fileUrl = fileUrl;
+    modalElements.fileLink.dataset.fileName = record.file_name || "Download";
+    modalElements.fileLink.textContent = "Download";
     await updateViewFileSize(fileUrl);
   } else {
-    adminRecordModalElements.fileLink.href = "#";
-    adminRecordModalElements.fileLink.dataset.fileUrl = "";
-    adminRecordModalElements.fileLink.dataset.fileName = "";
-    adminRecordModalElements.fileLink.textContent = "No file";
-    adminRecordModalElements.fileSize.textContent = "File size: -";
+    modalElements.fileLink.href = "#";
+    modalElements.fileLink.dataset.fileUrl = "";
+    modalElements.fileLink.dataset.fileName = "";
+    modalElements.fileLink.textContent = "No file";
+    modalElements.fileSize.textContent = "File size: -";
   }
   adminRecordModal.classList.add("show");
   document.body.style.overflow = "hidden";
