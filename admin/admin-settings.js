@@ -1,4 +1,5 @@
 import { draftTaClient } from '../pdf-generator/draft-ta-config.js';
+import { collapseSettingsSections } from '../shared/settings-modal.js';
 
 const draftSection = document.getElementById('settings-draft-ta-section');
 const draftForm = document.getElementById('settings-draft-ta-form');
@@ -34,7 +35,7 @@ async function loadDraftSettings() {
             }
             select.value = config.data?.[key] || '';
         }
-        draftIso.value = config.data?.iso_no || 'AD-HRS-F010-01';
+        draftIso.value = config.data?.iso_no ?? 'AD-HRS-F010-01';
         draftSave.disabled = false;
         draftStatus.textContent = config.data ? '' : 'Choose the signatories and save to enable draft TA PDFs.';
     } catch (error) {
@@ -49,8 +50,8 @@ draftForm?.addEventListener('submit', async (event) => {
     if (!canManageDraftSettings(window.adminCurrentRole) || draftSave.disabled) return;
     const values = { iso_no: draftIso.value.trim() };
     for (const key of draftFields) values[key] = document.getElementById(`settings-draft-ta-${key}`).value;
-    if (!values.iso_no || draftFields.some((key) => !values[key])) {
-        draftStatus.textContent = 'Select all three signatories and enter the ISO number.';
+    if (draftFields.some((key) => !values[key])) {
+        draftStatus.textContent = 'Select all three signatories.';
         return;
     }
     draftSave.disabled = true;
@@ -168,13 +169,14 @@ window.addEventListener('admin-view-panel-ready', () => {
     window.applyAdminMatchAllFilterVisibility(getHideMatchAllFilter());
 });
 
-document.getElementById('close-settings').addEventListener('click', () => {
+const closeSettingsModal = () => {
+    collapseSettingsSections(settingsModal);
     settingsModal?.classList.remove('show');
-});
+};
+
+document.getElementById('close-settings').addEventListener('click', closeSettingsModal);
 
 settingsModal?.addEventListener('click', (e) => {
-    if (e.target === settingsModal) {
-        settingsModal.classList.remove('show');
-    }
+    if (e.target === settingsModal) closeSettingsModal();
 });
 

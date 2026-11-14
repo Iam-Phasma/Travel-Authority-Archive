@@ -16,6 +16,7 @@ import { fetchFileSizeBytes, createFileOpener, setupResponsiveViewDownload } fro
 import { createInsights } from "./insights.js";
 import { createAgendaTracker } from "./agenda.js";
 import { createInsightsLayout } from "./insights-layout.js";
+import { collapseSettingsSections } from "../shared/settings-modal.js";
 import { createDashboardAccess } from "../auth/page-access.js";
 import "../pwa-update.js";
 
@@ -1295,14 +1296,16 @@ if (window.headerLoaded) {
   window.initHeaderButtons();
 }
 
-document.getElementById("close-settings").addEventListener("click", () => {
-  document.getElementById("settings-modal").classList.remove("show");
-});
+const settingsModal = document.getElementById("settings-modal");
+const closeSettingsModal = () => {
+  collapseSettingsSections(settingsModal);
+  settingsModal.classList.remove("show");
+};
 
-document.getElementById("settings-modal").addEventListener("click", (e) => {
-  if (e.target === document.getElementById("settings-modal")) {
-    document.getElementById("settings-modal").classList.remove("show");
-  }
+document.getElementById("close-settings").addEventListener("click", closeSettingsModal);
+
+settingsModal.addEventListener("click", (e) => {
+  if (e.target === settingsModal) closeSettingsModal();
 });
 
 // Sidebar collapse toggle

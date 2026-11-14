@@ -1,4 +1,5 @@
 // Header menus, notices, and draft form behavior for this page.
+import { collapseSettingsSections } from "../shared/settings-modal.js";
 export const createAdminHeader = ({ supabase, getEmployees, loadEmployees, markCurrentUserOffline, clearAdminClientState }) => {
   let headerButtonsInitialized = false;
   const initHeaderButtons = () => {
@@ -921,7 +922,9 @@ export const createAdminHeader = ({ supabase, getEmployees, loadEmployees, markC
       settingsOption.addEventListener("click", () => {
         headerPopup.classList.remove("show");
         noticePanel?.classList.remove("show");
-        document.getElementById("settings-modal").classList.add("show");
+        const settingsModal = document.getElementById("settings-modal");
+        collapseSettingsSections(settingsModal);
+        settingsModal?.classList.add("show");
       });
     }
 

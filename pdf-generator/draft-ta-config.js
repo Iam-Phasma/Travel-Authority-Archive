@@ -19,6 +19,5 @@ export async function loadDraftTaConfig() {
         if (!employee) throw new Error(`The ${key} signatory must be selected in Settings.`);
         signatories[key] = { name: employee.name, position: employee.position || '' };
     }
-    if (!data.iso_no?.trim()) throw new Error('Set the draft TA ISO number in Settings first.');
     return { ...data, signatories };
 }

@@ -1,4 +1,5 @@
 // Header menus, notices, and draft form behavior for this page.
+import { collapseSettingsSections } from "../shared/settings-modal.js";
 export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentUserOffline, clearDashboardClientState }) => {
   let headerButtonsInitialized = false;
   const initHeaderButtons = () => {
@@ -991,7 +992,9 @@ export const createDashboardHeader = ({ supabase, showConfirmation, markCurrentU
       settingsOption.addEventListener("click", () => {
         headerPopup.classList.remove("show");
         noticePanel?.classList.remove("show");
-        document.getElementById("settings-modal").classList.add("show");
+        const settingsModal = document.getElementById("settings-modal");
+        collapseSettingsSections(settingsModal);
+        settingsModal?.classList.add("show");
       });
     }
 
