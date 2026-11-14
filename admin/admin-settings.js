@@ -8,9 +8,10 @@ const draftIso = document.getElementById('settings-draft-ta-iso');
 const draftFields = ['recommending', 'funds', 'approved'];
 let draftConfigId = null;
 let draftLoading = false;
+const canManageDraftSettings = (role) => role === 'admin' || role === 'super';
 
 async function loadDraftSettings() {
-    if (window.adminCurrentRole !== 'super' || draftLoading) return;
+    if (!canManageDraftSettings(window.adminCurrentRole) || draftLoading) return;
     draftLoading = true;
     draftSave.disabled = true;
     draftStatus.textContent = 'Loading draft TA settings...';
@@ -45,7 +46,7 @@ async function loadDraftSettings() {
 
 draftForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (window.adminCurrentRole !== 'super' || draftSave.disabled) return;
+    if (!canManageDraftSettings(window.adminCurrentRole) || draftSave.disabled) return;
     const values = { iso_no: draftIso.value.trim() };
     for (const key of draftFields) values[key] = document.getElementById(`settings-draft-ta-${key}`).value;
     if (!values.iso_no || draftFields.some((key) => !values[key])) {
@@ -64,10 +65,10 @@ draftForm?.addEventListener('submit', async (event) => {
         draftStatus.textContent = 'Saved. New draft TA PDFs will use these settings.';
     } catch (error) {
         draftStatus.textContent = error.code === '42501'
-            ? 'Save denied by database permissions. Ask the database administrator to apply the draft TA settings migration and verify your super-user access.'
+            ? 'Save denied by database permissions. Ask the database administrator to apply the updated draft TA settings migration and verify your admin access.'
             : `Could not save draft TA settings: ${error.message}`;
     } finally {
-        draftSave.disabled = window.adminCurrentRole !== 'super';
+        draftSave.disabled = !canManageDraftSettings(window.adminCurrentRole);
     }
 });
 
@@ -120,18 +121,18 @@ window.applyDemoCheckboxVisibility = (visible) => {
 const settingsShowDemoCheckbox = document.getElementById('settings-show-demo-checkbox');
 const settingsModal = document.getElementById('settings-modal');
 
-const applySuperOnlySettingsVisibilityByRole = (role) => {
-    const isSuper = role === 'super';
+const applyDraftSettingsVisibilityByRole = (role) => {
+    const canManage = canManageDraftSettings(role);
     if (draftSection) {
-        draftSection.style.display = isSuper ? '' : 'none';
-        if (isSuper) void loadDraftSettings();
+        draftSection.style.display = canManage ? '' : 'none';
+        if (canManage) void loadDraftSettings();
         else draftSave.disabled = true;
     }
 };
 
-applySuperOnlySettingsVisibilityByRole(window.adminCurrentRole || '');
+applyDraftSettingsVisibilityByRole(window.adminCurrentRole || '');
 window.addEventListener('admin-role-ready', (event) => {
-    applySuperOnlySettingsVisibilityByRole(event?.detail?.role || '');
+    applyDraftSettingsVisibilityByRole(event?.detail?.role || '');
 });
 
 // Load saved setting (default: true = visible)

@@ -1,4 +1,4 @@
--- Run in the Supabase SQL editor before using the Draft TA PDF settings editor.
+-- Run in the Supabase SQL editor to enable Draft TA PDF settings for admins and super admins.
 -- Uses the existing draft_ta columns and employee_list name foreign keys.
 BEGIN;
 
@@ -15,7 +15,7 @@ AS $$
     SELECT EXISTS (
         SELECT 1 FROM public.profiles
         WHERE id = auth.uid()
-          AND role = 'super'
+          AND role IN ('admin', 'super')
           AND access_enabled IS NOT FALSE
     );
 $$;
@@ -43,12 +43,14 @@ CREATE POLICY draft_ta_read ON public.draft_ta
 FOR SELECT TO authenticated USING (true);
 
 DROP POLICY IF EXISTS draft_ta_super_insert ON public.draft_ta;
-CREATE POLICY draft_ta_super_insert ON public.draft_ta
+DROP POLICY IF EXISTS draft_ta_admin_insert ON public.draft_ta;
+CREATE POLICY draft_ta_admin_insert ON public.draft_ta
 FOR INSERT TO authenticated WITH CHECK (
     (SELECT public.can_manage_draft_ta())
 );
 DROP POLICY IF EXISTS draft_ta_super_update ON public.draft_ta;
-CREATE POLICY draft_ta_super_update ON public.draft_ta
+DROP POLICY IF EXISTS draft_ta_admin_update ON public.draft_ta;
+CREATE POLICY draft_ta_admin_update ON public.draft_ta
 FOR UPDATE TO authenticated
 USING ((SELECT public.can_manage_draft_ta()))
 WITH CHECK ((SELECT public.can_manage_draft_ta()));
