@@ -253,32 +253,59 @@ body.login-page #header-container {
 }
 
 .recovery-panel {
-  align-self: start;
-  gap: 22px;
-  padding: 32px 38px 28px;
+  justify-self: center;
+  margin-inline: auto;
+  width: min(580px, calc(100vw - 36px));
+  max-width: 100%;
+  margin-top: 10px;
+  margin-bottom: 0;
+  padding: 26px 38px 18px;
+  gap: 12px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+
+.recovery-panel .recovery-panel-intro {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+  text-align: center;
+}
+
+.recovery-panel .login-panel-brand {
+  margin-bottom: 2px;
+}
+
+.recovery-panel .login-panel-subtitle {
+  margin-top: 5px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .recovery-panel .recovery-intro {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .recovery-panel h2 {
   margin: 0;
   color: var(--ink);
-  font-size: 1.55rem;
-  letter-spacing: -0.025em;
+  font-size: 1.2rem;
+  letter-spacing: normal;
 }
 
 .recovery-panel .recovery-intro p {
   margin: 0;
   color: rgba(11, 28, 59, 0.62);
-  font-size: 0.94rem;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  line-height: 1.4;
 }
 
 .recovery-panel .new-password-fields {
-  gap: 16px;
+  gap: 12px;
 }
 
 .recovery-panel .new-password-fields > div {
@@ -286,9 +313,9 @@ body.login-page #header-container {
   gap: 8px;
 }
 
-.recovery-panel .new-password-fields label:not(.checkbox-label) {
+.recovery-panel .new-password-fields > div label {
   margin: 0;
-  color: var(--ink);
+  color: #111827;
   font-size: 0.95rem;
 }
 
@@ -322,20 +349,36 @@ body.login-page #header-container {
 }
 
 .recovery-panel .login-actions {
-  gap: 12px;
+  width: 100%;
+  gap: 8px;
 }
 
 .recovery-panel #update-password-btn {
-  width: fit-content;
-  min-width: 190px;
-  min-height: 48px;
-  padding-inline: 22px;
+  width: 100%;
+  min-width: 100%;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 18px;
   border-radius: var(--radius-md);
-  background: var(--ink);
+  background: var(--sea);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.recovery-panel #update-password-btn-lottie {
+  display: none;
+  width: 72px;
+  height: 36px;
+  aspect-ratio: 2 / 1;
+  pointer-events: none;
 }
 
 .recovery-panel #update-password-btn:hover {
-  background: var(--hover-ink);
+  background: var(--hover-sea);
 }
 
 .recovery-panel #update-password-btn:disabled {
@@ -351,6 +394,40 @@ body.login-page #header-container {
 #login-panel .fields > div {
   display: grid;
   gap: 8px;
+}
+
+.recovery-panel .input-wrap input[type="password"],
+.recovery-panel .input-wrap input[type="text"] {
+  min-height: 44px;
+  height: 44px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 0.95rem;
+  border-radius: var(--radius-md);
+  border-color: rgba(17, 24, 39, 0.12);
+}
+
+.recovery-panel .input-wrap--password input[type="password"],
+.recovery-panel .input-wrap--password input[type="text"] {
+  padding-right: 56px;
+}
+
+.recovery-panel .input-wrap .icon {
+  left: 12px;
+  width: 18px;
+  height: 18px;
+  color: rgba(15, 26, 31, 0.65);
+}
+
+.recovery-panel .input-wrap .icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.recovery-panel .password-visibility-btn {
+  right: 1px;
+  width: 42px;
+  border-radius: 0 calc(var(--radius-md) - 1px) calc(var(--radius-md) - 1px) 0;
 }
 
 #login-panel label {
@@ -1646,12 +1723,8 @@ button:hover {
   }
 
   .recovery-panel {
-    padding: 28px 22px 24px;
-  }
-
-  .recovery-panel #update-password-btn {
-    width: 100%;
-    min-width: 100%;
+    padding: 34px 22px 26px;
+    border-radius: var(--radius-xl);
   }
 
   .login-panel-brand {

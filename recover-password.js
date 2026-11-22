@@ -2,6 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { supabaseConfig } from "./config.js";
 import { validatePasswordStrength } from "./auth/password-validation.js";
 
+import "@lottiefiles/dotlottie-wc";
+
 const RECOVERY_STORAGE_KEY = "travel-authority-password-recovery";
 const recoveryHash = window.location.hash.slice(1);
 const recoveryParams = new URLSearchParams(recoveryHash);
@@ -16,8 +18,9 @@ const recoveryCode = recoveryQueryParams.get("code");
 const form = document.getElementById("recovery-form");
 const newPasswordInput = document.getElementById("new-password");
 const confirmPasswordInput = document.getElementById("confirm-password");
-const showPasswordInput = document.getElementById("show-new-password");
 const updatePasswordButton = document.getElementById("update-password-btn");
+const updatePasswordButtonText = document.getElementById("update-password-btn-text");
+const updatePasswordButtonLottie = document.getElementById("update-password-btn-lottie");
 const status = document.getElementById("update-password-status");
 
 const setStatus = (message, type = "neutral") => {
@@ -48,10 +51,14 @@ try {
   setStatus("Password reset is unavailable. Please request a new reset link.", "error");
 }
 
-showPasswordInput.addEventListener("change", () => {
-  const type = showPasswordInput.checked ? "text" : "password";
-  newPasswordInput.type = type;
-  confirmPasswordInput.type = type;
+document.querySelectorAll("[data-password-toggle]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const input = document.getElementById(button.dataset.passwordToggle);
+    const isVisible = input.type === "text";
+    input.type = isVisible ? "password" : "text";
+    button.setAttribute("aria-pressed", isVisible ? "false" : "true");
+    button.setAttribute("aria-label", isVisible ? "Show password" : "Hide password");
+  });
 });
 
 const showLivePasswordFeedback = () => {
@@ -103,6 +110,8 @@ form.addEventListener("submit", async (event) => {
   }
 
   updatePasswordButton.disabled = true;
+  updatePasswordButtonText.style.display = "none";
+  updatePasswordButtonLottie.style.display = "block";
   setStatus("Updating password...");
 
   try {
@@ -131,6 +140,8 @@ form.addEventListener("submit", async (event) => {
   } catch (error) {
     console.error("Password update failed:", error);
     setStatus(error.message || "Could not update the password. Please try again.", "error");
+    updatePasswordButtonText.style.display = "";
+    updatePasswordButtonLottie.style.display = "none";
     updatePasswordButton.disabled = false;
   }
 });
