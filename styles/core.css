@@ -234,7 +234,7 @@ body.login-page .shell {
   width: min(580px, calc(100vw - 36px));
   max-width: 100%;
   padding: 26px 38px 18px;
-  margin-top: 10;
+  margin-top: 10px;
   margin-bottom: 0;
   background: #ffffff;
   backdrop-filter: none;
@@ -306,18 +306,22 @@ body.login-page #header-container {
 }
 
 .recovery-panel .new-password-fields {
-  gap: 10px;
+  gap: 8px;
 }
 
 .recovery-panel .new-password-fields > div {
   display: grid;
-  gap: 6px;
+  gap: 10px;
 }
 
 .recovery-panel .new-password-fields > div label {
   margin: 0;
   color: #111827;
   font-size: 0.95rem;
+}
+
+.recovery-panel #recovery-form > div:nth-child(2) {
+  margin-top: 15px;
 }
 
 .recovery-panel .input-wrap .icon {
@@ -352,7 +356,7 @@ body.login-page #header-container {
 .recovery-panel .login-actions {
   width: 100%;
   gap: 8px;
-  margin-top: 2px;
+  margin-top: 20px;
 }
 
 .recovery-panel #update-password-btn {
