@@ -43,11 +43,13 @@ If Vite is not recognized, the dependency installation has not completed; run `n
 Notes:
 - `vercel.json` includes rewrites so `/admin` and `/dashboard` resolve to their HTML entry pages.
 - If you are using Supabase Edge Functions, include your Vercel domain in `CORS_ALLOWED_ORIGINS` for each function deployment.
+- Password reset links now open `/recover-password.html`, which uses a tab-scoped Supabase session separate from the normal app session. Add the deployed recovery page URL (including the GitHub Pages repository path, if applicable) to Supabase Authentication URL Configuration > Redirect URLs. Set `PASSWORD_RESET_REDIRECT_URL` in Supabase Edge Function Secrets to the deployed site base URL or full recovery page URL, then redeploy the `request-password-reset` Edge Function.
 
 ## Crawler Controls
 
 - The public login page at / and /index.html permits indexing and includes a descriptive title and search description.
-- public/robots.txt allows the login page and assets required for rendering it, while disallowing internal routes. No sitemap is generated.
+- The password-recovery route is noindex and allowed in public/robots.txt so browsers can fetch its shared rendering assets without indexing recovery attempts.
+- public/robots.txt allows the login and recovery pages and their rendering assets, while disallowing internal routes. No sitemap is generated.
 - Admin, dashboard, and error pages retain noindex, nofollow metadata. Vercel sends matching headers for internal routes and shared HTML fragments, without applying noindex to the homepage.
 - Deploy to activate these controls, then verify /robots.txt, homepage source, and response headers.
 - Robots directives are voluntary, not access controls. Disallowed URLs may still appear as URL-only results because crawlers cannot read their noindex directives. Authentication and backend permissions must protect internal records.

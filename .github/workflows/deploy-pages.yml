@@ -59,6 +59,9 @@ jobs:
           VITE_PRODUCTION_URL: ${{ secrets.VITE_PRODUCTION_URL }}
         run: npm run build:github-pages
 
+      - name: Copy recovery page to GitHub Pages repository path
+        run: cp dist/recover-password.html dist/Travel-Authority-Archive/recover-password.html
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:

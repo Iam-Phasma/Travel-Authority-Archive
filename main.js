@@ -1,5 +1,4 @@
 import "@lottiefiles/dotlottie-wc";
-import zxcvbn from "zxcvbn";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseConfig } from "./config.js";
 import "./pwa-update.js";
@@ -31,20 +30,17 @@ const setLoginLoading = (loading) => {
   loginBtnText.style.display = loading ? "none" : "";
   loginBtnLottie.style.display = loading ? "block" : "none";
 };
-const loginPanel = document.getElementById("login-panel");
-const newPasswordPanel = document.getElementById("new-password-panel");
 let loginCaptchaWidgetId = null;
 let loginCaptchaToken = null;
 let pendingLoginResolve = null;
 let pendingLoginReject = null;
-const MIN_PASSWORD_LENGTH = 12;
-const MIN_PASSWORD_SCORE = 3;
 const DEFAULT_LOGIN_RETRY_SECONDS = 60;
 const GENERIC_LOGIN_FAILURE_MESSAGE = "Invalid email or password.";
 const GENERIC_RESET_MESSAGE =
   "If the email is registered, a reset link will be sent.";
 const HCAPTCHA_BASE_WIDTH = 303;
 const HCAPTCHA_BASE_HEIGHT = 78;
+const PASSWORD_RESET_PAGE = "recover-password.html";
 
 const showSupabaseConfigError = () => {
   if (!loginStatus) return;
@@ -105,17 +101,6 @@ if (togglePasswordBtn) {
     );
   });
 }
-
-document
-  .getElementById("show-new-password")
-  .addEventListener("change", (e) => {
-    const newPasswordInput = document.getElementById("new-password");
-    const confirmPasswordInput =
-      document.getElementById("confirm-password");
-    const type = e.target.checked ? "text" : "password";
-    newPasswordInput.type = type;
-    confirmPasswordInput.type = type;
-  });
 
 const parseRetrySeconds = (
   value,
@@ -553,300 +538,8 @@ passwordInput.addEventListener("keypress", (e) => {
   }
 });
 
-// Check if user is in password recovery mode (clicked email link)
-const checkPasswordRecovery = async () => {
-  const hashParams = new URLSearchParams(
-    window.location.hash.substring(1),
-  );
-  const type = hashParams.get("type");
-
-  if (type === "recovery") {
-    loginPanel.classList.add("hidden");
-    newPasswordPanel.classList.remove("hidden");
-    return true;
-  }
-  return false;
-};
-
-// Handle new password update
-const handlePasswordUpdate = async () => {
-  const newPassword = document.getElementById("new-password").value;
-  const confirmPassword =
-    document.getElementById("confirm-password").value;
-  const updatePasswordStatus = document.getElementById(
-    "update-password-status",
-  );
-  const updatePasswordBtn = document.getElementById(
-    "update-password-btn",
-  );
-
-  if (!requireSupabaseClient()) {
-    updatePasswordStatus.textContent =
-      "App configuration error: Supabase is not available.";
-    updatePasswordStatus.classList.remove("status--success", "status--neutral", "hidden");
-    updatePasswordStatus.classList.add("status--error");
-    return;
-  }
-
-  if (!newPassword || !confirmPassword) {
-    updatePasswordStatus.textContent =
-      "Please enter and confirm your new password.";
-    updatePasswordStatus.classList.remove("status--success", "hidden");
-    updatePasswordStatus.classList.add("status--error");
-    return;
-  }
-
-  if (newPassword !== confirmPassword) {
-    updatePasswordStatus.textContent = "Passwords do not match.";
-    updatePasswordStatus.classList.remove("status--success", "hidden");
-    updatePasswordStatus.classList.add("status--error");
-    return;
-  }
-
-  const passwordValidation = validatePasswordStrength(newPassword);
-  if (!passwordValidation.valid) {
-    updatePasswordStatus.textContent = passwordValidation.message;
-    updatePasswordStatus.classList.remove("status--success", "hidden");
-    updatePasswordStatus.classList.add("status--error");
-    return;
-  }
-
-  updatePasswordStatus.textContent = "Updating password...";
-  updatePasswordStatus.classList.remove(
-    "status--error",
-    "status--success",
-    "hidden",
-  );
-  updatePasswordBtn.disabled = true;
-
-  try {
-    const { data: sessionData } = await supabase.auth.getSession();
-
-    if (!sessionData?.session) {
-      throw new Error(
-        "No active session. Please click the reset link from your email again.",
-      );
-    }
-
-    const passwordValidation = validatePasswordStrength(
-      newPassword,
-      sessionData?.session?.user?.email,
-    );
-    if (!passwordValidation.valid) {
-      updatePasswordStatus.textContent = passwordValidation.message;
-      updatePasswordStatus.classList.remove("status--success", "hidden");
-      updatePasswordStatus.classList.add("status--error");
-      updatePasswordBtn.disabled = false;
-      return;
-    }
-
-    const { data, error } = await supabase.auth.updateUser({
-      password: newPassword,
-    });
-
-    if (error) {
-      throw error;
-    }
-
-    updatePasswordStatus.textContent =
-      "Password updated! Clearing session...";
-    updatePasswordStatus.classList.remove("status--error", "hidden");
-    updatePasswordStatus.classList.add("status--success");
-
-    // Clear any failed login attempts for this user
-    const userEmail = sessionData?.session?.user?.email;
-    if (userEmail) {
-      await clearLoginAttempts();
-    }
-
-    // Sign out to clear the recovery session
-    const { error: signOutError } = await supabase.auth.signOut();
-
-    if (signOutError) {
-      console.error("Sign out error:", signOutError);
-    }
-
-    // Clear all local storage and session storage
-    localStorage.clear();
-    sessionStorage.clear();
-
-    updatePasswordStatus.textContent =
-      "Password updated successfully! Redirecting to login...";
-
-    // Always redirect to production URL after password reset
-    setTimeout(() => {
-      // Redirect to GitHub Pages for login (works from localhost or production)
-      window.location.replace(
-        supabaseConfig.productionUrl + "/index.html",
-      );
-    }, 2000);
-  } catch (error) {
-    console.error("Password update error:", error);
-    updatePasswordStatus.textContent =
-      error.message || "Failed to update password. Please try again.";
-    updatePasswordStatus.classList.remove("status--success", "hidden");
-    updatePasswordStatus.classList.add("status--error");
-    updatePasswordBtn.disabled = false;
-  }
-};
-
-// Add event listener for update password button
-document
-  .getElementById("update-password-btn")
-  .addEventListener("click", handlePasswordUpdate);
-
-const normalizeForComparison = (value) =>
-  (value || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-
-const validatePasswordStrength = (password, email = "") => {
-  if (!password || password.length < MIN_PASSWORD_LENGTH) {
-    return {
-      valid: false,
-      message: `Password must be at least ${MIN_PASSWORD_LENGTH} characters long.`,
-    };
-  }
-
-  const normalizedPassword = normalizeForComparison(password);
-  const emailLocalPart = (email || "").split("@")[0] || "";
-  const normalizedLocalPart = normalizeForComparison(emailLocalPart);
-
-  if (
-    normalizedLocalPart &&
-    normalizedPassword.includes(normalizedLocalPart)
-  ) {
-    return {
-      valid: false,
-      message:
-        "Password is too predictable. Avoid using parts of your email.",
-    };
-  }
-
-  const weakPatterns = [
-    "password",
-    "qwerty",
-    "admin",
-    "letmein",
-    "welcome",
-    "123456",
-    "changeme",
-  ];
-  if (
-    weakPatterns.some((pattern) => normalizedPassword.includes(pattern))
-  ) {
-    return {
-      valid: false,
-      message:
-        "Password is too common. Use a less predictable passphrase.",
-    };
-  }
-
-  if (typeof zxcvbn === "function") {
-    const analysis = zxcvbn(password, [emailLocalPart]);
-    if ((analysis?.score ?? 0) < MIN_PASSWORD_SCORE) {
-      const suggestion =
-        analysis?.feedback?.suggestions?.[0] ||
-        "Add more words and make it less predictable.";
-      return {
-        valid: false,
-        message: `Password is too weak. ${suggestion}`,
-      };
-    }
-  }
-
-  return { valid: true, message: "" };
-};
-
-const showLivePasswordFeedback = () => {
-  const updatePasswordStatus = document.getElementById(
-    "update-password-status",
-  );
-  const newPasswordValue = document.getElementById("new-password").value;
-  const confirmPasswordValue =
-    document.getElementById("confirm-password").value;
-
-  if (!newPasswordValue && !confirmPasswordValue) {
-    updatePasswordStatus.textContent = "Enter your new password.";
-    updatePasswordStatus.classList.remove(
-      "status--error",
-      "status--success",
-    );
-    updatePasswordStatus.classList.add("status--neutral", "hidden");
-    return;
-  }
-
-  if (confirmPasswordValue && newPasswordValue !== confirmPasswordValue) {
-    updatePasswordStatus.textContent = "Passwords do not match.";
-    updatePasswordStatus.classList.remove(
-      "status--success",
-      "status--neutral",
-      "hidden",
-    );
-    updatePasswordStatus.classList.add("status--error");
-    return;
-  }
-
-  const validation = validatePasswordStrength(newPasswordValue);
-  if (!validation.valid) {
-    updatePasswordStatus.textContent = validation.message;
-    updatePasswordStatus.classList.remove(
-      "status--success",
-      "status--neutral",
-      "hidden",
-    );
-    updatePasswordStatus.classList.add("status--error");
-    return;
-  }
-
-  updatePasswordStatus.textContent = "Strong password format.";
-  updatePasswordStatus.classList.remove("status--error", "hidden");
-  updatePasswordStatus.classList.add("status--success");
-};
-
-document
-  .getElementById("new-password")
-  .addEventListener("input", showLivePasswordFeedback);
-document
-  .getElementById("confirm-password")
-  .addEventListener("input", showLivePasswordFeedback);
-
-// Allow Enter key to update password
-document
-  .getElementById("new-password")
-  .addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      handlePasswordUpdate();
-    }
-  });
-
-document
-  .getElementById("confirm-password")
-  .addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      handlePasswordUpdate();
-    }
-  });
-
-// Initialize - check if in recovery mode first
-const initializePage = async () => {
-  if (!supabase) return;
-
-  const isRecovery = await checkPasswordRecovery();
-  if (!isRecovery) {
-    // Only check login redirect if not in recovery mode
-    await redirectIfLoggedIn();
-  }
-};
-
 if (supabase) {
-  initializePage();
-
-  // Listen for auth state changes
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "PASSWORD_RECOVERY") {
-      loginPanel.classList.add("hidden");
-      newPasswordPanel.classList.remove("hidden");
-    }
-  });
+  redirectIfLoggedIn();
 } else {
   showSupabaseConfigError();
 }
@@ -915,7 +608,6 @@ const storeResetCooldown = (email, seconds) => {
 const requestPasswordResetViaEdgeFunction = async ({
   email,
   captchaToken,
-  redirectTo,
 }) => {
   if (!requireSupabaseClient()) {
     return {
@@ -931,7 +623,6 @@ const requestPasswordResetViaEdgeFunction = async ({
         body: {
           email,
           captchaToken,
-          redirectTo,
         },
       },
     );
@@ -1126,7 +817,6 @@ sendResetBtn.addEventListener("click", async () => {
     const requestResult = await requestPasswordResetViaEdgeFunction({
       email,
       captchaToken: hcaptchaResponse,
-      redirectTo: supabaseConfig.getRedirectUrl(),
     });
 
     if (

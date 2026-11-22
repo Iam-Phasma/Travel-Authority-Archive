@@ -11,26 +11,40 @@
     />
     <script>
       (function () {
+        var params = new URLSearchParams(location.hash.slice(1));
+        var hasRecoveryHash = params.get("type") === "recovery" ||
+          params.has("access_token") || params.has("token_hash");
+        var hasRecoveryCode = new URLSearchParams(location.search).has("code") ||
+          new URLSearchParams(location.search).get("type") === "recovery";
         var productionUrl = "%VITE_PRODUCTION_URL%".trim();
         var isGitHubPagesHost = location.hostname === "iam-phasma.github.io";
-        if (!isGitHubPagesHost) return;
-        if (
-          !productionUrl ||
-          productionUrl.indexOf("VITE_PRODUCTION_URL") !== -1
-        )
+        if (isGitHubPagesHost && productionUrl && !productionUrl.includes("VITE_PRODUCTION_URL")) {
+          var targetBase = productionUrl.replace(/\/+$/, "");
+          var repoBase = "/Travel-Authority-Archive";
+          var currentPath = location.pathname.startsWith(repoBase)
+            ? location.pathname.slice(repoBase.length)
+            : location.pathname;
+          if (!currentPath) currentPath = "/";
+
+          if (hasRecoveryHash || hasRecoveryCode) {
+            var recoveryBase = currentPath
+              .replace(/\/index\.html$/i, "")
+              .replace(/\/+$/, "");
+            location.replace(
+              targetBase + recoveryBase + "/recover-password.html" + location.search + location.hash,
+            );
+            return;
+          }
+
+          var targetUrl = targetBase + currentPath + location.search + location.hash;
+          if (targetUrl !== location.href) location.replace(targetUrl);
           return;
+        }
 
-        var targetBase = productionUrl.replace(/\/+$/, "");
-        var repoBase = "/Travel-Authority-Archive";
-        var currentPath = location.pathname.startsWith(repoBase)
-          ? location.pathname.slice(repoBase.length)
-          : location.pathname;
-        if (!currentPath) currentPath = "/";
-
-        var targetUrl =
-          targetBase + currentPath + location.search + location.hash;
-        if (targetUrl !== location.href) {
-          location.replace(targetUrl);
+        if (hasRecoveryHash || hasRecoveryCode) {
+          location.replace(
+            location.origin + "/recover-password.html" + location.search + location.hash,
+          );
         }
       })();
     </script>
@@ -40,7 +54,7 @@
     <link rel="stylesheet" href="footer/footer.css?v=20260321-3" />
     <!-- hCaptcha Script -->
     <script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-    <!-- Module entry — bundles supabase, zxcvbn, dotlottie-wc via Vite -->
+    <!-- Module entry — bundles Supabase and dotlottie-wc via Vite -->
     <script type="module" src="./main.js"></script>
   </head>
   <body class="login-page">
@@ -159,72 +173,6 @@
           </button>
           <span class="status status--neutral hidden" id="login-status"
             >Enter your credentials.</span
-          >
-        </div>
-      </section>
-
-      <!-- New Password Panel (shown when user clicks reset link from email) -->
-      <section class="panel hidden" id="new-password-panel" aria-labelledby="new-password-heading">
-        <div class="new-password-intro">
-          <h2 id="new-password-heading">Set New Password</h2>
-          <p>Choose a new password to securely access your account.</p>
-        </div>
-        <div class="fields new-password-fields">
-          <div>
-            <label for="new-password"
-              >New Password <span class="required">*</span></label
-            >
-            <div class="input-wrap">
-              <span class="icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" role="img" focusable="false">
-                  <path
-                    d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7-2a2 2 0 0 1 4 0v2h-4V7Z"
-                  />
-                </svg>
-              </span>
-              <input
-                id="new-password"
-                type="password"
-                autocomplete="new-password"
-                placeholder="new password"
-                minlength="12"
-              />
-            </div>
-          </div>
-          <div>
-            <label for="confirm-password"
-              >Confirm Password <span class="required">*</span></label
-            >
-            <div class="input-wrap">
-              <span class="icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" role="img" focusable="false">
-                  <path
-                    d="M17 9h-1V7a4 4 0 0 0-8 0v2H7a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7a2 2 0 0 0-2-2Zm-7-2a2 2 0 0 1 4 0v2h-4V7Z"
-                  />
-                </svg>
-              </span>
-              <input
-                id="confirm-password"
-                type="password"
-                autocomplete="new-password"
-                placeholder="confirm password"
-                minlength="12"
-              />
-            </div>
-          </div>
-          <label class="checkbox-label">
-            <input type="checkbox" id="show-new-password" />
-            <span>Show password</span>
-          </label>
-        </div>
-        <div class="login-actions">
-          <button id="update-password-btn" type="button">
-            Update Password
-          </button>
-          <span
-            class="status status--neutral hidden"
-            id="update-password-status"
-            >Enter your new password.</span
           >
         </div>
       </section>

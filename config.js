@@ -3,11 +3,6 @@
 // The anon key is intentionally public; real access control relies on RLS policies.
 
 export const supabaseConfig = {
-    url: import.meta.env.VITE_SUPABASE_URL,
-    anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
-    productionUrl: (import.meta.env.VITE_PRODUCTION_URL || window.location.origin).replace(/\/+$/, ""),
-
-    getRedirectUrl: function() {
-        return this.productionUrl + '/index.html';
-    }
+  url: import.meta.env.VITE_SUPABASE_URL,
+  anonKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
 };

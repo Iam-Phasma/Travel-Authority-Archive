@@ -37,6 +37,7 @@ export default defineConfig(({ mode }) => {
         workbox: {
           skipWaiting: true,
           clientsClaim: true,
+          navigateFallbackDenylist: [/\/recover-password\.html$/i],
         },
         devOptions: {
           enabled: false,
@@ -47,11 +48,9 @@ export default defineConfig(({ mode }) => {
     build: {
       rollupOptions: {
         input: {
-
           main: resolve(__dirname, 'index.html'),
-
+          recovery: resolve(__dirname, 'recover-password.html'),
           dashboard: resolve(__dirname, 'dashboard/dashboard.html'),
-
           admin: resolve(__dirname, 'admin/admin.html'),
         },
       },

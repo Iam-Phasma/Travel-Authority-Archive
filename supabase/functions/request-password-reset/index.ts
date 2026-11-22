@@ -16,6 +16,8 @@ const DEFAULT_ALLOWED_ORIGINS = [
 
 const DEFAULT_COOLDOWN_SECONDS = 60;
 const HCAPTCHA_SITEKEY = "fcc42bc6-e25c-48f2-85ea-497021987410";
+const DEFAULT_PASSWORD_RESET_PATH = "recover-password.html";
+const PASSWORD_RESET_REDIRECT_URL_ENV = "https://travel-authority-archive-fr1i.vercel.app/recover-password.html";
 
 type ResetRequestBody = {
   email?: string;
@@ -191,8 +193,27 @@ Deno.serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const hcaptchaSecret = Deno.env.get("HCAPTCHA_SECRET");
-  const configuredRedirectUrl = (Deno.env.get("PASSWORD_RESET_REDIRECT_URL") || "").trim();
-  const redirectTo = configuredRedirectUrl;
+  const configuredRedirectUrl = (
+    Deno.env.get(PASSWORD_RESET_REDIRECT_URL_ENV) ||
+    Deno.env.get("VITE_PRODUCTION_URL") ||
+    ""
+  ).trim();
+  let redirectTo = "";
+  if (configuredRedirectUrl) {
+    try {
+      const configuredUrl = new URL(configuredRedirectUrl);
+      if (configuredUrl.pathname.endsWith(DEFAULT_PASSWORD_RESET_PATH)) {
+        redirectTo = configuredUrl.toString();
+      } else {
+        configuredUrl.pathname = `${configuredUrl.pathname
+          .replace(/\/index\.html$/i, "")
+          .replace(/\/+$/, "")}/`;
+        redirectTo = new URL(DEFAULT_PASSWORD_RESET_PATH, configuredUrl).toString();
+      }
+    } catch (error) {
+      console.error("Invalid PASSWORD_RESET_REDIRECT_URL:", error);
+    }
+  }
 
   if (!supabaseUrl || !serviceRoleKey || !hcaptchaSecret || !redirectTo) {
     console.error("Missing required env config for request-password-reset function");
