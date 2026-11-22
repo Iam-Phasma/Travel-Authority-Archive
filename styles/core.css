@@ -259,8 +259,8 @@ body.login-page #header-container {
   max-width: 100%;
   margin-top: 10px;
   margin-bottom: 0;
-  padding: 26px 38px 18px;
-  gap: 12px;
+  padding: 24px 38px 18px;
+  gap: 8px;
   background: #ffffff;
   border: 1px solid var(--line);
   box-shadow: var(--shadow);
@@ -269,8 +269,8 @@ body.login-page #header-container {
 .recovery-panel .recovery-panel-intro {
   display: grid;
   justify-items: center;
-  gap: 6px;
-  margin-bottom: 2px;
+  gap: 2px;
+  margin-bottom: 0;
   text-align: center;
 }
 
@@ -279,15 +279,16 @@ body.login-page #header-container {
 }
 
 .recovery-panel .login-panel-subtitle {
-  margin-top: 5px;
-  margin-bottom: 10px;
+  margin-top: 2px;
+  margin-bottom: 4px;
   font-size: 0.9rem;
   line-height: 1.4;
 }
 
 .recovery-panel .recovery-intro {
   display: grid;
-  gap: 6px;
+  gap: 4px;
+  margin-top: 2px;
 }
 
 .recovery-panel h2 {
@@ -305,12 +306,12 @@ body.login-page #header-container {
 }
 
 .recovery-panel .new-password-fields {
-  gap: 12px;
+  gap: 10px;
 }
 
 .recovery-panel .new-password-fields > div {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .recovery-panel .new-password-fields > div label {
@@ -351,6 +352,7 @@ body.login-page #header-container {
 .recovery-panel .login-actions {
   width: 100%;
   gap: 8px;
+  margin-top: 2px;
 }
 
 .recovery-panel #update-password-btn {
@@ -389,6 +391,7 @@ body.login-page #header-container {
 .recovery-panel #update-password-status {
   margin: 0;
   font-size: 0.94rem;
+  text-align: center;
 }
 
 #login-panel .fields > div {
