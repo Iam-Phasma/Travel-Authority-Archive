@@ -17,7 +17,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 const DEFAULT_COOLDOWN_SECONDS = 60;
 const HCAPTCHA_SITEKEY = "fcc42bc6-e25c-48f2-85ea-497021987410";
 const DEFAULT_PASSWORD_RESET_PATH = "recover-password.html";
-const PASSWORD_RESET_REDIRECT_URL_ENV = "https://travel-authority-archive-fr1i.vercel.app/recover-password.html";
+const PASSWORD_RESET_REDIRECT_URL_ENV = "PASSWORD_RESET_REDIRECT_URL";
 
 type ResetRequestBody = {
   email?: string;
