@@ -164,9 +164,12 @@
       </section>
 
       <!-- New Password Panel (shown when user clicks reset link from email) -->
-      <section class="panel hidden" id="new-password-panel">
-        <h2>Set New Password</h2>
-        <div class="fields">
+      <section class="panel hidden" id="new-password-panel" aria-labelledby="new-password-heading">
+        <div class="new-password-intro">
+          <h2 id="new-password-heading">Set New Password</h2>
+          <p>Choose a new password to securely access your account.</p>
+        </div>
+        <div class="fields new-password-fields">
           <div>
             <label for="new-password"
               >New Password <span class="required">*</span></label

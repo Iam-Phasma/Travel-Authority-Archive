@@ -252,6 +252,102 @@ body.login-page #header-container {
   gap: 12px;
 }
 
+#new-password-panel {
+  align-self: start;
+  gap: 22px;
+  padding: 32px 38px 28px;
+}
+
+#new-password-panel .new-password-intro {
+  display: grid;
+  gap: 8px;
+}
+
+#new-password-panel h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.55rem;
+  letter-spacing: -0.025em;
+}
+
+#new-password-panel .new-password-intro p {
+  margin: 0;
+  color: rgba(11, 28, 59, 0.62);
+  font-size: 0.94rem;
+  line-height: 1.5;
+}
+
+#new-password-panel .new-password-fields {
+  gap: 16px;
+}
+
+#new-password-panel .new-password-fields > div {
+  display: grid;
+  gap: 8px;
+}
+
+#new-password-panel .new-password-fields label:not(.checkbox-label) {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+#new-password-panel .input-wrap .icon {
+  left: 15px;
+  color: rgba(11, 28, 59, 0.58);
+}
+
+#new-password-panel .input-wrap input {
+  min-height: 54px;
+  padding-left: 46px;
+  border-radius: var(--radius-lg);
+  border-color: rgba(11, 28, 59, 0.16);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+#new-password-panel .input-wrap input:focus {
+  border-color: var(--sea);
+  box-shadow: 0 0 0 3px rgba(44, 109, 210, 0.14);
+}
+
+#new-password-panel .checkbox-label {
+  gap: 10px;
+  color: rgba(11, 28, 59, 0.72);
+}
+
+#new-password-panel .checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--sea);
+}
+
+#new-password-panel .login-actions {
+  gap: 12px;
+}
+
+#new-password-panel #update-password-btn {
+  width: fit-content;
+  min-width: 190px;
+  min-height: 48px;
+  padding-inline: 22px;
+  border-radius: var(--radius-md);
+  background: var(--ink);
+}
+
+#new-password-panel #update-password-btn:hover {
+  background: var(--hover-ink);
+}
+
+#new-password-panel #update-password-btn:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+#new-password-panel #update-password-status {
+  margin: 0;
+  font-size: 0.94rem;
+}
+
 #login-panel .fields > div {
   display: grid;
   gap: 8px;
@@ -1547,6 +1643,15 @@ button:hover {
   #login-panel {
     padding: 34px 22px 26px;
     border-radius: var(--radius-xl);
+  }
+
+  #new-password-panel {
+    padding: 28px 22px 24px;
+  }
+
+  #new-password-panel #update-password-btn {
+    width: 100%;
+    min-width: 100%;
   }
 
   .login-panel-brand {
