@@ -15,6 +15,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 ];
 
 const DEFAULT_COOLDOWN_SECONDS = 60;
+const HCAPTCHA_SITEKEY = "fcc42bc6-e25c-48f2-85ea-497021987410";
 
 type ResetRequestBody = {
   email?: string;
@@ -135,11 +136,12 @@ const verifyHCaptcha = async (token: string, secret: string, remoteIp: string) =
   const formBody = new URLSearchParams();
   formBody.set("secret", secret);
   formBody.set("response", token);
+  formBody.set("sitekey", HCAPTCHA_SITEKEY);
   if (remoteIp && remoteIp !== "unknown") {
     formBody.set("remoteip", remoteIp);
   }
 
-  const response = await fetch("https://hcaptcha.com/siteverify", {
+  const response = await fetch("https://api.hcaptcha.com/siteverify", {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -148,11 +150,15 @@ const verifyHCaptcha = async (token: string, secret: string, remoteIp: string) =
   });
 
   if (!response.ok) {
-    return false;
+    return { success: false, errorCodes: [`verification-http-${response.status}`] };
   }
 
   const payload = await response.json();
-  return payload?.success === true;
+  return {
+    success: payload?.success === true,
+    errorCodes: payload?.["error-codes"] || [],
+    hostname: payload?.hostname,
+  };
 };
 
 Deno.serve(async (req) => {
@@ -199,15 +205,22 @@ Deno.serve(async (req) => {
 
   const clientIp = getClientIp(req);
 
-  let captchaVerified = false;
+  let captchaResult: {
+    success: boolean;
+    errorCodes: string[];
+    hostname?: string;
+  } = { success: false, errorCodes: [] };
   try {
-    captchaVerified = await verifyHCaptcha(captchaToken, hcaptchaSecret, clientIp);
+    captchaResult = await verifyHCaptcha(captchaToken, hcaptchaSecret, clientIp);
   } catch (error) {
     console.error("hCaptcha verification error:", error);
-    captchaVerified = false;
   }
 
-  if (!captchaVerified) {
+  if (!captchaResult.success) {
+    console.error("hCaptcha verification rejected:", {
+      errorCodes: captchaResult.errorCodes,
+      hostname: captchaResult.hostname,
+    });
     return jsonResponse(req, { accepted: false, code: "captcha_failed" });
   }
 
